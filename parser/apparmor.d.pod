@@ -115,7 +115,7 @@ B<PROFILE FLAG CONDS> =  [ 'flags=' ] '(' comma or white space separated list of
 
 B<PROFILE FLAGS> = I<PROFILE MODE> | I<AUDIT_MODE> | 'mediate_deleted' | 'attach_disconnected' | 'chroot_relative' | 'debug'
 
-B<PROFILE MODE> = 'enforce' | 'complain' | 'kill' | 'unconfined'
+B<PROFILE MODE> = 'enforce' | 'complain' | 'kill' | 'unconfined' | 'prompt'
 
 B<AUDIT MODE> = 'audit'
 
@@ -458,6 +458,11 @@ unconfined behavior that can be later changed to confinement by using
 profile replacement. This mode is should not be used under regular
 deployment but can be useful during debugging and some system
 initialization scenarios.
+
+=item B<prompt> This mode allows task mediation to send an up call to
+userspace to ask for a decision when there isn't a rule covering the
+permission request. If userspace does not respond then the access
+will be denied.
 
 =back
 
