@@ -69,7 +69,7 @@ static void free_processes(struct process *processes, size_t n) {
 		free(processes[n].profile);
 		free(processes[n].exe);
 		free(processes[n].mode);
-        }
+	}
 	free(processes);
 }
 
@@ -112,7 +112,7 @@ static int get_profiles(struct profile **profiles, size_t *n) {
 		dfprintf(stderr, "apparmor not present.\n");
 		ret = AA_EXIT_DISABLED;
 		goto exit;
-        }
+	}
 	dprintf("apparmor module is loaded.\n");
 
 	ret = aa_find_mountpoint(&apparmorfs);
@@ -120,13 +120,13 @@ static int get_profiles(struct profile **profiles, size_t *n) {
 		dfprintf(stderr, "apparmor filesystem is not mounted.\n");
 		ret = AA_EXIT_NO_CONTROL;
 		goto exit;
-        }
+	}
 
 	apparmor_profiles = malloc(strlen(apparmorfs) + 10); // /profiles\0
 	if (apparmor_profiles == NULL) {
 		ret = AA_EXIT_INTERNAL_ERROR;
 		goto exit;
-        }
+	}
 	sprintf(apparmor_profiles, "%s/profiles", apparmorfs);
 
 	fp = fopen(apparmor_profiles, "r");
@@ -221,7 +221,7 @@ static int filter_profiles(struct profile *profiles,
 				*nfiltered = 0;
 				ret = AA_EXIT_INTERNAL_ERROR;
 				break;
-                        }
+			}
 			_filtered[*nfiltered].name = strdup(profiles[i].name);
 			_filtered[*nfiltered].status = strdup(profiles[i].status);
 			*filtered = _filtered;
@@ -261,7 +261,7 @@ static int get_processes(struct profile *profiles,
 	if (dir == NULL) {
 		ret = AA_EXIT_INTERNAL_ERROR;
 		goto exit;
-        }
+	}
 	while ((entry = readdir(dir)) != NULL) {
 		size_t i;
 		int rc;
@@ -436,35 +436,35 @@ static int simple_filtered_count(const char *filter) {
  */
 static int simple_filtered_process_count(const char *filter) {
 	size_t nprocesses, nprofiles;
-        struct profile *profiles = NULL;
-        struct process *processes = NULL;
-        int ret;
+	struct profile *profiles = NULL;
+	struct process *processes = NULL;
+	int ret;
 
-        ret = get_profiles(&profiles, &nprofiles);
+	ret = get_profiles(&profiles, &nprofiles);
 	if (ret != 0)
 		return ret;
-        ret = get_processes(profiles, nprofiles, &processes, &nprocesses);
-        if (ret == 0) {
-                size_t nfiltered;
-                struct process *filtered = NULL;
-                ret = filter_processes(processes, nprocesses, filter, &filtered, &nfiltered);
-                printf("%zd\n", nfiltered);
-                free_processes(filtered, nfiltered);
-        }
-        free_profiles(profiles, nprofiles);
+	ret = get_processes(profiles, nprofiles, &processes, &nprocesses);
+	if (ret == 0) {
+		size_t nfiltered;
+		struct process *filtered = NULL;
+		ret = filter_processes(processes, nprocesses, filter, &filtered, &nfiltered);
+		printf("%zd\n", nfiltered);
+		free_processes(filtered, nfiltered);
+	}
+	free_profiles(profiles, nprofiles);
 	free_processes(processes, nprocesses);
-        return ret;
+	return ret;
 }
 
 
 static int compare_processes_by_profile(const void *a, const void *b) {
 	return strcmp(((struct process *)a)->profile,
-                      ((struct process *)b)->profile);
+		      ((struct process *)b)->profile);
 }
 
 static int compare_processes_by_executable(const void *a, const void *b) {
 	return strcmp(((struct process *)a)->exe,
-                      ((struct process *)b)->exe);
+		      ((struct process *)b)->exe);
 }
 
 /**
