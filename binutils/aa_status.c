@@ -124,8 +124,8 @@ const char *opt_profiles = ".*";
 const char *opt_pid = ".*";
 const char *opt_exe = ".*";
 
-const char *profile_statuses[] = {"enforce", "complain", "kill", "unconfined"};
-const char *process_statuses[] = {"enforce", "complain", "kill", "unconfined", "mixed"};
+const char *profile_statuses[] = {"enforce", "complain", "prompt", "kill", "unconfined"};
+const char *process_statuses[] = {"enforce", "complain", "prompt", "kill", "unconfined", "mixed"};
 
 #define dprintf(...)                                                           \
 do {									       \
@@ -208,8 +208,12 @@ static int get_profiles(FILE *fp, struct profile **profiles, size_t *n) {
 		}
 		name = strdup(tmpname);
 
-		if (status)
-			status = strdup(status);
+		if (status) {
+			if (strcmp(status, "user") == 0)
+				status = strdup("prompt");
+			else
+				status = strdup(status);
+		}
 		// give up if out of memory
 		if (name == NULL || status == NULL)
 			goto err;
@@ -345,7 +349,10 @@ static int get_processes(struct profile *profiles,
 			goto exit;
 		} else if (mode) {
 			/* TODO: make this not needed. Mode can now be autofreed */
-			mode = strdup(mode);
+			if (strcmp(mode, "user") == 0)
+				mode = strdup("prompt");
+			else
+				mode = strdup(mode);
 		}
 		// get executable - readpath can allocate for us but seems
 		// to fail in some cases with errno 2 - no such file or
@@ -698,6 +705,7 @@ static int print_legacy(const char *command)
 	 "  --enforced             --count --profiles --mode=enforced\n"
 	 "  --complaining          --count --profiles --mode=complain\n"
 	 "  --kill                 --count --profiles --mode=kill\n"
+	 "  --prompt               --count --profiles --mode=prompt\n"
 	 "  --special-unconfined   --count --profiles --mode=unconfined\n"
 	 "  --process-mixed        --count --ps --mode=mixed\n",
 	command);
@@ -779,6 +787,7 @@ static int print_usage(const char *command, bool error)
 #define ARG_PROFILES	141
 #define ARG_PID		142
 #define ARG_EXE		143
+#define ARG_PROMPT	144
 #define ARG_VERBOSE 'v'
 #define ARG_HELP 'h'
 
@@ -790,6 +799,7 @@ static int parse_args(int argc, char **argv)
 		{"profiled", no_argument, 0, ARG_PROFILED},
 		{"enforced", no_argument, 0, ARG_ENFORCED},
 		{"complaining", no_argument, 0, ARG_COMPLAIN},
+		{"prompt", no_argument, 0, ARG_PROMPT},
 		{"kill", no_argument, 0, ARG_KILL},
 		{"special-unconfined", no_argument, 0, ARG_UNCONFINED},
 		{"process-mixed", no_argument, 0, ARG_PS_MIXED},
@@ -847,6 +857,12 @@ static int parse_args(int argc, char **argv)
 			opt_count = true;
 			opt_show = SHOW_PROFILES;
 			opt_mode = "complain";
+			break;
+		case ARG_PROMPT:
+			verbose = false;
+			opt_count = true;
+			opt_show = SHOW_PROFILES;
+			opt_mode = "prompt";
 			break;
 		case ARG_UNCONFINED:
 			verbose = false;
