@@ -34,8 +34,9 @@
 
 #include "expr-tree.h"
 #include "hfa.h"
+#include "policy_compat.h"
 #include "../immunix.h"
-
+#include "../perms.h"
 
 ostream &operator<<(ostream &os, const CacheStats &cache)
 {
@@ -1299,6 +1300,44 @@ void DFA::apply_equivalence_classes(map<transchar, transchar> &eq)
 		}
 	}
 }
+
+void DFA::compute_perms_table_ent(State *state, size_t pos,
+				  vector <aa_perms> &perms_table)
+{
+	uint32_t accept1, accept2;
+
+	state->map_perms_to_accept(accept1, accept2);
+	if (filedfa) {
+		state->idx = pos * 2;
+		perms_table[pos*2] = compute_fperms_user(accept1, accept2);
+		perms_table[pos*2 + 1] = compute_fperms_other(accept1, accept2);
+	} else {
+		state->idx = pos;
+		perms_table[pos] = compute_perms_entry(accept1, accept2);
+	}
+}
+
+void DFA::compute_perms_table(vector <aa_perms> &perms_table)
+{
+	size_t mult = filedfa ? 2 : 1;
+	size_t pos = 2;
+
+	assert(states.size() >= 2);
+	perms_table.resize(states.size() * mult);
+
+	// nonmatching and start need to be 0 and 1 so handle outside of loop
+	if (filedfa)
+		compute_perms_table_ent(nonmatching, 0, perms_table);
+	compute_perms_table_ent(start, 1, perms_table);
+
+	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+		if (*i == nonmatching || *i == start)
+			continue;
+		compute_perms_table_ent(*i, pos, perms_table);
+		pos++;
+	}
+}
+
 
 #if 0
 typedef set <ImportantNode *>AcceptNodes;

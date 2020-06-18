@@ -194,8 +194,10 @@ bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
  *          else NULL on failure, @min_match_len set to the shortest string
  *          that can match the dfa for determining xmatch priority.
  */
-void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &opts,
-			     bool filedfa)
+void *aare_rules::create_dfa(size_t *size, int *min_match_len,
+			     vector <aa_perms> &perms_table,
+			     optflags const &opts,
+			     bool filedfa,  bool extended_perms)
 {
 	char *buffer = NULL;
 
@@ -304,7 +306,12 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 				dfa.dump_diff_encode(cerr);
 		}
 
-		CHFA chfa(dfa, eq, opts, false);
+		//cerr << "Checking extended perms " << extended_perms << "\n";
+		if (extended_perms) {
+			//cerr << "creating permstable\n";
+			dfa.compute_perms_table(perms_table);
+		}
+		CHFA chfa(dfa, eq, opts, extended_perms);
 		if (opts.dump & DUMP_DFA_TRANS_TABLE)
 			chfa.dump(cerr);
 		chfa.flex_table(stream);

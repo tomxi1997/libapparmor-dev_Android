@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Create a compressed hfa (chfa) from and hfa
+ * Create a compressed hfa (chfa) from an hfa
  */
 #ifndef __LIBAA_RE_CHFA_H
 #define __LIBAA_RE_CHFA_H

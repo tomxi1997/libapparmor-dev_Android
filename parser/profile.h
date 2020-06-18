@@ -15,6 +15,7 @@
 #define __AA_PROFILE_H
 
 #include <set>
+#include <vector>
 #include <string>
 #include <iostream>
 
@@ -24,6 +25,8 @@
 #include "libapparmor_re/aare_rules.h"
 #include "network.h"
 #include "signal.h"
+#include "immunix.h"
+#include "perms.h"
 
 class Profile;
 
@@ -336,7 +339,7 @@ struct dfa_stuff {
 	aare_rules *rules;
 	void *dfa;
 	size_t size;
-
+	vector <aa_perms> perms_table;
 	dfa_stuff(void): rules(NULL), dfa(NULL), size(0) { }
 };
 
@@ -349,7 +352,7 @@ public:
 	void *xmatch;
 	size_t xmatch_size;
 	int xmatch_len;
-
+	vector <aa_perms> xmatch_perms_table;
 	struct cond_entry_list xattrs;
 
 	/* char *sub_name; */			/* subdomain name or NULL */

@@ -105,20 +105,23 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 	num.insert(make_pair(dfa.nonmatching, num.size()));
 
 	accept.resize(max(dfa.states.size(), (size_t) 2));
-	if (!permindex) {
+	if (permindex) {
+		accept[0] = dfa.nonmatching->idx;
+		accept[1] = dfa.start->idx;
+	} else {
 		accept2.resize(max(dfa.states.size(), (size_t) 2));
-		accept2[0] = 0;
-		accept2[1] = 0;
+		dfa.nonmatching->map_perms_to_accept(accept[0],
+						     accept2[0]);
+		dfa.start->map_perms_to_accept(accept[1],
+					       accept2[1]);
 	}
 	next_check.resize(max(optimal, (size_t) dfa.max_range));
 	free_list.resize(next_check.size());
 
-	accept[0] = 0;
 	first_free = 1;
 	init_free_list(free_list, 0, 1);
 
 	insert_state(free_list, dfa.start, dfa);
-	accept[1] = 0;
 	num.insert(make_pair(dfa.start, num.size()));
 
 	int count = 2;
@@ -127,8 +130,11 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 		for (Partition::iterator i = dfa.states.begin(); i != dfa.states.end(); i++) {
 			if (*i != dfa.nonmatching && *i != dfa.start) {
 				insert_state(free_list, *i, dfa);
-				(*i)->map_perms_to_accept(accept[num.size()],
-							  accept2[num.size()]);
+				if (permindex)
+					accept[num.size()] = (*i)->idx;
+				else
+					(*i)->map_perms_to_accept(accept[num.size()],
+								  accept2[num.size()]);
 				num.insert(make_pair(*i, num.size()));
 			}
 			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
@@ -144,8 +150,11 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 			if (i->second != dfa.nonmatching &&
 			    i->second != dfa.start) {
 				insert_state(free_list, i->second, dfa);
-				i->second->map_perms_to_accept(accept[num.size()],
-							       accept2[num.size()]);
+				if (permindex)
+					accept[num.size()] = i->second->idx;
+				else
+					i->second->map_perms_to_accept(accept[num.size()],
+								       accept2[num.size()]);
 				num.insert(make_pair(i->second, num.size()));
 			}
 			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {

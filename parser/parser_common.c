@@ -87,6 +87,7 @@ int features_supports_flag_interruptible = 0;
 int features_supports_flag_signal = 0;
 int features_supports_flag_error = 0;
 int kernel_supports_oob = 0;		/* out of band transitions */
+int kernel_supports_permstable32 = 0;	/* extended permissions */
 int conf_verbose = 0;
 int conf_quiet = 0;
 int names_only = 0;

@@ -32,6 +32,7 @@
 #include <stdint.h>
 
 #include "expr-tree.h"
+#include "policy_compat.h"
 
 #define DiffEncodeFlag 1
 
@@ -198,7 +199,7 @@ struct DiffDag {
 class State {
 public:
 	State(int l, ProtoState &n, State *other, bool filedfa):
-		label(l), flags(0), perms(), trans()
+		label(l), flags(0), idx(0), perms(), trans()
 	{
 		int error;
 
@@ -256,6 +257,7 @@ public:
 
 	int label;
 	int flags;
+	int idx;
 	perms_t perms;
 	StateTrans trans;
 	State *otherwise;
@@ -303,7 +305,6 @@ public:
 	}
 };
 
-
 /* Transitions in the DFA. */
 class DFA {
 	void dump_node_to_dfa(void);
@@ -346,6 +347,10 @@ public:
 	map<transchar, transchar> equivalence_classes(optflags const &flags);
 	void apply_equivalence_classes(map<transchar, transchar> &eq);
 
+	void compute_perms_table_ent(State *state, size_t pos,
+				     vector <aa_perms> &perms_table);
+	void compute_perms_table(vector <aa_perms> &perms_table);
+
 	unsigned int diffcount;
 	int oob_range;
 	int max_range;
@@ -354,6 +359,7 @@ public:
 	Node *root;
 	State *nonmatching, *start;
 	Partition states;
+	//vector <aa_perms> perms_table;
 	bool filedfa;
 };
 

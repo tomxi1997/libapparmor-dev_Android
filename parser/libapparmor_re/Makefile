@@ -22,16 +22,18 @@ all : ${TARGET}
 
 UNITTESTS = tst_parse
 
-libapparmor_re.a: parse.o expr-tree.o hfa.o chfa.o aare_rules.o
+libapparmor_re.a: parse.o expr-tree.o hfa.o chfa.o aare_rules.o policy_compat.o
 	${AR} ${ARFLAGS} $@ $^
 
 expr-tree.o: expr-tree.cc expr-tree.h
 
-hfa.o: hfa.cc apparmor_re.h hfa.h ../immunix.h
+hfa.o: hfa.cc apparmor_re.h hfa.h ../immunix.h  policy_compat.h
 
 aare_rules.o: aare_rules.cc aare_rules.h apparmor_re.h expr-tree.h hfa.h chfa.h parse.h ../immunix.h
 
 chfa.o: chfa.cc chfa.h ../immunix.h
+
+policy_compat.o: policy_compat.cc policy_compat.h ../perms.h ../immunix.h
 
 parse.o : parse.cc apparmor_re.h expr-tree.h
 

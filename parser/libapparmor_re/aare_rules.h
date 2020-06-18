@@ -21,11 +21,15 @@
 #ifndef __LIBAA_RE_RULES_H
 #define __LIBAA_RE_RULES_H
 
+#include <vector>
+
 #include <stdint.h>
 
 #include "../common_optarg.h"
 #include "apparmor_re.h"
 #include "expr-tree.h"
+#include "../immunix.h"
+#include "../perms.h"
 
 class UniquePerm {
 public:
@@ -106,8 +110,10 @@ class aare_rules {
 	bool add_rule_vec(int deny, uint32_t perms, uint32_t audit, int count,
 			  const char **rulev, optflags const &opts, bool oob);
 	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);
-	void *create_dfa(size_t *size, int *min_match_len, optflags const &opts,
-			 bool filedfa);
+	void *create_dfa(size_t *size, int *min_match_len,
+			 vector <aa_perms> &perms_table,
+			 optflags const &opts,
+			 bool filedfa, bool extended_perms);
 };
 
 #endif				/* __LIBAA_RE_RULES_H */

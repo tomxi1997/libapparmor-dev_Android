@@ -569,7 +569,11 @@ static int process_profile_name_xmatch(Profile *prof)
 			}
 		}
 build:
-		prof->xmatch = rules->create_dfa(&prof->xmatch_size, &prof->xmatch_len, parseopts, true);
+		/* xmatch doesn't use file dfa exec mode bits NOT the owner
+		 * conditional and for just MAY_EXEC can be processed as
+		 * none file perms
+		 */
+		prof->xmatch = rules->create_dfa(&prof->xmatch_size, &prof->xmatch_len, prof->xmatch_perms_table, parseopts, false, kernel_supports_permstable32);
 		delete rules;
 		if (!prof->xmatch)
 			return FALSE;
@@ -769,8 +773,9 @@ int process_profile_regex(Profile *prof)
 
 	if (prof->dfa.rules->rule_count > 0) {
 		int xmatch_len = 0;
+		//fprintf(stderr, "Creating file DFA %d\n", kernel_supports_permstable32);
 		prof->dfa.dfa = prof->dfa.rules->create_dfa(&prof->dfa.size,
-							    &xmatch_len, parseopts, true);
+							    &xmatch_len, prof->dfa.perms_table, parseopts, true, kernel_supports_permstable32);
 		delete prof->dfa.rules;
 		prof->dfa.rules = NULL;
 		if (!prof->dfa.dfa)
@@ -1044,7 +1049,7 @@ int process_profile_policydb(Profile *prof)
 	if (prof->policy.rules->rule_count > 0) {
 		int xmatch_len = 0;
 		prof->policy.dfa = prof->policy.rules->create_dfa(&prof->policy.size,
-								  &xmatch_len, parseopts, false);
+								  &xmatch_len, prof->policy.perms_table, parseopts, false, kernel_supports_permstable32);
 		delete prof->policy.rules;
 
 		prof->policy.rules = NULL;
