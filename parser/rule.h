@@ -153,7 +153,7 @@ typedef std::list<rule_t *> RuleList;
 /* Not classes so they can be used in the bison front end */
 typedef uint32_t perms_t;
 typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
-typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY } rule_mode_t;
+typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY, RULE_PROMPT } rule_mode_t;
 
 /* NOTE: we can not have a constructor for class prefixes. This is
  * because it will break bison, and we would need to transition to
@@ -183,11 +183,25 @@ public:
 		}
 
 		switch (rule_mode) {
+		case RULE_ALLOW:
+			if (output)
+				os << " ";
+
+			os << "allow";
+			output = true;
+			break;
 		case RULE_DENY:
 			if (output)
 				os << " ";
 
 			os << "deny";
+			output = true;
+			break;
+		case RULE_PROMPT:
+			if (output)
+				os << " ";
+
+			os << "prompt";
 			output = true;
 			break;
 		default:

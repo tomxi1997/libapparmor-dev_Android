@@ -115,6 +115,7 @@ static void abi_features(char *filename, bool search);
 %token TOK_AUDIT
 %token TOK_DENY
 %token TOK_ALLOW
+%token TOK_PROMPT
 %token TOK_PROFILE
 %token TOK_SET
 %token TOK_ALIAS
@@ -632,6 +633,7 @@ opt_owner_flag: { /* nothing */ $$ = 0; }
 opt_rule_mode: { /* nothing */ $$ = RULE_UNSPECIFIED; }
 	| TOK_ALLOW { $$ = RULE_ALLOW; }
 	| TOK_DENY { $$ = RULE_DENY; }
+	| TOK_PROMPT { $$ = RULE_PROMPT; }
 
 opt_prefix: opt_audit_flag opt_rule_mode opt_owner_flag
 	{
@@ -674,8 +676,11 @@ rules: rules opt_prefix block
 	{
 		struct cod_entry *entry, *tmp;
 
-		PDEBUG("matched: %s%s%sblock\n", $2.audit == AUDIT_FORCE ? "audit " : "",
-		       $2.rule_mode == RULE_DENY ? "deny " : "", $2.owner ? "owner " : "");
+		PDEBUG("matched: %s%s%sblock\n",
+		       $2.audit == AUDIT_FORCE ? "audit " : "",
+		       $2.rule_mode == RULE_DENY ? "deny " : "",
+		       $2.rule_mode == RULE_PROMPT ? "prompt " : "",
+		       $2.owner ? "owner " : "");
 		list_for_each_safe($3->entries, entry, tmp) {
 			const char *error;
 			entry->next = NULL;
