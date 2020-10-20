@@ -420,6 +420,12 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 		}
 	}
 
+	/* added in 4.13, unfortunately there is no features flag */
+	if (profile->flags.disconnected_path) {
+		sd_write_string(buf, profile->flags.disconnected_path,
+				"disconnected");
+	}
+
 	sd_write_struct(buf, "flags");
 	/* used to be flags.debug, but that's no longer supported */
 	sd_write_uint32(buf, profile->flags.flags);

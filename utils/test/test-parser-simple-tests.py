@@ -164,6 +164,11 @@ exception_not_raised = (
     'profile/flags/flags_bad54.sd',
     'profile/flags/flags_bad55.sd',
     'profile/flags/flags_bad56.sd',
+    'profile/flags/flags_bad_disconnected_path1.sd',
+    'profile/flags/flags_bad_disconnected_path2.sd',
+    'profile/flags/flags_bad_disconnected_path3.sd',
+    'profile/flags/flags_bad_disconnected_path4.sd',
+    'profile/flags/flags_bad_disconnected_path5.sd',
     'profile/profile_ns_bad8.sd',  # 'profile :ns/t' without terminating ':'
     'ptrace/bad_05.sd',  # actually contains a capability rule with invalid (ptrace-related) keyword
     'ptrace/bad_06.sd',  # actually contains a capability rule with invalid (ptrace-related) keyword

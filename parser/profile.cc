@@ -107,6 +107,8 @@ Profile::~Profile()
 		free(name);
 	if (attachment)
 		free(attachment);
+	if (flags.disconnected_path)
+		free(flags.disconnected_path);
 	if (ns)
 		free(ns);
 	for (int i = (AA_EXEC_LOCAL >> 10) + 1; i < AA_EXEC_COUNT; i++)

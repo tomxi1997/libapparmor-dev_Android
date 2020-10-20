@@ -285,7 +285,20 @@ static int process_variables_in_name(Profile &prof)
 	int error = expand_entry_variables(&prof.name);
 	if (!error && prof.attachment)
 		error = expand_entry_variables(&prof.attachment);
+	if (!error && prof.flags.disconnected_path) {
+		error = expand_entry_variables(&prof.flags.disconnected_path);
+		if (error)
+			return error;
+		filter_slashes(prof.flags.disconnected_path);
+		// TODO: semantic check should go somewhere else
+		if (prof.flags.disconnected_path[0] != '/')
+			yyerror(_("attach_disconnected_path value must begin with a /"));
+		int n = strlen(prof.flags.disconnected_path);
+		// removing trailing / */
+		while (n && prof.flags.disconnected_path[n-1] == '/')
+			prof.flags.disconnected_path[--n] = 0;
 
+	}
 	return error;
 }
 
