@@ -303,7 +303,7 @@ static void split_node_types(NodeSet *nodes, NodeSet **anodes, NodeSet **nnodes
 
 State *DFA::add_new_state(NodeSet *anodes, NodeSet *nnodes, State *other)
 {
-	hashedNodeVec *nnodev;
+	NodeVec *nnodev;
 	nnodev = nnodes_cache.insert(nnodes);
 	anodes = anodes_cache.insert(anodes);
 
@@ -347,7 +347,7 @@ void DFA::update_state_transitions(State *state)
 	 * need to compute follow for the accept nodes in a protostate
 	 */
 	Cases cases;
-	for (hashedNodeVec::iterator i = state->proto.nnodes->begin(); i != state->proto.nnodes->end(); i++)
+	for (NodeVec::iterator i = state->proto.nnodes->begin(); i != state->proto.nnodes->end(); i++)
 		(*i)->follow(cases);
 
 	/* Now for each set of nodes in the computed transitions, make

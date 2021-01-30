@@ -140,13 +140,13 @@ int accept_perms(NodeSet *state, perms_t &perms, bool filedfa);
  */
 class ProtoState {
 public:
-	hashedNodeVec *nnodes;
+	NodeVec *nnodes;
 	NodeSet *anodes;
 
 	/* init is used instead of a constructor because ProtoState is used
 	 * in a union
 	 */
-	void init(hashedNodeVec *n, NodeSet *a = NULL)
+	void init(NodeVec *n, NodeSet *a = NULL)
 	{
 		nnodes = n;
 		anodes = a;

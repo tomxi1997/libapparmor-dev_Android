@@ -992,7 +992,7 @@ public:
 };
 
 
-class hashedNodeVec {
+class NodeVec {
 public:
 	typedef ImportantNode ** iterator;
 	iterator begin() { return nodes; }
@@ -1002,7 +1002,7 @@ public:
 	unsigned long len;
 	ImportantNode **nodes;
 
-	hashedNodeVec(NodeSet *n)
+	NodeVec(NodeSet *n)
 	{
 		hash = hash_NodeSet(n);
 		len = n->size();
@@ -1014,7 +1014,7 @@ public:
 		}
 	}
 
-	hashedNodeVec(NodeSet *n, unsigned long h): hash(h)
+	NodeVec(NodeSet *n, unsigned long h): hash(h)
 	{
 		len = n->size();
 		nodes = new ImportantNode *[n->size()];
@@ -1024,14 +1024,14 @@ public:
 		}
 	}
 
-	~hashedNodeVec()
+	~NodeVec()
 	{
 		delete [] nodes;
 	}
 
 	unsigned long size()const { return len; }
 
-	bool operator<(hashedNodeVec const &rhs)const
+	bool operator<(NodeVec const &rhs)const
 	{
 		if (hash == rhs.hash) {
 			if (len == rhs.size()) {
@@ -1095,7 +1095,7 @@ public:
 };
 
 struct deref_less_than {
-       bool operator()(hashedNodeVec * const &lhs, hashedNodeVec * const &rhs)const
+       bool operator()(NodeVec * const &lhs, NodeVec * const &rhs)const
 		{
 			return *lhs < *rhs;
 		}
@@ -1103,7 +1103,7 @@ struct deref_less_than {
 
 class NodeVecCache: public CacheStats {
 public:
-	set<hashedNodeVec *, deref_less_than> cache;
+	set<NodeVec *, deref_less_than> cache;
 
 	NodeVecCache(void): cache() { };
 	~NodeVecCache() { clear(); };
@@ -1112,7 +1112,7 @@ public:
 
 	void clear()
 	{
-		for (set<hashedNodeVec *>::iterator i = cache.begin();
+		for (set<NodeVec *>::iterator i = cache.begin();
 		     i != cache.end(); i++) {
 			delete *i;
 		}
@@ -1120,12 +1120,12 @@ public:
 		CacheStats::clear();
 	}
 
-	hashedNodeVec *insert(NodeSet *nodes)
+	NodeVec *insert(NodeSet *nodes)
 	{
 		if (!nodes)
 			return NULL;
-		pair<set<hashedNodeVec *>::iterator,bool> uniq;
-		hashedNodeVec *nv = new hashedNodeVec(nodes);
+		pair<set<NodeVec *>::iterator,bool> uniq;
+		NodeVec *nv = new NodeVec(nodes);
 		uniq = cache.insert(nv);
 		if (uniq.second == false) {
 			delete nv;
