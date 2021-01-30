@@ -964,34 +964,6 @@ unsigned long hash_NodeSet(NodeSet *ns);
 void flip_tree(Node *node);
 
 
-
-/*
- * hashedNodes - for efficient set comparison
- */
-class hashedNodeSet {
-public:
-	unsigned long hash;
-	NodeSet *nodes;
-
-	hashedNodeSet(NodeSet *n): nodes(n)
-	{
-		hash = hash_NodeSet(n);
-	}
-
-	bool operator<(hashedNodeSet const &rhs)const
-	{
-		if (hash == rhs.hash) {
-			if (nodes->size() == rhs.nodes->size())
-				return *nodes < *(rhs.nodes);
-			else
-				return nodes->size() < rhs.nodes->size();
-		} else {
-			return hash < rhs.hash;
-		}
-	}
-};
-
-
 class NodeVec {
 public:
 	typedef ImportantNode ** iterator;
@@ -1055,43 +1027,6 @@ public:
 
 	void clear(void) { dup = sum = max = 0; }
 	virtual unsigned long size(void) const = 0;
-};
-
-class NodeCache: public CacheStats {
-public:
-	set<hashedNodeSet> cache;
-
-	NodeCache(void): cache() { };
-	~NodeCache() { clear(); };
-
-	virtual unsigned long size(void) const { return cache.size(); }
-
-	void clear()
-	{
-		for (set<hashedNodeSet>::iterator i = cache.begin();
-		     i != cache.end(); i++) {
-			delete i->nodes;
-		}
-		cache.clear();
-		CacheStats::clear();
-	}
-
-	NodeSet *insert(NodeSet *nodes)
-	{
-		if (!nodes)
-			return NULL;
-		pair<set<hashedNodeSet>::iterator,bool> uniq;
-		uniq = cache.insert(hashedNodeSet(nodes));
-		if (uniq.second == false) {
-			delete(nodes);
-			dup++;
-		} else {
-			sum += nodes->size();
-			if (nodes->size() > max)
-				max = nodes->size();
-		}
-		return uniq.first->nodes;
-	}
 };
 
 struct deref_less_than {
