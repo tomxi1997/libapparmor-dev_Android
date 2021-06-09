@@ -31,7 +31,7 @@
 
 typedef set<int> Signals;
 
-int parse_signal_mode(const char *str_mode, int *mode, int fail);
+int parse_signal_perms(const char *str_perms, perms_t *perms, int fail);
 
 class signal_rule: public rule_t {
 	void extract_sigs(struct value_list **list);
@@ -39,11 +39,11 @@ class signal_rule: public rule_t {
 public:
 	Signals signals;
 	char *peer_label;
-	int mode;
+	perms_t perms;
 	int audit;
 	int deny;
 
-	signal_rule(int mode, struct cond_entry *conds);
+	signal_rule(perms_t perms, struct cond_entry *conds);
 	virtual ~signal_rule() {
 		signals.clear();
 		free(peer_label);

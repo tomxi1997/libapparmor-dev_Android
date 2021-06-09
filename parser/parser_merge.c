@@ -89,12 +89,12 @@ static int process_file_entries(Profile *prof)
 		}
 
 		/* check for merged x consistency */
-		if (!is_merged_x_consistent(cur->mode, next->mode)) {
+		if (!is_merged_x_consistent(cur->perms, next->perms)) {
 			PERROR(_("profile %s: has merged rule %s with conflicting x modifiers\n"),
 				prof->name, cur->name);
 			return -1;
 		}
-		cur->mode |= next->mode;
+		cur->perms |= next->perms;
 		cur->audit |= next->audit;
 		cur->next = next->next;
 

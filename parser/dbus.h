@@ -23,7 +23,7 @@
 #include "rule.h"
 #include "profile.h"
 
-extern int parse_dbus_mode(const char *str_mode, int *mode, int fail);
+extern int parse_dbus_perms(const char *str_mode, perms_t *mode, int fail);
 
 class dbus_rule: public rule_t {
 	void move_conditionals(struct cond_entry *conds);
@@ -39,11 +39,11 @@ public:
 	char *path;
 	char *interface;
 	char *member;
-	int mode;
+	perms_t perms;
 	int audit;
 	int deny;
 
-	dbus_rule(int mode_p, struct cond_entry *conds,
+	dbus_rule(perms_t perms_p, struct cond_entry *conds,
 		  struct cond_entry *peer_conds);
 	virtual ~dbus_rule() {
 		free(bus);

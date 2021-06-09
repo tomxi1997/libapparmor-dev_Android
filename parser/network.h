@@ -100,7 +100,7 @@ static inline uint32_t map_perms(uint32_t mask)
 };
 
 
-int parse_net_mode(const char *str_mode, int *mode, int fail);
+int parse_net_perms(const char *str_mode, perms_t *perms, int fail);
 extern struct aa_network_entry *new_network_ent(unsigned int family,
 						unsigned int type,
 						unsigned int protocol);

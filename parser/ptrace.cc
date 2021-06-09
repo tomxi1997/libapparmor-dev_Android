@@ -24,9 +24,9 @@
 #include <string>
 #include <sstream>
 
-int parse_ptrace_mode(const char *str_mode, int *mode, int fail)
+int parse_ptrace_perms(const char *str_perms, perms_t *perms, int fail)
 {
-	return parse_X_mode("ptrace", AA_VALID_PTRACE_PERMS, str_mode, mode, fail);
+	return parse_X_perms("ptrace", AA_VALID_PTRACE_PERMS, str_perms, perms, fail);
 }
 
 void ptrace_rule::move_conditionals(struct cond_entry *conds)
@@ -47,15 +47,15 @@ void ptrace_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-ptrace_rule::ptrace_rule(int mode_p, struct cond_entry *conds):
+ptrace_rule::ptrace_rule(perms_t perms_p, struct cond_entry *conds):
 	peer_label(NULL), audit(0), deny(0)
 {
-	if (mode_p) {
-		if (mode_p & ~AA_VALID_PTRACE_PERMS)
-			yyerror("mode contains invalid permissions for ptrace\n");
-		mode = mode_p;
+	if (perms_p) {
+		if (perms_p & ~AA_VALID_PTRACE_PERMS)
+			yyerror("perms contains invalid permissions for ptrace\n");
+		perms = perms_p;
 	} else {
-		mode = AA_VALID_PTRACE_PERMS;
+		perms = AA_VALID_PTRACE_PERMS;
 	}
 
 	move_conditionals(conds);
@@ -71,16 +71,16 @@ ostream &ptrace_rule::dump(ostream &os)
 
 	os << "ptrace";
 
-	if (mode != AA_VALID_PTRACE_PERMS) {
+	if (perms != AA_VALID_PTRACE_PERMS) {
 		os << " (";
 
-		if (mode & AA_MAY_READ)
+		if (perms & AA_MAY_READ)
 			os << "read ";
-		if (mode & AA_MAY_READBY)
+		if (perms & AA_MAY_READBY)
 			os << "readby ";
-		if (mode & AA_MAY_TRACE)
+		if (perms & AA_MAY_TRACE)
 			os << "trace ";
-		if (mode & AA_MAY_TRACEDBY)
+		if (perms & AA_MAY_TRACEDBY)
 			os << "tracedby ";
 		os << ")";
 	}
@@ -136,8 +136,8 @@ int ptrace_rule::gen_policy_re(Profile &prof)
 	}
 
 	buf = buffer.str();
-	if (mode & AA_VALID_PTRACE_PERMS) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny, mode, audit,
+	if (perms & AA_VALID_PTRACE_PERMS) {
+		if (!prof.policy.rules->add_rule(buf.c_str(), deny, perms, audit,
 						 dfaflags))
 			goto fail;
 	}

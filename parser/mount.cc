@@ -1057,7 +1057,7 @@ fail:
 void mnt_rule::post_process(Profile &prof)
 {
 	if (trans) {
-		unsigned int mode = 0;
+		perms_t perms = 0;
 		int n = add_entry_to_x_table(&prof, trans);
 		if (!n) {
 			PERROR("Profile %s has too many specified profile transitions.\n", prof.name);
@@ -1065,11 +1065,11 @@ void mnt_rule::post_process(Profile &prof)
 		}
 
 		if (allow & AA_USER_EXEC)
-			mode |= SHIFT_MODE(n << 10, AA_USER_SHIFT);
+			perms |= SHIFT_PERMS(n << 10, AA_USER_SHIFT);
 		if (allow & AA_OTHER_EXEC)
-			mode |= SHIFT_MODE(n << 10, AA_OTHER_SHIFT);
+			perms |= SHIFT_PERMS(n << 10, AA_OTHER_SHIFT);
 		allow = ((allow & ~AA_ALL_EXEC_MODIFIERS) |
-				(mode & AA_ALL_EXEC_MODIFIERS));
+				(perms & AA_ALL_EXEC_MODIFIERS));
 
 		trans = NULL;
 	}

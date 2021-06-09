@@ -32,9 +32,9 @@
 /* See unix(7) for autobind address definition */
 #define autobind_address_pattern "\\x00[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]";
 
-int parse_unix_mode(const char *str_mode, int *mode, int fail)
+int parse_unix_perms(const char *str_perms, perms_t *perms, int fail)
 {
-	return parse_X_mode("unix", AA_VALID_NET_PERMS, str_mode, mode, fail);
+	return parse_X_perms("unix", AA_VALID_NET_PERMS, str_perms, perms, fail);
 }
 
 
@@ -104,26 +104,26 @@ unix_rule::unix_rule(unsigned int type_p, bool audit_p, bool denied):
 		if (!sock_type)
 			yyerror("socket rule: invalid socket type '%d'", type_p);
 	}
-	mode = AA_VALID_NET_PERMS;
+	perms = AA_VALID_NET_PERMS;
 	audit = audit_p ? AA_VALID_NET_PERMS : 0;
 	deny = denied;
 }
 
-unix_rule::unix_rule(int mode_p, struct cond_entry *conds,
+unix_rule::unix_rule(perms_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds):
 	af_rule("unix"), addr(NULL), peer_addr(NULL)
 {
 	move_conditionals(conds);
 	move_peer_conditionals(peer_conds);
 
-	if (mode_p) {
-		mode = mode_p;
-		if (mode & ~AA_VALID_NET_PERMS)
-			yyerror("mode contains invalid permissions for unix socket rules\n");
-		else if ((mode & ~AA_PEER_NET_PERMS) && has_peer_conds())
+	if (perms_p) {
+		perms = perms_p;
+		if (perms & ~AA_VALID_NET_PERMS)
+			yyerror("perms contains invalid permissions for unix socket rules\n");
+		else if ((perms & ~AA_PEER_NET_PERMS) && has_peer_conds())
 			yyerror("unix socket 'create', 'shutdown', 'setattr', 'getattr', 'bind', 'listen', 'setopt', and/or 'getopt' accesses cannot be used with peer socket conditionals\n");
 	} else {
-		mode = AA_VALID_NET_PERMS;
+		perms = AA_VALID_NET_PERMS;
 	}
 
 	free_cond_list(conds);
@@ -187,7 +187,7 @@ static void writeu16(std::ostringstream &o, int v)
 #define CMD_OPT		4
 
 void unix_rule::downgrade_rule(Profile &prof) {
-	unsigned int mask = (unsigned int) -1;
+	perms_t mask = (perms_t) -1;
 
 	if (!prof.net.allow && !prof.alloc_net_table())
 		yyerror(_("Memory allocation error."));
@@ -309,7 +309,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 	std::ostringstream buffer;
 	std::string buf;
 
-	int mask = mode;
+	perms_t mask = perms;
 
 	/* always generate a downgraded rule. This doesn't change generated
 	 * policy size and allows the binary policy to be loaded against
@@ -432,7 +432,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			goto fail;
 
 		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny, map_perms(mode & AA_PEER_NET_PERMS), map_perms(audit), dfaflags))
+		if (!prof.policy.rules->add_rule(buf.c_str(), deny, map_perms(perms & AA_PEER_NET_PERMS), map_perms(audit), dfaflags))
 			goto fail;
 	}
 

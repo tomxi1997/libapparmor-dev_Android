@@ -540,139 +540,139 @@ void warn_uppercase(void)
 	}
 }
 
-static int parse_sub_mode(const char *str_mode, const char *mode_desc unused)
+static perms_t parse_sub_perms(const char *str_perms, const char *perms_desc unused)
 {
 
-#define IS_DIFF_QUAL(mode, q) (((mode) & AA_MAY_EXEC) && (((mode) & AA_EXEC_TYPE) != ((q) & AA_EXEC_TYPE)))
+#define IS_DIFF_QUAL(perms, q) (((perms) & AA_MAY_EXEC) && (((perms) & AA_EXEC_TYPE) != ((q) & AA_EXEC_TYPE)))
 
-	int mode = 0;
+	perms_t perms = 0;
 	const char *p;
 
-	PDEBUG("Parsing mode: %s\n", str_mode);
+	PDEBUG("Parsing perms: %s\n", str_perms);
 
-	if (!str_mode)
+	if (!str_perms)
 		return 0;
 
-	p = str_mode;
+	p = str_perms;
 	while (*p) {
 		char thisc = *p;
 		char next = *(p + 1);
 		char lower;
-		int tmode = 0;
+		perms_t tperms = 0;
 
 reeval:
 		switch (thisc) {
 		case COD_READ_CHAR:
 			if (read_implies_exec) {
-				PDEBUG("Parsing mode: found %s READ imply X\n", mode_desc);
-				mode |= AA_MAY_READ | AA_OLD_EXEC_MMAP;
+				PDEBUG("Parsing perms: found %s READ imply X\n", perms_desc);
+				perms |= AA_MAY_READ | AA_OLD_EXEC_MMAP;
 			} else {
-				PDEBUG("Parsing mode: found %s READ\n", mode_desc);
-				mode |= AA_MAY_READ;
+				PDEBUG("Parsing perms: found %s READ\n", perms_desc);
+				perms |= AA_MAY_READ;
 			}
 			break;
 
 		case COD_WRITE_CHAR:
-			PDEBUG("Parsing mode: found %s WRITE\n", mode_desc);
-			if ((mode & AA_MAY_APPEND) && !(mode & AA_MAY_WRITE))
+			PDEBUG("Parsing perms: found %s WRITE\n", perms_desc);
+			if ((perms & AA_MAY_APPEND) && !(perms & AA_MAY_WRITE))
 				yyerror(_("Conflict 'a' and 'w' perms are mutually exclusive."));
-			mode |= AA_MAY_WRITE | AA_MAY_APPEND;
+			perms |= AA_MAY_WRITE | AA_MAY_APPEND;
 			break;
 
 		case COD_APPEND_CHAR:
-			PDEBUG("Parsing mode: found %s APPEND\n", mode_desc);
-			if (mode & AA_MAY_WRITE)
+			PDEBUG("Parsing perms: found %s APPEND\n", perms_desc);
+			if (perms & AA_MAY_WRITE)
 				yyerror(_("Conflict 'a' and 'w' perms are mutually exclusive."));
-			mode |= AA_MAY_APPEND;
+			perms |= AA_MAY_APPEND;
 			break;
 
 		case COD_LINK_CHAR:
-			PDEBUG("Parsing mode: found %s LINK\n", mode_desc);
-			mode |= AA_OLD_MAY_LINK;
+			PDEBUG("Parsing perms: found %s LINK\n", perms_desc);
+			perms |= AA_OLD_MAY_LINK;
 			break;
 
 		case COD_LOCK_CHAR:
-			PDEBUG("Parsing mode: found %s LOCK\n", mode_desc);
-			mode |= AA_OLD_MAY_LOCK;
+			PDEBUG("Parsing perms: found %s LOCK\n", perms_desc);
+			perms |= AA_OLD_MAY_LOCK;
 			break;
 
 		case COD_INHERIT_CHAR:
-			PDEBUG("Parsing mode: found INHERIT\n");
-			if (mode & AA_EXEC_MODIFIERS) {
+			PDEBUG("Parsing perms: found INHERIT\n");
+			if (perms & AA_EXEC_MODIFIERS) {
 				yyerror(_("Exec qualifier 'i' invalid, conflicting qualifier already specified"));
 			} else {
 				if (next != tolower(next))
 					warn_uppercase();
-				mode |= (AA_EXEC_INHERIT | AA_MAY_EXEC);
+				perms |= (AA_EXEC_INHERIT | AA_MAY_EXEC);
 				p++;	/* skip 'x' */
 			}
 			break;
 
 		case COD_UNSAFE_UNCONFINED_CHAR:
-			tmode = AA_EXEC_UNSAFE;
+			tperms = AA_EXEC_UNSAFE;
 			pwarn(WARN_DANGEROUS, _("Unconfined exec qualifier (%c%c) allows some dangerous environment variables "
 				"to be passed to the unconfined process; 'man 5 apparmor.d' for details.\n"),
 			      COD_UNSAFE_UNCONFINED_CHAR, COD_EXEC_CHAR);
 			/* fall through */
 		case COD_UNCONFINED_CHAR:
-			tmode |= AA_EXEC_UNCONFINED | AA_MAY_EXEC;
-			PDEBUG("Parsing mode: found UNCONFINED\n");
-			if (IS_DIFF_QUAL(mode, tmode)) {
+			tperms |= AA_EXEC_UNCONFINED | AA_MAY_EXEC;
+			PDEBUG("Parsing perms: found UNCONFINED\n");
+			if (IS_DIFF_QUAL(perms, tperms)) {
 				yyerror(_("Exec qualifier '%c' invalid, conflicting qualifier already specified"),
 					thisc);
 			} else {
 				if (next != tolower(next))
 					warn_uppercase();
-				mode |=  tmode;
+				perms |=  tperms;
 				p++;	/* skip 'x' */
 			}
-			tmode = 0;
+			tperms = 0;
 			break;
 
 		case COD_UNSAFE_PROFILE_CHAR:
 		case COD_UNSAFE_LOCAL_CHAR:
-			tmode = AA_EXEC_UNSAFE;
+			tperms = AA_EXEC_UNSAFE;
 			/* fall through */
 		case COD_PROFILE_CHAR:
 		case COD_LOCAL_CHAR:
 			if (tolower(thisc) == COD_UNSAFE_PROFILE_CHAR)
-				tmode |= AA_EXEC_PROFILE | AA_MAY_EXEC;
+				tperms |= AA_EXEC_PROFILE | AA_MAY_EXEC;
 			else
 			{
-				tmode |= AA_EXEC_LOCAL | AA_MAY_EXEC;
+				tperms |= AA_EXEC_LOCAL | AA_MAY_EXEC;
 			}
-			PDEBUG("Parsing mode: found PROFILE\n");
+			PDEBUG("Parsing perms: found PROFILE\n");
 			if (tolower(next) == COD_INHERIT_CHAR) {
-				tmode |= AA_EXEC_INHERIT;
-				if (IS_DIFF_QUAL(mode, tmode)) {
+				tperms |= AA_EXEC_INHERIT;
+				if (IS_DIFF_QUAL(perms, tperms)) {
 					yyerror(_("Exec qualifier '%c%c' invalid, conflicting qualifier already specified"), thisc, next);
 				} else {
-					mode |= tmode;
+					perms |= tperms;
 					p += 2;		/* skip x */
 				}
 			} else if (tolower(next) == COD_UNSAFE_UNCONFINED_CHAR) {
-				tmode |= AA_EXEC_PUX;
-				if (IS_DIFF_QUAL(mode, tmode)) {
+				tperms |= AA_EXEC_PUX;
+				if (IS_DIFF_QUAL(perms, tperms)) {
 					yyerror(_("Exec qualifier '%c%c' invalid, conflicting qualifier already specified"), thisc, next);
 				} else {
-					mode |= tmode;
+					perms |= tperms;
 					p += 2;		/* skip x */
 				}
-			} else if (IS_DIFF_QUAL(mode, tmode)) {
+			} else if (IS_DIFF_QUAL(perms, tperms)) {
 				yyerror(_("Exec qualifier '%c' invalid, conflicting qualifier already specified"), thisc);
 
 			} else {
 				if (next != tolower(next))
 					warn_uppercase();
-				mode |= tmode;
+				perms |= tperms;
 				p++;	/* skip 'x' */
 			}
-			tmode = 0;
+			tperms = 0;
 			break;
 
 		case COD_MMAP_CHAR:
-			PDEBUG("Parsing mode: found %s MMAP\n", mode_desc);
-			mode |= AA_OLD_EXEC_MMAP;
+			PDEBUG("Parsing perms: found %s MMAP\n", perms_desc);
+			perms |= AA_OLD_EXEC_MMAP;
 			break;
 
 		case COD_EXEC_CHAR:
@@ -680,7 +680,7 @@ reeval:
 			 * but invalid for regular x transitions
 			 * sort it out later.
 			 */
-			mode |= AA_MAY_EXEC;
+			perms |= AA_MAY_EXEC;
 			break;
 
  		/* error cases */
@@ -695,13 +695,13 @@ reeval:
 			case COD_INHERIT_CHAR:
 			case COD_MMAP_CHAR:
 			case COD_EXEC_CHAR:
-				PDEBUG("Parsing mode: found invalid upper case char %c\n", thisc);
+				PDEBUG("Parsing perms: found invalid upper case char %c\n", thisc);
 				warn_uppercase();
 				thisc = lower;
 				goto reeval;
 				break;
 			default:
-				yyerror(_("Internal: unexpected mode character '%c' in input"),
+				yyerror(_("Internal: unexpected perms character '%c' in input"),
 					thisc);
 				break;
 			}
@@ -711,33 +711,33 @@ reeval:
 		p++;
 	}
 
-	PDEBUG("Parsed mode: %s 0x%x\n", str_mode, mode);
+	PDEBUG("Parsed perms: %s 0x%x\n", str_perms, perms);
 
-	return mode;
+	return perms;
 }
 
-int parse_mode(const char *str_mode)
+perms_t parse_perms(const char *str_perms)
 {
-	int tmp, mode = 0;
-	tmp = parse_sub_mode(str_mode, "");
-	mode = SHIFT_MODE(tmp, AA_USER_SHIFT);
-	mode |= SHIFT_MODE(tmp, AA_OTHER_SHIFT);
-	if (mode & ~AA_VALID_PERMS)
-		yyerror(_("Internal error generated invalid perm 0x%llx\n"), mode);
-	return mode;
+	perms_t tmp, perms = 0;
+	tmp = parse_sub_perms(str_perms, "");
+	perms = SHIFT_PERMS(tmp, AA_USER_SHIFT);
+	perms |= SHIFT_PERMS(tmp, AA_OTHER_SHIFT);
+	if (perms & ~AA_VALID_PERMS)
+		yyerror(_("Internal error generated invalid perm 0x%llx\n"), perms);
+	return perms;
 }
 
-static int parse_X_sub_mode(const char *X, const char *str_mode, int *result, int fail, const char *mode_desc unused)
+static int parse_X_sub_perms(const char *X, const char *str_perms, perms_t *result, int fail, const char *perms_desc unused)
 {
-	int mode = 0;
+	perms_t perms = 0;
 	const char *p;
 
-	PDEBUG("Parsing %s mode: %s\n", X, str_mode);
+	PDEBUG("Parsing %s perms: %s\n", X, str_perms);
 
-	if (!str_mode)
+	if (!str_perms)
 		return 0;
 
-	p = str_mode;
+	p = str_perms;
 	while (*p) {
 		char current = *p;
 		char lower;
@@ -745,14 +745,14 @@ static int parse_X_sub_mode(const char *X, const char *str_mode, int *result, in
 reeval:
 		switch (current) {
 		case COD_READ_CHAR:
-			PDEBUG("Parsing %s mode: found %s READ\n", X, mode_desc);
-			mode |= AA_DBUS_RECEIVE;
+			PDEBUG("Parsing %s perms: found %s READ\n", X, perms_desc);
+			perms |= AA_DBUS_RECEIVE;
 			break;
 
 		case COD_WRITE_CHAR:
-			PDEBUG("Parsing %s mode: found %s WRITE\n", X,
-			       mode_desc);
-			mode |= AA_DBUS_SEND;
+			PDEBUG("Parsing %s perms: found %s WRITE\n", X,
+			       perms_desc);
+			perms |= AA_DBUS_SEND;
 			break;
 
 		/* error cases */
@@ -762,7 +762,7 @@ reeval:
 			switch (lower) {
 			case COD_READ_CHAR:
 			case COD_WRITE_CHAR:
-				PDEBUG("Parsing %s mode: found invalid upper case char %c\n",
+				PDEBUG("Parsing %s perms: found invalid upper case char %c\n",
 				       X, current);
 				warn_uppercase();
 				current = lower;
@@ -770,7 +770,7 @@ reeval:
 				break;
 			default:
 				if (fail)
-					yyerror(_("Internal: unexpected %s mode character '%c' in input"),
+					yyerror(_("Internal: unexpected %s perms character '%c' in input"),
 						X, current);
 				else
 					return 0;
@@ -781,21 +781,21 @@ reeval:
 		p++;
 	}
 
-	PDEBUG("Parsed %s mode: %s 0x%x\n", X, str_mode, mode);
+	PDEBUG("Parsed %s perms: %s 0x%x\n", X, str_perms, perms);
 
-	*result = mode;
+	*result = perms;
 	return 1;
 }
 
-int parse_X_mode(const char *X, int valid, const char *str_mode, int *mode, int fail)
+int parse_X_perms(const char *X, int valid, const char *str_perms, perms_t *perms, int fail)
 {
-	*mode = 0;
-	if (!parse_X_sub_mode(X, str_mode, mode, fail, ""))
+	*perms = 0;
+	if (!parse_X_sub_perms(X, str_perms, perms, fail, ""))
 		return 0;
-	if (*mode & ~valid) {
+	if (*perms & ~valid) {
 		if (fail)
 			yyerror(_("Internal error generated invalid %s perm 0x%x\n"),
-				X, mode);
+				X, perms);
 		else
 			return 0;
 	}
@@ -950,7 +950,7 @@ alloc_fail:
 	return false;
 }
 
-struct cod_entry *new_entry(char *id, int mode, char *link_id)
+struct cod_entry *new_entry(char *id, perms_t perms, char *link_id)
 {
 	struct cod_entry *entry = NULL;
 
@@ -960,7 +960,7 @@ struct cod_entry *new_entry(char *id, int mode, char *link_id)
 
 	entry->name = id;
 	entry->link_name = link_id;
-	entry->mode = mode;
+	entry->perms = perms;
 	entry->audit = 0;
 	entry->deny = FALSE;
 
@@ -984,7 +984,7 @@ struct cod_entry *copy_cod_entry(struct cod_entry *orig)
 	DUP_STRING(orig, entry, name, err);
 	DUP_STRING(orig, entry, link_name, err);
 	DUP_STRING(orig, entry, nt_name, err);
-	entry->mode = orig->mode;
+	entry->perms = orig->perms;
 	entry->audit = orig->audit;
 	entry->deny = orig->deny;
 
@@ -1043,20 +1043,20 @@ void debug_cod_entries(struct cod_entry *list)
 	printf("--- Entries ---\n");
 
 	list_for_each(list, item) {
-		printf("Mode:\t");
-		if (HAS_CHANGE_PROFILE(item->mode))
+		printf("Perms:\t");
+		if (HAS_CHANGE_PROFILE(item->perms))
 			printf(" change_profile");
-		if (HAS_EXEC_UNSAFE(item->mode))
+		if (HAS_EXEC_UNSAFE(item->perms))
 			printf(" unsafe");
-		debug_base_perm_mask(SHIFT_TO_BASE(item->mode, AA_USER_SHIFT));
+		debug_base_perm_mask(SHIFT_TO_BASE(item->perms, AA_USER_SHIFT));
 		printf(":");
-		debug_base_perm_mask(SHIFT_TO_BASE(item->mode, AA_OTHER_SHIFT));
+		debug_base_perm_mask(SHIFT_TO_BASE(item->perms, AA_OTHER_SHIFT));
 		if (item->name)
 			printf("\tName:\t(%s)\n", item->name);
 		else
 			printf("\tName:\tNULL\n");
 
-		if (AA_LINK_BITS & item->mode)
+		if (AA_LINK_BITS & item->perms)
 			printf("\tlink:\t(%s)\n", item->link_name ? item->link_name : "/**");
 
 	}

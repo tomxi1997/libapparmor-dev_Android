@@ -63,10 +63,10 @@
 
 int parser_token = 0;
 
-struct cod_entry *do_file_rule(char *id, int mode, char *link_id, char *nt);
+struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt);
 mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 		      struct cond_entry *dst_conds, char *dst,
-		      int mode);
+		      perms_t perms);
 mnt_rule *do_pivot_rule(struct cond_entry *old, char *root,
 			char *transition);
 static void abi_features(char *filename, bool search);
@@ -202,7 +202,7 @@ void add_local_entry(Profile *prof);
 	mqueue_rule *mqueue_entry;
 
 	flagvals flags;
-	int fmode;
+	perms_t fperms;
 	uint64_t cap;
 	unsigned int allowed_protocol;
 	char *set_var;
@@ -220,7 +220,7 @@ void add_local_entry(Profile *prof);
 %type <id>	TOK_CONDID
 %type <id>	TOK_CONDLISTID
 %type <mode> 	TOK_MODE
-%type <fmode>   file_mode
+%type <fperms>   file_perms
 %type <prof>	profile_base
 %type <prof> 	profile
 %type <prof>	rules
@@ -259,33 +259,33 @@ void add_local_entry(Profile *prof);
 %type <boolean> opt_perm_mode
 %type <id>	opt_id
 %type <prefix>  opt_prefix
-%type <fmode>	dbus_perm
-%type <fmode>	dbus_perms
-%type <fmode>	opt_dbus_perm
+%type <fperms>	dbus_perm
+%type <fperms>	dbus_perms
+%type <fperms>	opt_dbus_perm
 %type <dbus_entry>	dbus_rule
-%type <fmode>	signal_perm
-%type <fmode>	signal_perms
-%type <fmode>	opt_signal_perm
+%type <fperms>	signal_perm
+%type <fperms>	signal_perms
+%type <fperms>	opt_signal_perm
 %type <signal_entry>	signal_rule
-%type <fmode>	ptrace_perm
-%type <fmode>	ptrace_perms
-%type <fmode>	opt_ptrace_perm
+%type <fperms>	ptrace_perm
+%type <fperms>	ptrace_perms
+%type <fperms>	opt_ptrace_perm
 %type <ptrace_entry>	ptrace_rule
-%type <fmode>	net_perm
-%type <fmode>	net_perms
-%type <fmode>	opt_net_perm
+%type <fperms>	net_perm
+%type <fperms>	net_perms
+%type <fperms>	opt_net_perm
 %type <unix_entry>	unix_rule
 %type <id>	opt_target
 %type <id>	opt_named_transition
 %type <boolean> opt_exec_mode
 %type <boolean> opt_file
-%type <fmode>  	userns_perm
-%type <fmode>  	userns_perms
-%type <fmode>	opt_userns_perm
+%type <fperms>  userns_perm
+%type <fperms>  userns_perms
+%type <fperms>	opt_userns_perm
 %type <userns_entry>	userns_rule
-%type <fmode>  	mqueue_perm
-%type <fmode>  	mqueue_perms
-%type <fmode>	opt_mqueue_perm
+%type <fperms>  mqueue_perm
+%type <fperms>  mqueue_perms
+%type <fperms>	opt_mqueue_perm
 %type <mqueue_entry>	mqueue_rule
 %%
 
@@ -686,21 +686,21 @@ rules:  rules opt_prefix rule
 		if (!$3)
 			yyerror(_("Assert: `rule' returned NULL."));
 		$3->deny = $2.deny;
-		if (($2.deny && ($3->mode & AA_EXEC_BITS) &&
-		     ($3->mode & ALL_AA_EXEC_TYPE)))
-			yyerror(_("Invalid mode, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
-		else if (!$2.deny && ($3->mode & AA_EXEC_BITS) &&
-			 !($3->mode & ALL_AA_EXEC_TYPE) &&
+		if (($2.deny && ($3->perms & AA_EXEC_BITS) &&
+		     ($3->perms & ALL_AA_EXEC_TYPE)))
+			yyerror(_("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
+		else if (!$2.deny && ($3->perms & AA_EXEC_BITS) &&
+			 !($3->perms & ALL_AA_EXEC_TYPE) &&
 			 !($3->nt_name))
-			yyerror(_("Invalid mode, 'x' must be preceded by exec qualifier 'i', 'p', 'c', or 'u'"));
+			yyerror(_("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', 'c', or 'u'"));
 
 		if ($2.owner == 1)
-			$3->mode &= (AA_USER_PERMS | AA_SHARED_PERMS);
+			$3->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
 		else if ($2.owner == 2)
-			$3->mode &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
+			$3->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 		/* only set audit ctl quieting if the rule is not audited */
 		if (($2.deny && !$2.audit) || (!$2.deny && $2.audit))
-			$3->audit = $3->mode & ~ALL_AA_EXEC_TYPE;
+			$3->audit = $3->perms & ~ALL_AA_EXEC_TYPE;
 
 		add_entry_to_policy($1, $3);
 		$$ = $1;
@@ -717,23 +717,23 @@ rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
 		       $2.deny ? "deny " : "", $2.owner ? "owner " : "");
 		list_for_each_safe($4->entries, entry, tmp) {
 			entry->next = NULL;
-			if (entry->mode & AA_EXEC_BITS) {
+			if (entry->perms & AA_EXEC_BITS) {
 				if (entry->deny &&
-				    (entry->mode & ALL_AA_EXEC_TYPE))
-					yyerror(_("Invalid mode, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
+				    (entry->perms & ALL_AA_EXEC_TYPE))
+					yyerror(_("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
 				else if (!entry->deny &&
-					 !(entry->mode & ALL_AA_EXEC_TYPE))
-					yyerror(_("Invalid mode, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'"));
+					 !(entry->perms & ALL_AA_EXEC_TYPE))
+					yyerror(_("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'"));
 			}
 			if ($2.owner == 1)
- 				entry->mode &= (AA_USER_PERMS | AA_SHARED_PERMS);
+				entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
 			else if ($2.owner == 2)
-				entry->mode &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
+				entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 
 			if ($2.audit && !entry->deny)
-				entry->audit = entry->mode & ~ALL_AA_EXEC_TYPE;
+				entry->audit = entry->perms & ~ALL_AA_EXEC_TYPE;
 			else if (!$2.audit && entry->deny)
-				 entry->audit = entry->mode & ~ALL_AA_EXEC_TYPE;
+				 entry->audit = entry->perms & ~ALL_AA_EXEC_TYPE;
 			add_entry_to_policy($1, entry);
 		}
 		$4->entries = NULL;
@@ -817,9 +817,9 @@ rules:  rules opt_prefix dbus_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		} else if ($2.audit) {
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -833,9 +833,9 @@ rules:  rules opt_prefix signal_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		} else if ($2.audit) {
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -849,9 +849,9 @@ rules:  rules opt_prefix ptrace_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		} else if ($2.audit) {
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -865,9 +865,9 @@ rules:  rules opt_prefix unix_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		} else if ($2.audit) {
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -881,9 +881,9 @@ rules:  rules opt_prefix userns_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		} else if ($2.audit) {
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -901,9 +901,9 @@ rules:	rules opt_prefix change_profile
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		} else if ($2.audit) {
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		}
 		add_entry_to_policy($1, $3);
 		$$ = $1;
@@ -936,9 +936,9 @@ rules:  rules opt_prefix mqueue_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		} else if ($2.audit) {
-			$3->audit = $3->mode;
+			$3->audit = $3->perms;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -1183,12 +1183,12 @@ opt_exec_mode: { /* nothing */ $$ = EXEC_MODE_EMPTY; }
 opt_file: { /* nothing */ $$ = 0; }
 	| TOK_FILE { $$ = 1; }
 
-frule:	id_or_var file_mode opt_named_transition TOK_END_OF_RULE
+frule:	id_or_var file_perms opt_named_transition TOK_END_OF_RULE
 	{
 		$$ = do_file_rule($1, $2, NULL, $3);
 	};
 
-frule:	file_mode opt_subset_flag id_or_var opt_named_transition TOK_END_OF_RULE
+frule:	file_perms opt_subset_flag id_or_var opt_named_transition TOK_END_OF_RULE
 	{
 		if ($2 && ($1 & ~AA_LINK_BITS))
 			yyerror(_("subset can only be used with link rules."));
@@ -1223,19 +1223,19 @@ file_rule: TOK_FILE TOK_END_OF_RULE
 file_rule_tail: opt_exec_mode frule
 	{
 		if ($1 != EXEC_MODE_EMPTY) {
-			if (!($2->mode & AA_EXEC_BITS))
+			if (!($2->perms & AA_EXEC_BITS))
 				yyerror(_("unsafe rule missing exec permissions"));
 			if ($1 == EXEC_MODE_UNSAFE) {
-				$2->mode |= (($2->mode & AA_EXEC_BITS) << 8) &
+				$2->perms |= (($2->perms & AA_EXEC_BITS) << 8) &
 					 ALL_AA_EXEC_UNSAFE;
 			}
 			else if ($1 == EXEC_MODE_SAFE)
-				$2->mode &= ~ALL_AA_EXEC_UNSAFE;
+				$2->perms &= ~ALL_AA_EXEC_UNSAFE;
 		}
 		$$ = $2;
 	};
 
-file_rule_tail: opt_exec_mode id_or_var file_mode id_or_var
+file_rule_tail: opt_exec_mode id_or_var file_perms id_or_var
 	{
 		/* Oopsie, we appear to be missing an EOL marker. If we
 		 * were *smart*, we could work around it. Since we're
@@ -1387,7 +1387,7 @@ dbus_perm: TOK_VALUE
 		else if (strcmp($1, "eavesdrop") == 0)
 			$$ = AA_DBUS_EAVESDROP;
 		else if ($1) {
-			parse_dbus_mode($1, &$$, 1);
+			parse_dbus_perms($1, &$$, 1);
 		} else
 			$$ = 0;
 
@@ -1402,7 +1402,7 @@ dbus_perm: TOK_VALUE
 	| TOK_EAVESDROP { $$ = AA_DBUS_EAVESDROP; }
 	| TOK_MODE
 	{
-		parse_dbus_mode($1, &$$, 1);
+		parse_dbus_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1457,7 +1457,7 @@ net_perm: TOK_VALUE
 		else if (strcmp($1, "receive") == 0 || strcmp($1, "read") == 0)
 			$$ = AA_NET_RECEIVE;
 		else if ($1) {
-			parse_net_mode($1, &$$, 1);
+			parse_net_perms($1, &$$, 1);
 		} else
 			$$ = 0;
 
@@ -1480,7 +1480,7 @@ net_perm: TOK_VALUE
 	| TOK_WRITE { $$ = AA_NET_SEND; }
 	| TOK_MODE
 	{
-		parse_unix_mode($1, &$$, 1);
+		parse_unix_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1515,7 +1515,7 @@ signal_perm: TOK_VALUE
 		else if (strcmp($1, "receive") == 0 || strcmp($1, "read") == 0)
 			$$ = AA_MAY_RECEIVE;
 		else if ($1) {
-			parse_signal_mode($1, &$$, 1);
+			parse_signal_perms($1, &$$, 1);
 		} else
 			$$ = 0;
 
@@ -1528,7 +1528,7 @@ signal_perm: TOK_VALUE
 	| TOK_WRITE { $$ = AA_MAY_SEND; }
 	| TOK_MODE
 	{
-		parse_signal_mode($1, &$$, 1);
+		parse_signal_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1557,7 +1557,7 @@ ptrace_perm: TOK_VALUE
 		else if (strcmp($1, "readby") == 0)
 			$$ = AA_MAY_READBY;
 		else if ($1)
-			parse_ptrace_mode($1, &$$, 1);
+			parse_ptrace_perms($1, &$$, 1);
 		else
 			$$ = 0;
 
@@ -1571,7 +1571,7 @@ ptrace_perm: TOK_VALUE
 	| TOK_READBY { $$ = AA_MAY_READBY; }
 	| TOK_MODE
 	{
-		parse_ptrace_mode($1, &$$, 1);
+		parse_ptrace_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1632,7 +1632,7 @@ mqueue_perm: TOK_VALUE
 		else if (strcmp($1, "read") == 0)
 			$$ = AA_MQUEUE_READ;
 		else if ($1) {
-			parse_mqueue_mode($1, &$$, 1);
+			parse_mqueue_perms($1, &$$, 1);
 		} else
 			$$ = 0;
 
@@ -1648,7 +1648,7 @@ mqueue_perm: TOK_VALUE
 	| TOK_READ { $$ = AA_MQUEUE_READ; }
 	| TOK_MODE
 	{
-		parse_mqueue_mode($1, &$$, 1);
+		parse_mqueue_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1674,18 +1674,18 @@ mqueue_rule: TOK_MQUEUE opt_mqueue_perm opt_conds TOK_END_OF_RULE
 hat_start: TOK_CARET {}
 	| TOK_HAT {}
 
-file_mode: TOK_MODE
+file_perms: TOK_MODE
 	{
 		/* A single TOK_MODE maps to the same permission in all
 		 * of user::other */
-		$$ = parse_mode($1);
+		$$ = parse_perms($1);
 		free($1);
 	}
 
 change_profile: TOK_CHANGE_PROFILE opt_exec_mode opt_id opt_named_transition TOK_END_OF_RULE
 	{
 		struct cod_entry *entry;
-		int mode = AA_CHANGE_PROFILE;
+		perms_t perms = AA_CHANGE_PROFILE;
 		int exec_mode = $2;
 		char *exec = $3;
 		char *target = $4;
@@ -1694,9 +1694,9 @@ change_profile: TOK_CHANGE_PROFILE opt_exec_mode opt_id opt_named_transition TOK
 			/* exec bits required to trigger rule conflict if
 			 * for overlapping safe and unsafe exec rules
 			 */
-			mode |= AA_EXEC_BITS;
+			perms |= AA_EXEC_BITS;
 			if (exec_mode == EXEC_MODE_UNSAFE)
-				mode |= ALL_AA_EXEC_UNSAFE;
+				perms |= ALL_AA_EXEC_UNSAFE;
 			else if (exec_mode == EXEC_MODE_SAFE &&
 				 !features_supports_stacking) {
 				pwarn(WARN_RULE_DOWNGRADED, "downgrading change_profile safe rule to unsafe due to lack of necessary kernel support\n");
@@ -1720,7 +1720,7 @@ change_profile: TOK_CHANGE_PROFILE opt_exec_mode opt_id opt_named_transition TOK
 				yyerror(_("Memory allocation error."));
 		}
 
-		entry = new_entry(target, mode, exec);
+		entry = new_entry(target, perms, exec);
 		if (!entry)
 			yyerror(_("Memory allocation error."));
 
@@ -1793,11 +1793,11 @@ void yyerror(const char *msg, ...)
 	exit(1);
 }
 
-struct cod_entry *do_file_rule(char *id, int mode, char *link_id, char *nt)
+struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt)
 {
 		struct cod_entry *entry;
-		PDEBUG("Matched: tok_id (%s) tok_mode (0x%x)\n", id, mode);
-		entry = new_entry(id, mode, link_id);
+		PDEBUG("Matched: tok_id (%s) tok_perms (0x%x)\n", id, perms);
+		entry = new_entry(id, perms, link_id);
 		if (!entry)
 			yyerror(_("Memory allocation error."));
 		entry->nt_name = nt;
@@ -1811,7 +1811,7 @@ struct cod_entry *do_file_rule(char *id, int mode, char *link_id, char *nt)
 void add_local_entry(Profile *prof)
 {
 	/* ugh this has to be called after the hat is attached to its parent */
-	if (prof->local_mode) {
+	if (prof->local_perms) {
 		struct cod_entry *entry;
 		char *trans = (char *) malloc(strlen(prof->parent->name) +
 				    strlen(prof->name) + 3);
@@ -1820,7 +1820,7 @@ void add_local_entry(Profile *prof)
 			yyerror(_("Memory allocation error."));
 		sprintf(name, "%s//%s", prof->parent->name, prof->name);
 
-		entry = new_entry(name, prof->local_mode, NULL);
+		entry = new_entry(name, prof->local_perms, NULL);
 		entry->audit = prof->local_audit;
 		entry->nt_name = trans;
 		if (!entry)
@@ -1859,7 +1859,7 @@ int verify_mnt_conds(struct cond_entry *conds, int src)
 
 mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 		      struct cond_entry *dst_conds, char *dst,
-		      int mode)
+		      perms_t perms)
 {
 	if (verify_mnt_conds(src_conds, MNT_SRC_OPT) != 0)
 		yyerror(_("bad mount rule"));
@@ -1871,7 +1871,7 @@ mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 	if (dst_conds)
 		yyerror(_("mount point conditions not currently supported"));
 
-	mnt_rule *ent = new mnt_rule(src_conds, src, dst_conds, dst, mode);
+	mnt_rule *ent = new mnt_rule(src_conds, src, dst_conds, dst, perms);
 	if (!ent) {
 		yyerror(_("Memory allocation error."));
 	}

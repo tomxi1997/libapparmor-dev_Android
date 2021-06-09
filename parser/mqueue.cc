@@ -25,9 +25,9 @@
 #include <iostream>
 #include <sstream>
 
-int parse_mqueue_mode(const char *str_mode, int *mode, int fail)
+int parse_mqueue_perms(const char *str_perms, perms_t *perms, int fail)
 {
-	return parse_X_mode("mqueue", AA_VALID_MQUEUE_PERMS, str_mode, mode, fail);
+	return parse_X_perms("mqueue", AA_VALID_MQUEUE_PERMS, str_perms, perms, fail);
 }
 
 static bool is_all_digits(char *str)
@@ -86,7 +86,7 @@ void mqueue_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-mqueue_rule::mqueue_rule(int mode_p, struct cond_entry *conds, char *qname_p):
+mqueue_rule::mqueue_rule(perms_t perms_p, struct cond_entry *conds, char *qname_p):
 	qtype(mqueue_unspecified), qname(qname_p), label(NULL), audit(0), deny(0)
 {
 	move_conditionals(conds);
@@ -94,20 +94,20 @@ mqueue_rule::mqueue_rule(int mode_p, struct cond_entry *conds, char *qname_p):
 
 	if (qname)
 		validate_qname();
-	if (mode_p) {
+	if (perms_p) {
 		// do we want to allow perms to imply type like we do for
 		// qname?
-		if (qtype == mqueue_posix && (mode_p & ~AA_VALID_POSIX_MQ_PERMS)) {
-			yyerror("mode contains invalid permissions for mqueue type=posix\n");
-		} else if (qtype == mqueue_sysv && (mode_p & ~AA_VALID_SYSV_MQ_PERMS)) {
-			yyerror("mode contains invalid permissions for mqueue type=sysv\n");
-		} else if (mode_p & ~AA_VALID_MQUEUE_PERMS) {
-			yyerror("mode contains invalid permissions for mqueue\n");
+		if (qtype == mqueue_posix && (perms_p & ~AA_VALID_POSIX_MQ_PERMS)) {
+			yyerror("perms contains invalid permissions for mqueue type=posix\n");
+		} else if (qtype == mqueue_sysv && (perms_p & ~AA_VALID_SYSV_MQ_PERMS)) {
+			yyerror("perms contains invalid permissions for mqueue type=sysv\n");
+		} else if (perms_p & ~AA_VALID_MQUEUE_PERMS) {
+			yyerror("perms contains invalid permissions for mqueue\n");
 		}
-		mode = mode_p;
+		perms = perms_p;
 	} else {
 		// default to all perms
-		mode = AA_VALID_MQUEUE_PERMS;
+		perms = AA_VALID_MQUEUE_PERMS;
 	}
 	qname = qname_p;
 
@@ -129,22 +129,22 @@ ostream &mqueue_rule::dump(ostream &os)
 	else if (qtype == mqueue_sysv)
 		os << "type=sysv";
 
-	if (mode != AA_VALID_MQUEUE_PERMS) {
+	if (perms != AA_VALID_MQUEUE_PERMS) {
 		os << "(";
 
-		if (mode & AA_MQUEUE_WRITE)
+		if (perms & AA_MQUEUE_WRITE)
 			os << "write ";
-		if (mode & AA_MQUEUE_READ)
+		if (perms & AA_MQUEUE_READ)
 			os << "read ";
-		if (mode & AA_MQUEUE_OPEN)
+		if (perms & AA_MQUEUE_OPEN)
 			os << "open ";
-		if (mode & AA_MQUEUE_CREATE)
+		if (perms & AA_MQUEUE_CREATE)
 			os << "create ";
-		if (mode & AA_MQUEUE_DELETE)
+		if (perms & AA_MQUEUE_DELETE)
 			os << "delete ";
-		if (mode & AA_MQUEUE_SETATTR)
+		if (perms & AA_MQUEUE_SETATTR)
 			os << "setattr ";
-		if (mode & AA_MQUEUE_GETATTR)
+		if (perms & AA_MQUEUE_GETATTR)
 			os << "getattr ";
 
 		os << ")";
@@ -229,14 +229,14 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 			vec[1] = anyone_match_pattern;
 		}
 
-		if (mode & AA_VALID_POSIX_MQ_PERMS) {
+		if (perms & AA_VALID_POSIX_MQ_PERMS) {
 			/* store perms at name match so label doesn't need
 			 * to be checked
 			 */
-			if (!label && !prof.policy.rules->add_rule_vec(deny, mode, audit, 1, vec, dfaflags, false))
+			if (!label && !prof.policy.rules->add_rule_vec(deny, perms, audit, 1, vec, dfaflags, false))
 				goto fail;
 			/* also provide label match with perm */
-			if (!prof.policy.rules->add_rule_vec(deny, mode, audit, size, vec, dfaflags, false))
+			if (!prof.policy.rules->add_rule_vec(deny, perms, audit, size, vec, dfaflags, false))
 				goto fail;
 		}
 	}
@@ -267,11 +267,11 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 			vec[1] = anyone_match_pattern;
 		}
 
-		if (mode & AA_VALID_SYSV_MQ_PERMS) {
-			if (!label && !prof.policy.rules->add_rule_vec(deny, mode, audit, 1, vec, dfaflags, false))
+		if (perms & AA_VALID_SYSV_MQ_PERMS) {
+			if (!label && !prof.policy.rules->add_rule_vec(deny, perms, audit, 1, vec, dfaflags, false))
 				goto fail;
 			/* also provide label match with perm */
-			if (!prof.policy.rules->add_rule_vec(deny, mode, audit, size, vec, dfaflags, false))
+			if (!prof.policy.rules->add_rule_vec(deny, perms, audit, size, vec, dfaflags, false))
 				goto fail;
 		}
 	}

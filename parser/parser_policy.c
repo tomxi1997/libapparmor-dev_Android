@@ -101,10 +101,10 @@ static int add_named_transition(Profile *prof, struct cod_entry *entry)
 			free(entry->nt_name);
 			entry->nt_name = NULL;
 			return AA_EXEC_LOCAL >> 10;
-		} else if (((entry->mode & AA_USER_EXEC_MODIFIERS) ==
-			     SHIFT_MODE(AA_EXEC_LOCAL, AA_USER_SHIFT)) ||
-			    ((entry->mode & AA_OTHER_EXEC_MODIFIERS) ==
-			     SHIFT_MODE(AA_EXEC_LOCAL, AA_OTHER_SHIFT))) {
+		} else if (((entry->perms & AA_USER_EXEC_MODIFIERS) ==
+			     SHIFT_PERMS(AA_EXEC_LOCAL, AA_USER_SHIFT)) ||
+			    ((entry->perms & AA_OTHER_EXEC_MODIFIERS) ==
+			     SHIFT_PERMS(AA_EXEC_LOCAL, AA_OTHER_SHIFT))) {
 			if (strcmp(entry->nt_name, entry->name) == 0) {
 				free(entry->nt_name);
 				entry->nt_name = NULL;
@@ -199,31 +199,31 @@ static bool add_proc_access(Profile *prof, const char *rule)
 void post_process_file_entries(Profile *prof)
 {
 	struct cod_entry *entry;
-	int cp_mode = 0;
+	perms_t cp_perms = 0;
 
 	list_for_each(prof->entries, entry) {
 		if (entry->nt_name) {
-			int mode = 0;
+			perms_t perms = 0;
 			int n = add_named_transition(prof, entry);
 			if (!n) {
 				PERROR("Profile %s has too many specified profile transitions.\n", prof->name);
 				exit(1);
 			}
-			if (entry->mode & AA_USER_EXEC)
-				mode |= SHIFT_MODE(n << 10, AA_USER_SHIFT);
-			if (entry->mode & AA_OTHER_EXEC)
-				mode |= SHIFT_MODE(n << 10, AA_OTHER_SHIFT);
-			entry->mode = ((entry->mode & ~AA_ALL_EXEC_MODIFIERS) |
-				       (mode & AA_ALL_EXEC_MODIFIERS));
+			if (entry->perms & AA_USER_EXEC)
+				perms |= SHIFT_PERMS(n << 10, AA_USER_SHIFT);
+			if (entry->perms & AA_OTHER_EXEC)
+				perms |= SHIFT_PERMS(n << 10, AA_OTHER_SHIFT);
+			entry->perms = ((entry->perms & ~AA_ALL_EXEC_MODIFIERS) |
+				       (perms & AA_ALL_EXEC_MODIFIERS));
 		}
 		/* FIXME: currently change_profile also implies onexec */
-		cp_mode |= entry->mode & (AA_CHANGE_PROFILE);
+		cp_perms |= entry->perms & (AA_CHANGE_PROFILE);
 	}
 
 	/* if there are change_profile rules, this implies that we need
 	 * access to some /proc/ interfaces
 	 */
-	if (cp_mode & AA_CHANGE_PROFILE) {
+	if (cp_perms & AA_CHANGE_PROFILE) {
 		if (!add_proc_access(prof, CHANGEPROFILE_PATH))
 			exit(1);
 	}

@@ -30,9 +30,9 @@
 #include "dbus.h"
 
 
-int parse_dbus_mode(const char *str_mode, int *mode, int fail)
+int parse_dbus_perms(const char *str_perms, perms_t *perms, int fail)
 {
-	return parse_X_mode("DBus", AA_VALID_DBUS_PERMS, str_mode, mode, fail);
+	return parse_X_perms("DBus", AA_VALID_DBUS_PERMS, str_perms, perms, fail);
 }
 
 void dbus_rule::move_conditionals(struct cond_entry *conds)
@@ -66,10 +66,10 @@ void dbus_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-dbus_rule::dbus_rule(int mode_p, struct cond_entry *conds,
+dbus_rule::dbus_rule(perms_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds):
 	bus(NULL), name(NULL), peer_label(NULL), path(NULL), interface(NULL), member(NULL),
-	mode(0), audit(0), deny(0)
+	perms(0), audit(0), deny(0)
 {
 	int name_is_subject_cond = 0, message_rule = 0, service_rule = 0;
 
@@ -93,27 +93,27 @@ dbus_rule::dbus_rule(int mode_p, struct cond_entry *conds,
 	if (message_rule && service_rule)
 		yyerror("dbus rule contains message conditionals and service conditionals\n");
 
-	/* Copy mode. If no mode was specified, assign an implied mode. */
-	if (mode_p) {
-		mode = mode_p;
-		if (mode & ~AA_VALID_DBUS_PERMS)
-			yyerror("mode contains unknown dbus access\n");
-		else if (message_rule && (mode & AA_DBUS_BIND))
+	/* Copy perms. If no perms was specified, assign an implied perms. */
+	if (perms_p) {
+		perms = perms_p;
+		if (perms & ~AA_VALID_DBUS_PERMS)
+			yyerror("perms contains unknown dbus access\n");
+		else if (message_rule && (perms & AA_DBUS_BIND))
 			yyerror("dbus \"bind\" access cannot be used with message rule conditionals\n");
-		else if (service_rule && (mode & (AA_DBUS_SEND | AA_DBUS_RECEIVE)))
+		else if (service_rule && (perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE)))
 			yyerror("dbus \"send\" and/or \"receive\" accesses cannot be used with service rule conditionals\n");
-		else if (mode & AA_DBUS_EAVESDROP &&
+		else if (perms & AA_DBUS_EAVESDROP &&
 			 (path || interface || member ||
 			  peer_label || name)) {
 			yyerror("dbus \"eavesdrop\" access can only contain a bus conditional\n");
 		}
 	} else {
 		if (message_rule)
-			mode = (AA_DBUS_SEND | AA_DBUS_RECEIVE);
+			perms = (AA_DBUS_SEND | AA_DBUS_RECEIVE);
 		else if (service_rule)
-			mode = (AA_DBUS_BIND);
+			perms = (AA_DBUS_BIND);
 		else
-			mode = AA_VALID_DBUS_PERMS;
+			perms = AA_VALID_DBUS_PERMS;
 	}
 
 	free_cond_list(conds);
@@ -129,19 +129,19 @@ ostream &dbus_rule::dump(ostream &os)
 
 	os << "dbus ( ";
 
-	if (mode & AA_DBUS_SEND)
+	if (perms & AA_DBUS_SEND)
 		os << "send ";
-	if (mode & AA_DBUS_RECEIVE)
+	if (perms & AA_DBUS_RECEIVE)
 		os << "receive ";
-	if (mode & AA_DBUS_BIND)
+	if (perms & AA_DBUS_BIND)
 		os << "bind ";
-	if (mode & AA_DBUS_EAVESDROP)
+	if (perms & AA_DBUS_EAVESDROP)
 		os << "eavesdrop ";
 	os << ")";
 
 	if (bus)
 		os << " bus=\"" << bus << "\"";
-	if ((mode & AA_DBUS_BIND) && name)
+	if ((perms & AA_DBUS_BIND) && name)
 		os << " name=\"" << name << "\"";
 	if (path)
 		os << " path=\"" << path << "\"";
@@ -150,7 +150,7 @@ ostream &dbus_rule::dump(ostream &os)
 	if (member)
 		os << " member=\"" << member << "\"";
 
-	if (!(mode & AA_DBUS_BIND) && (peer_label || name)) {
+	if (!(perms & AA_DBUS_BIND) && (peer_label || name)) {
 		os << " peer=( ";
 		if (peer_label)
 			os << "label=\"" << peer_label << "\" ";
@@ -277,22 +277,22 @@ int dbus_rule::gen_policy_re(Profile &prof)
 		vec[5] = default_match_pattern;
 	}
 
-	if (mode & AA_DBUS_BIND) {
-		if (!prof.policy.rules->add_rule_vec(deny, mode & AA_DBUS_BIND,
+	if (perms & AA_DBUS_BIND) {
+		if (!prof.policy.rules->add_rule_vec(deny, perms & AA_DBUS_BIND,
 						    audit & AA_DBUS_BIND,
 						    2, vec, dfaflags, false))
 			goto fail;
 	}
-	if (mode & (AA_DBUS_SEND | AA_DBUS_RECEIVE)) {
+	if (perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE)) {
 		if (!prof.policy.rules->add_rule_vec(deny,
-				       mode & (AA_DBUS_SEND | AA_DBUS_RECEIVE),
+				       perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE),
 				       audit & (AA_DBUS_SEND | AA_DBUS_RECEIVE),
 				       6, vec, dfaflags, false))
 			goto fail;
 	}
-	if (mode & AA_DBUS_EAVESDROP) {
+	if (perms & AA_DBUS_EAVESDROP) {
 		if (!prof.policy.rules->add_rule_vec(deny,
-						    mode & AA_DBUS_EAVESDROP,
+						    perms & AA_DBUS_EAVESDROP,
 						    audit & AA_DBUS_EAVESDROP,
 						    1, vec, dfaflags, false))
 			goto fail;

@@ -40,17 +40,17 @@ void userns_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-userns_rule::userns_rule(int mode_p, struct cond_entry *conds):
+userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds):
 	audit(0), deny(0)
 {
-	if (mode_p) {
-		if (mode_p & ~AA_VALID_USERNS_PERMS)
-			yyerror("mode contains invalid permissions for userns\n");
-		mode = mode_p;
+	if (perms_p) {
+		if (perms_p & ~AA_VALID_USERNS_PERMS)
+			yyerror("perms contains invalid permissions for userns\n");
+		perms = perms_p;
 
 	} else {
 		/* default to all perms */
-		mode = AA_VALID_USERNS_PERMS;
+		perms = AA_VALID_USERNS_PERMS;
 	}
 
 	move_conditionals(conds);
@@ -66,8 +66,8 @@ ostream &userns_rule::dump(ostream &os)
 
 	os << "userns ";
 
-	if (mode != AA_VALID_USERNS_PERMS) {
-		if (mode & AA_USERNS_CREATE)
+	if (perms != AA_VALID_USERNS_PERMS) {
+		if (perms & AA_USERNS_CREATE)
 			os << "create ";
 	}
 
@@ -99,8 +99,8 @@ int userns_rule::gen_policy_re(Profile &prof)
 
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_NS;
 	buf = buffer.str();
-	if (mode & AA_VALID_USERNS_PERMS) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny, mode, audit,
+	if (perms & AA_VALID_USERNS_PERMS) {
+		if (!prof.policy.rules->add_rule(buf.c_str(), deny, perms, audit,
 						 dfaflags))
 			goto fail;
 	}

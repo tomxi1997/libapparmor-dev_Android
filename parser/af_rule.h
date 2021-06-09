@@ -44,13 +44,13 @@ public:
 	int proto_n;
 	char *label;
 	char *peer_label;
-	int mode;
+	perms_t perms;
 	int audit;
 	bool deny;
 
 	af_rule(const char *name): af_name(name), sock_type(NULL),
 		sock_type_n(-1), proto(NULL), proto_n(0), label(NULL),
-		peer_label(NULL), mode(0), audit(0), deny(0)
+		peer_label(NULL), perms(0), audit(0), deny(0)
 	{}
 
 	virtual ~af_rule()

@@ -190,7 +190,7 @@ public:
 	/* char *sub_name; */			/* subdomain name or NULL */
 	/* int default_deny; */			/* TRUE or FALSE */
 	int local;
-	int local_mode;				/* true if local, not hat */
+	perms_t local_perms;
 	int local_audit;
 
 	Profile *parent;
@@ -221,7 +221,8 @@ public:
 		xattrs.list = NULL;
 		xattrs.name = NULL;
 
-		local = local_mode = local_audit = 0;
+		local_perms = 0;
+		local = local_audit = 0;
 
 		parent = NULL;
 
