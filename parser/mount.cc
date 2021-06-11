@@ -469,7 +469,7 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 		   struct cond_entry *dst_conds unused, char *mnt_point_p,
 		   perms_t perms_p):
 	mnt_point(mnt_point_p), device(device_p), trans(NULL), opts(NULL),
-	flagsv(0), opt_flagsv(0), audit( { false } ), deny(0)
+	flagsv(0), opt_flagsv(0), audit(false), deny(0)
 {
 	/* FIXME: dst_conds are ignored atm */
 	dev_type = extract_fstype(&src_conds);
@@ -581,7 +581,7 @@ ostream &mnt_rule::dump(ostream &os)
 		os << " -> " << trans;
 
 	const char *prefix = deny ? "deny" : "";
-	os << " " << prefix << "(0x" << hex << perms << "/0x" << (audit.audit ? perms : 0) << ")";
+	os << " " << prefix << "(0x" << hex << perms << "/0x" << (audit ? perms : 0) << ")";
 	os << ",\n";
 
 	return os;
@@ -733,7 +733,7 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 	} else {
 		/* dependent on full expansion of any data match perms */
 		tmpperms = perms;
-		tmpaudit = audit.audit ? perms : 0;
+		tmpaudit = audit ? perms : 0;
 	}
 	/* match for up to but not including data
 	 * if a data match is required this only has AA_MATCH_CONT perms
@@ -751,7 +751,7 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 			goto fail;
 		vec[4] = optsbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(deny, perms,
-						     (audit.audit ? perms : 0),
+						     (audit ? perms : 0),
 						     5, vec, dfaflags, false))
 			goto fail;
 		count++;
@@ -792,7 +792,8 @@ int mnt_rule::gen_policy_bind_mount(Profile &prof, int &count,
 			     opt_flags & MS_BIND_FLAGS))
 		goto fail;
 	vec[3] = flagsbuf;
-	if (!prof.policy.rules->add_rule_vec(deny, perms, audit.audit ? perms : 0, 4, vec,
+	if (!prof.policy.rules->add_rule_vec(deny, perms, audit ? perms : 0,
+					     4, vec,
 					     dfaflags, false))
 		goto fail;
 	count++;
@@ -833,7 +834,8 @@ int mnt_rule::gen_policy_change_mount_type(Profile &prof, int &count,
 			     opt_flags & MS_MAKE_FLAGS))
 		goto fail;
 	vec[3] = flagsbuf;
-	if (!prof.policy.rules->add_rule_vec(deny, perms, audit.audit ? perms : 0, 4, vec,
+	if (!prof.policy.rules->add_rule_vec(deny, perms, audit ? perms : 0,
+					     4, vec,
 					     dfaflags, false))
 		goto fail;
 	count++;
@@ -875,7 +877,8 @@ int mnt_rule::gen_policy_move_mount(Profile &prof, int &count,
 			     opt_flags & MS_MOVE_FLAGS))
 		goto fail;
 	vec[3] = flagsbuf;
-	if (!prof.policy.rules->add_rule_vec(deny, perms, audit.audit ? perms : 0, 4, vec,
+	if (!prof.policy.rules->add_rule_vec(deny, perms, audit ? perms : 0,
+					     4, vec,
 					     dfaflags, false))
 		goto fail;
 	count++;
@@ -923,7 +926,7 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 		tmpaudit = 0;
 	} else {
 		tmpperms = perms;
-		tmpaudit = audit.audit ? perms : 0;
+		tmpaudit = audit ? perms : 0;
 	}
 	/* rule for match without required data || data MATCH_CONT */
 	if (!prof.policy.rules->add_rule_vec(deny, tmpperms, tmpaudit, 4,
@@ -938,7 +941,7 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 			goto fail;
 		vec[4] = optsbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(deny, perms,
-						     audit.audit ? perms : 0,
+						     audit ? perms : 0,
 						     5, vec, dfaflags, false))
 			goto fail;
 		count++;
@@ -1030,7 +1033,7 @@ int mnt_rule::gen_policy_re(Profile &prof)
 			goto fail;
 		vec[0] = mntbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(deny, perms,
-					(audit.audit ? perms : 0), 1, vec,
+					(audit ? perms : 0), 1, vec,
 					dfaflags, false))
 			goto fail;
 		count++;
@@ -1045,7 +1048,7 @@ int mnt_rule::gen_policy_re(Profile &prof)
 			goto fail;
 		vec[1] = devbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(deny, perms,
-					(audit.audit ? perms : 0), 2, vec,
+					(audit ? perms : 0), 2, vec,
 					dfaflags, false))
 			goto fail;
 		count++;

@@ -191,7 +191,7 @@ public:
 	/* int default_deny; */			/* TRUE or FALSE */
 	int local;
 	perms_t local_perms;
-	struct { bool local_audit; } local_audit;
+	bool local_audit;
 
 	Profile *parent;
 
@@ -223,7 +223,7 @@ public:
 
 		local_perms = 0;
 		local = 0;
-		local_audit.local_audit = false;
+		local_audit = false;
 
 		parent = NULL;
 

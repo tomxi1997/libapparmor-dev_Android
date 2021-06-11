@@ -34,7 +34,7 @@ class ptrace_rule: public rule_t {
 public:
 	char *peer_label;
 	perms_t perms;
-	struct { bool audit; } audit;
+	bool audit;
 	int deny;
 
 	ptrace_rule(perms_t perms, struct cond_entry *conds);

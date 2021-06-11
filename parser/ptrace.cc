@@ -48,7 +48,7 @@ void ptrace_rule::move_conditionals(struct cond_entry *conds)
 }
 
 ptrace_rule::ptrace_rule(perms_t perms_p, struct cond_entry *conds):
-	peer_label(NULL), audit( { false } ), deny(0)
+	peer_label(NULL), audit(false), deny(0)
 {
 	if (perms_p) {
 		if (perms_p & ~AA_VALID_PTRACE_PERMS)
@@ -64,7 +64,7 @@ ptrace_rule::ptrace_rule(perms_t perms_p, struct cond_entry *conds):
 
 ostream &ptrace_rule::dump(ostream &os)
 {
-	if (audit.audit)
+	if (audit)
 		os << "audit ";
 	if (deny)
 		os << "deny ";
@@ -137,7 +137,7 @@ int ptrace_rule::gen_policy_re(Profile &prof)
 
 	buf = buffer.str();
 	if (perms & AA_VALID_PTRACE_PERMS) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny, perms, audit.audit ? perms : 0,
+		if (!prof.policy.rules->add_rule(buf.c_str(), deny, perms, audit ? perms : 0,
 						 dfaflags))
 			goto fail;
 	}

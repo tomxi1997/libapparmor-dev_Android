@@ -105,7 +105,7 @@ unix_rule::unix_rule(unsigned int type_p, bool audit_p, bool denied):
 			yyerror("socket rule: invalid socket type '%d'", type_p);
 	}
 	perms = AA_VALID_NET_PERMS;
-	audit.audit = audit_p;
+	audit = audit_p;
 	deny = denied;
 }
 
@@ -195,7 +195,7 @@ void unix_rule::downgrade_rule(Profile &prof) {
 		mask = 1 << sock_type_n;
 	if (!deny) {
 		prof.net.allow[AF_UNIX] |= mask;
-		if (audit.audit)
+		if (audit)
 			prof.net.audit[AF_UNIX] |= mask;
 	} else {
 		/* deny rules have to be dropped because the downgrade makes
@@ -336,7 +336,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 		buf = buffer.str();
 		if (!prof.policy.rules->add_rule(buf.c_str(), deny,
 						 map_perms(AA_NET_CREATE),
-						 map_perms(audit.audit ? AA_NET_CREATE : 0),
+						 map_perms(audit ? AA_NET_CREATE : 0),
 						 dfaflags))
 			goto fail;
 		mask &= ~AA_NET_CREATE;
@@ -361,7 +361,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 		buf = tmp.str();
 		if (!prof.policy.rules->add_rule(buf.c_str(), deny,
 						 map_perms(AA_NET_BIND),
-						 map_perms(audit.audit ? AA_NET_BIND : 0),
+						 map_perms(audit ? AA_NET_BIND : 0),
 						 dfaflags))
 			goto fail;
 		/* clear if auto, else generic need to generate addr below */
@@ -386,7 +386,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			buf = buffer.str();
 			if (!prof.policy.rules->add_rule(buf.c_str(), deny,
 							 map_perms(mask & local_mask),
-							 map_perms(audit.audit ? mask & local_mask : 0),
+							 map_perms(audit ? mask & local_mask : 0),
 							 dfaflags))
 				goto fail;
 		}
@@ -400,7 +400,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			buf = tmp.str();
 			if (!prof.policy.rules->add_rule(buf.c_str(), deny,
 							 map_perms(AA_NET_LISTEN),
-							 map_perms(audit.audit ? AA_NET_LISTEN : 0),
+							 map_perms(audit ? AA_NET_LISTEN : 0),
 							 dfaflags))
 				goto fail;
 		}
@@ -413,7 +413,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			buf = tmp.str();
 			if (!prof.policy.rules->add_rule(buf.c_str(), deny,
 							 map_perms(AA_NET_OPT),
-							 map_perms(audit.audit ? AA_NET_OPT : 0),
+							 map_perms(audit ? AA_NET_OPT : 0),
 							 dfaflags))
 				goto fail;
 		}
@@ -432,7 +432,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			goto fail;
 
 		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny, map_perms(perms & AA_PEER_NET_PERMS), map_perms(audit.audit ? perms & AA_PEER_NET_PERMS : 0), dfaflags))
+		if (!prof.policy.rules->add_rule(buf.c_str(), deny, map_perms(perms & AA_PEER_NET_PERMS), map_perms(audit ? perms & AA_PEER_NET_PERMS : 0), dfaflags))
 			goto fail;
 	}
 

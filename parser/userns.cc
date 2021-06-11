@@ -41,7 +41,7 @@ void userns_rule::move_conditionals(struct cond_entry *conds)
 }
 
 userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds):
-	audit({false}), deny(0)
+	audit(false), deny(0)
 {
 	if (perms_p) {
 		if (perms_p & ~AA_VALID_USERNS_PERMS)
@@ -59,7 +59,7 @@ userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds):
 
 ostream &userns_rule::dump(ostream &os)
 {
-	if (audit.audit)
+	if (audit)
 		os << "audit ";
 	if (deny)
 		os << "deny ";
@@ -101,7 +101,7 @@ int userns_rule::gen_policy_re(Profile &prof)
 	buf = buffer.str();
 	if (perms & AA_VALID_USERNS_PERMS) {
 		if (!prof.policy.rules->add_rule(buf.c_str(), deny, perms,
-						 audit.audit ? perms : 0,
+						 audit ? perms : 0,
 						 dfaflags))
 			goto fail;
 	}
