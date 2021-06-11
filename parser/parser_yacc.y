@@ -800,9 +800,9 @@ rules:  rules opt_prefix mnt_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->allow;
+			$3->audit = $3->perms;
 		} else if ($2.audit) {
-			$3->audit = $3->allow;
+			$3->audit = $3->perms;
 		}
 
 		$1->rule_ents.push_back($3);

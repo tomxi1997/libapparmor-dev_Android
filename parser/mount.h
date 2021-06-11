@@ -143,12 +143,13 @@ public:
 
 	std::vector<unsigned int> flagsv, opt_flagsv;
 
-	int allow, audit;
+	perms_t perms;
+	int audit;
 	int deny;
 
 	mnt_rule(struct cond_entry *src_conds, char *device_p,
 		   struct cond_entry *dst_conds unused, char *mnt_point_p,
-		   int allow_p);
+		   perms_t perms_p);
 	virtual ~mnt_rule()
 	{
 		free_value_list(opts);

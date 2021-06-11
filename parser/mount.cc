@@ -467,7 +467,7 @@ static void process_one_option(struct cond_entry *&opts, unsigned int &flags,
 
 mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 		   struct cond_entry *dst_conds unused, char *mnt_point_p,
-		   int allow_p):
+		   perms_t perms_p):
 	mnt_point(mnt_point_p), device(device_p), trans(NULL), opts(NULL),
 	flagsv(0), opt_flagsv(0), audit(0), deny(0)
 {
@@ -506,7 +506,7 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 				/* throw away tmpinv_flags, only needed in
 				 * consistancy check
 				 */
-				if (allow_p & AA_DUMMY_REMOUNT)
+				if (perms_p & AA_DUMMY_REMOUNT)
 					tmpflags |= MS_REMOUNT;
 
 				if (conflicting_flags(tmpflags, tmpinv_flags)) {
@@ -526,7 +526,7 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 
 	if (!(flagsv.size() + opt_flagsv.size())) {
 		/* no flag options, and not remount, allow everything */
-		if (allow_p & AA_DUMMY_REMOUNT) {
+		if (perms_p & AA_DUMMY_REMOUNT) {
 			flagsv.push_back(MS_REMOUNT);
 			opt_flagsv.push_back(MS_REMOUNT_FLAGS & ~MS_REMOUNT);
 		} else {
@@ -535,7 +535,7 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 		}
 	} else if (!(flagsv.size())) {
 		/* no flags but opts set */
-		if (allow_p & AA_DUMMY_REMOUNT)
+		if (perms_p & AA_DUMMY_REMOUNT)
 			flagsv.push_back(MS_REMOUNT);
 		else
 			flagsv.push_back(0);
@@ -543,19 +543,19 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 		opt_flagsv.push_back(0);
 	}
 
-	if (allow_p & AA_DUMMY_REMOUNT) {
-		allow_p = AA_MAY_MOUNT;
+	if (perms_p & AA_DUMMY_REMOUNT) {
+		perms_p = AA_MAY_MOUNT;
 	}
-	allow = allow_p;
+	perms = perms_p;
 }
 
 ostream &mnt_rule::dump(ostream &os)
 {
-	if (allow & AA_MAY_MOUNT)
+	if (perms & AA_MAY_MOUNT)
 		os << "mount";
-	else if (allow & AA_MAY_UMOUNT)
+	else if (perms & AA_MAY_UMOUNT)
 		os << "umount";
-	else if (allow & AA_MAY_PIVOTROOT)
+	else if (perms & AA_MAY_PIVOTROOT)
 		os << "pivotroot";
 	else
 		os << "error: unknown mount perm";
@@ -581,7 +581,7 @@ ostream &mnt_rule::dump(ostream &os)
 		os << " -> " << trans;
 
 	const char *prefix = deny ? "deny" : "";
-	os << " " << prefix << "(0x" << hex << allow << "/0x" << audit << ")";
+	os << " " << prefix << "(0x" << hex << perms << "/0x" << audit << ")";
 	os << ",\n";
 
 	return os;
@@ -699,7 +699,7 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 	std::string optsbuf;
 	char class_mount_hdr[64];
 	const char *vec[5];
-	int tmpallow;
+	perms_t tmpperms;
 
 	sprintf(class_mount_hdr, "\\x%02x", AA_CLASS_MOUNT);
 
@@ -728,12 +728,12 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 	vec[3] = flagsbuf;
 
 	if (opts)
-		tmpallow = AA_MATCH_CONT;
+		tmpperms = AA_MATCH_CONT;
 	else
-		tmpallow = allow;
+		tmpperms = perms;
 
 	/* rule for match without required data || data MATCH_CONT */
-	if (!prof.policy.rules->add_rule_vec(deny, tmpallow,
+	if (!prof.policy.rules->add_rule_vec(deny, tmpperms,
 					     audit | AA_AUDIT_MNT_DATA, 4,
 					     vec, dfaflags, false))
 		goto fail;
@@ -745,7 +745,7 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 		if (!build_mnt_opts(optsbuf, opts))
 			goto fail;
 		vec[4] = optsbuf.c_str();
-		if (!prof.policy.rules->add_rule_vec(deny, allow,
+		if (!prof.policy.rules->add_rule_vec(deny, perms,
 						     audit | AA_AUDIT_MNT_DATA,
 						     5, vec, dfaflags, false))
 			goto fail;
@@ -787,7 +787,7 @@ int mnt_rule::gen_policy_bind_mount(Profile &prof, int &count,
 			     opt_flags & MS_BIND_FLAGS))
 		goto fail;
 	vec[3] = flagsbuf;
-	if (!prof.policy.rules->add_rule_vec(deny, allow, audit, 4, vec,
+	if (!prof.policy.rules->add_rule_vec(deny, perms, audit, 4, vec,
 					     dfaflags, false))
 		goto fail;
 	count++;
@@ -828,7 +828,7 @@ int mnt_rule::gen_policy_change_mount_type(Profile &prof, int &count,
 			     opt_flags & MS_MAKE_FLAGS))
 		goto fail;
 	vec[3] = flagsbuf;
-	if (!prof.policy.rules->add_rule_vec(deny, allow, audit, 4, vec,
+	if (!prof.policy.rules->add_rule_vec(deny, perms, audit, 4, vec,
 					     dfaflags, false))
 		goto fail;
 	count++;
@@ -870,7 +870,7 @@ int mnt_rule::gen_policy_move_mount(Profile &prof, int &count,
 			     opt_flags & MS_MOVE_FLAGS))
 		goto fail;
 	vec[3] = flagsbuf;
-	if (!prof.policy.rules->add_rule_vec(deny, allow, audit, 4, vec,
+	if (!prof.policy.rules->add_rule_vec(deny, perms, audit, 4, vec,
 					     dfaflags, false))
 		goto fail;
 	count++;
@@ -891,7 +891,7 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 	std::string optsbuf;
 	char class_mount_hdr[64];
 	const char *vec[5];
-	int tmpallow;
+	perms_t tmpperms;
 
 	sprintf(class_mount_hdr, "\\x%02x", AA_CLASS_MOUNT);
 
@@ -914,12 +914,12 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 	vec[3] = flagsbuf;
 
 	if (opts)
-		tmpallow = AA_MATCH_CONT;
+		tmpperms = AA_MATCH_CONT;
 	else
-		tmpallow = allow;
+		tmpperms = perms;
 
 	/* rule for match without required data || data MATCH_CONT */
-	if (!prof.policy.rules->add_rule_vec(deny, tmpallow,
+	if (!prof.policy.rules->add_rule_vec(deny, tmpperms,
 					     audit | AA_AUDIT_MNT_DATA, 4,
 					     vec, dfaflags, false))
 		goto fail;
@@ -931,7 +931,7 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 		if (!build_mnt_opts(optsbuf, opts))
 			goto fail;
 		vec[4] = optsbuf.c_str();
-		if (!prof.policy.rules->add_rule_vec(deny, allow,
+		if (!prof.policy.rules->add_rule_vec(deny, perms,
 						     audit | AA_AUDIT_MNT_DATA,
 						     5, vec, dfaflags, false))
 			goto fail;
@@ -951,7 +951,7 @@ int mnt_rule::gen_flag_rules(Profile &prof, int &count, unsigned int flags,
 	 * XXX: added !flags to cover cases like:
 	 * mount options in (bind) /d -> /4,
 	 */
-	if ((allow & AA_MAY_MOUNT) && (!flags || flags == MS_ALL_FLAGS)) {
+	if ((perms & AA_MAY_MOUNT) && (!flags || flags == MS_ALL_FLAGS)) {
 		/* no mount flags specified, generate multiple rules */
 		if (!device && !dev_type &&
 		    gen_policy_remount(prof, count, flags, opt_flags) == RULE_ERROR)
@@ -967,20 +967,20 @@ int mnt_rule::gen_flag_rules(Profile &prof, int &count, unsigned int flags,
 			return RULE_ERROR;
 
 		return gen_policy_new_mount(prof, count, flags, opt_flags);
-	} else if ((allow & AA_MAY_MOUNT) && (flags & MS_REMOUNT)
+	} else if ((perms & AA_MAY_MOUNT) && (flags & MS_REMOUNT)
 		   && !device && !dev_type) {
 		return gen_policy_remount(prof, count, flags, opt_flags);
-	} else if ((allow & AA_MAY_MOUNT) && (flags & MS_BIND)
+	} else if ((perms & AA_MAY_MOUNT) && (flags & MS_BIND)
 		   && !dev_type && !opts) {
 		return gen_policy_bind_mount(prof, count, flags, opt_flags);
-	} else if ((allow & AA_MAY_MOUNT) &&
+	} else if ((perms & AA_MAY_MOUNT) &&
 		   (flags & (MS_MAKE_CMDS))
 		   && !device && !dev_type && !opts) {
 		return gen_policy_change_mount_type(prof, count, flags, opt_flags);
-	} else if ((allow & AA_MAY_MOUNT) && (flags & MS_MOVE)
+	} else if ((perms & AA_MAY_MOUNT) && (flags & MS_MOVE)
 		   && !dev_type && !opts) {
 		return gen_policy_move_mount(prof, count, flags, opt_flags);
-	} else if ((allow & AA_MAY_MOUNT) &&
+	} else if ((perms & AA_MAY_MOUNT) &&
 		   ((flags | opt_flags) & ~MS_CMDS)) {
 		/* generic mount if flags are set that are not covered by
 		 * above commands
@@ -1017,18 +1017,18 @@ int mnt_rule::gen_policy_re(Profile &prof)
 				goto fail;
 		}
 	}
-	if (allow & AA_MAY_UMOUNT) {
+	if (perms & AA_MAY_UMOUNT) {
 		/* rule class single byte header */
 		mntbuf.assign(class_mount_hdr);
 		if (!convert_entry(mntbuf, mnt_point))
 			goto fail;
 		vec[0] = mntbuf.c_str();
-		if (!prof.policy.rules->add_rule_vec(deny, allow, audit, 1, vec,
+		if (!prof.policy.rules->add_rule_vec(deny, perms, audit, 1, vec,
 						     dfaflags, false))
 			goto fail;
 		count++;
 	}
-	if (allow & AA_MAY_PIVOTROOT) {
+	if (perms & AA_MAY_PIVOTROOT) {
 		/* rule class single byte header */
 		mntbuf.assign(class_mount_hdr);
 		if (!convert_entry(mntbuf, mnt_point))
@@ -1037,7 +1037,7 @@ int mnt_rule::gen_policy_re(Profile &prof)
 		if (!clear_and_convert_entry(devbuf, device))
 			goto fail;
 		vec[1] = devbuf.c_str();
-		if (!prof.policy.rules->add_rule_vec(deny, allow, audit, 2, vec,
+		if (!prof.policy.rules->add_rule_vec(deny, perms, audit, 2, vec,
 						     dfaflags, false))
 			goto fail;
 		count++;
@@ -1064,11 +1064,11 @@ void mnt_rule::post_process(Profile &prof)
 			exit(1);
 		}
 
-		if (allow & AA_USER_EXEC)
+		if (perms & AA_USER_EXEC)
 			perms |= SHIFT_PERMS(n << 10, AA_USER_SHIFT);
-		if (allow & AA_OTHER_EXEC)
+		if (perms & AA_OTHER_EXEC)
 			perms |= SHIFT_PERMS(n << 10, AA_OTHER_SHIFT);
-		allow = ((allow & ~AA_ALL_EXEC_MODIFIERS) |
+		perms = ((perms & ~AA_ALL_EXEC_MODIFIERS) |
 				(perms & AA_ALL_EXEC_MODIFIERS));
 
 		trans = NULL;
