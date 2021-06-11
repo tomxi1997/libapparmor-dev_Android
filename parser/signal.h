@@ -40,7 +40,7 @@ public:
 	Signals signals;
 	char *peer_label;
 	perms_t perms;
-	int audit;
+	struct { bool audit; } audit;
 	int deny;
 
 	signal_rule(perms_t perms, struct cond_entry *conds);

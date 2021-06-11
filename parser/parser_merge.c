@@ -51,8 +51,8 @@ static int file_comp(const void *c1, const void *c2)
 	if ((*e1)->deny != (*e2)->deny)
 		return (*e1)->deny < (*e2)->deny ? -1 : 1;
 
-	if ((*e1)->audit != (*e2)->audit)
-		return (*e1)->audit < (*e2)->audit ? -1 : 1;
+	if ((*e1)->audit.audit != (*e2)->audit.audit)
+		return (*e1)->audit.audit < (*e2)->audit.audit ? -1 : 1;
 
 	return strcmp((*e1)->name, (*e2)->name);
 }

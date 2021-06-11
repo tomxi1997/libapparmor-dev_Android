@@ -40,7 +40,7 @@ public:
 	char *interface;
 	char *member;
 	perms_t perms;
-	int audit;
+	struct { bool audit; } audit;
 	int deny;
 
 	dbus_rule(perms_t perms_p, struct cond_entry *conds,

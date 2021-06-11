@@ -174,7 +174,7 @@ void signal_rule::move_conditionals(struct cond_entry *conds)
 }
 
 signal_rule::signal_rule(perms_t perms_p, struct cond_entry *conds):
-	signals(), peer_label(NULL), audit(0), deny(0)
+	signals(), peer_label(NULL), audit( { false} ), deny(0)
 {
 	if (perms_p) {
 		perms = perms_p;
@@ -191,7 +191,7 @@ signal_rule::signal_rule(perms_t perms_p, struct cond_entry *conds):
 
 ostream &signal_rule::dump(ostream &os)
 {
-	if (audit)
+	if (audit.audit)
 		os << "audit ";
 	if (deny)
 		os << "deny ";
@@ -292,7 +292,7 @@ int signal_rule::gen_policy_re(Profile &prof)
 
 	buf = buffer.str();
 	if (perms & (AA_MAY_SEND | AA_MAY_RECEIVE)) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny, perms, audit,
+		if (!prof.policy.rules->add_rule(buf.c_str(), deny, perms, audit.audit ? perms : 0,
 						 dfaflags))
 			goto fail;
 	}

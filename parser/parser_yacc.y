@@ -700,7 +700,7 @@ rules:  rules opt_prefix rule
 			$3->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 		/* only set audit ctl quieting if the rule is not audited */
 		if (($2.deny && !$2.audit) || (!$2.deny && $2.audit))
-			$3->audit = $3->perms & ~ALL_AA_EXEC_TYPE;
+			$3->audit.audit = true;
 
 		add_entry_to_policy($1, $3);
 		$$ = $1;
@@ -731,9 +731,9 @@ rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
 				entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 
 			if ($2.audit && !entry->deny)
-				entry->audit = entry->perms & ~ALL_AA_EXEC_TYPE;
+				entry->audit.audit = true;
 			else if (!$2.audit && entry->deny)
-				 entry->audit = entry->perms & ~ALL_AA_EXEC_TYPE;
+				entry->audit.audit = true;
 			add_entry_to_policy($1, entry);
 		}
 		$4->entries = NULL;
@@ -800,9 +800,9 @@ rules:  rules opt_prefix mnt_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		} else if ($2.audit) {
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		}
 
 		$1->rule_ents.push_back($3);
@@ -817,9 +817,9 @@ rules:  rules opt_prefix dbus_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		} else if ($2.audit) {
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -833,9 +833,9 @@ rules:  rules opt_prefix signal_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		} else if ($2.audit) {
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -849,9 +849,9 @@ rules:  rules opt_prefix ptrace_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		} else if ($2.audit) {
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -865,9 +865,9 @@ rules:  rules opt_prefix unix_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		} else if ($2.audit) {
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -881,9 +881,9 @@ rules:  rules opt_prefix userns_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		} else if ($2.audit) {
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -901,9 +901,9 @@ rules:	rules opt_prefix change_profile
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		} else if ($2.audit) {
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		}
 		add_entry_to_policy($1, $3);
 		$$ = $1;
@@ -936,9 +936,9 @@ rules:  rules opt_prefix mqueue_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		} else if ($2.audit) {
-			$3->audit = $3->perms;
+			$3->audit.audit = true;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -1821,7 +1821,7 @@ void add_local_entry(Profile *prof)
 		sprintf(name, "%s//%s", prof->parent->name, prof->name);
 
 		entry = new_entry(name, prof->local_perms, NULL);
-		entry->audit = prof->local_audit;
+		entry->audit.audit = prof->local_audit.local_audit;
 		entry->nt_name = trans;
 		if (!entry)
 			yyerror(_("Memory allocation error."));

@@ -961,7 +961,7 @@ struct cod_entry *new_entry(char *id, perms_t perms, char *link_id)
 	entry->name = id;
 	entry->link_name = link_id;
 	entry->perms = perms;
-	entry->audit = 0;
+	entry->audit.audit = false;
 	entry->deny = FALSE;
 
 	entry->pattern_type = ePatternInvalid;
