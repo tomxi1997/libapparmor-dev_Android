@@ -157,6 +157,8 @@ extern int aa_features_write_to_file(aa_features *features,
 				     int dirfd, const char *path);
 extern bool aa_features_is_equal(aa_features *features1,
 				 aa_features *features2);
+extern int aa_features_check(int dirfd, const char *path,
+			     aa_features *features);
 extern bool aa_features_supports(aa_features *features, const char *str);
 extern char *aa_features_id(aa_features *features);
 extern char *aa_features_value(aa_features *features, const char *str, size_t *len);
