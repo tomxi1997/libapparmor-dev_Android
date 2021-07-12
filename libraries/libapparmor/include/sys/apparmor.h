@@ -211,6 +211,8 @@ extern char *aa_policy_cache_filename(aa_policy_cache *policy_cache, const char 
 extern char *aa_policy_cache_dir_path_preview(aa_features *kernel_features,
 					      int dirfd, const char *path);
 
+extern int aa_split_overlay_str(char *str, char ***vec, size_t max_size, bool immutable);
+
 #ifdef __cplusplus
 }
 #endif
