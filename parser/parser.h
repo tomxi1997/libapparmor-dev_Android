@@ -46,6 +46,7 @@ class Profile;
 class rule_t;
 
 typedef uint32_t perms_t;
+typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
 
 #define MODULE_NAME "apparmor"
 
@@ -91,7 +92,7 @@ extern dfaflags_t werrflags;
 typedef enum pattern_t pattern_t;
 
 struct prefixes {
-	int audit;
+	audit_t audit;
 	int deny;
 	int owner;
 };
@@ -130,7 +131,7 @@ struct cod_entry {
 	Profile *prof;		 	/* Special profile defined
 					 * just for this executable */
 	perms_t perms;			/* perms is 'or' of AA_* bits */
-	bool audit;			/* audit flags for perms */
+	struct { audit_t audit_mode; } audit;
 	int deny;			/* TRUE or FALSE */
 
 	int alias_ignore;		/* ignore for alias processing */

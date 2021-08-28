@@ -92,7 +92,7 @@ int af_rule::move_base_cond(struct cond_entry *ent, bool peer)
 
 ostream &af_rule::dump_prefix(ostream &os)
 {
-	if (audit)
+	if (audit.audit_mode == AUDIT_FORCE)
 		os << "audit ";
 	if (deny)
 		os << "deny ";

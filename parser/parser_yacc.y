@@ -214,6 +214,7 @@ void add_local_entry(Profile *prof);
 	int boolean;
 	struct prefixes prefix;
 	IncludeCache_t *includecache;
+	audit_t audit;
 }
 
 %type <id> 	TOK_ID
@@ -252,7 +253,7 @@ void add_local_entry(Profile *prof);
 %type <id>	id_or_var
 %type <id>	opt_id_or_var
 %type <boolean> opt_subset_flag
-%type <boolean> opt_audit_flag
+%type <audit>	opt_audit_flag
 %type <boolean> opt_owner_flag
 %type <boolean> opt_profile_flag
 %type <boolean> opt_flags
@@ -650,8 +651,8 @@ opt_subset_flag: { /* nothing */ $$ = 0; }
 	| TOK_SUBSET { $$ = 1; }
 	| TOK_LE { $$ = 1; }
 
-opt_audit_flag: { /* nothing */ $$ = 0; }
-	| TOK_AUDIT { $$ = 1; };
+opt_audit_flag: { /* nothing */ $$ = AUDIT_UNSPECIFIED; }
+	| TOK_AUDIT { $$ = AUDIT_FORCE; };
 
 opt_owner_flag: { /* nothing */ $$ = 0; }
 	| TOK_OWNER { $$ = 1; };
@@ -699,8 +700,8 @@ rules:  rules opt_prefix rule
 		else if ($2.owner == 2)
 			$3->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 		/* only set audit ctl quieting if the rule is not audited */
-		if (($2.deny && !$2.audit) || (!$2.deny && $2.audit))
-			$3->audit = true;
+		if (($2.deny && $2.audit != AUDIT_FORCE) || (!$2.deny && $2.audit == AUDIT_FORCE))
+			$3->audit.audit_mode = AUDIT_FORCE;
 
 		add_entry_to_policy($1, $3);
 		$$ = $1;
@@ -713,7 +714,7 @@ rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
 		if ($2.deny)
 			yyerror(_("deny prefix not allowed"));
 
-		PDEBUG("matched: %s%s%sblock\n", $2.audit ? "audit " : "",
+		PDEBUG("matched: %s%s%sblock\n", $2.audit == AUDIT_FORCE ? "audit " : "",
 		       $2.deny ? "deny " : "", $2.owner ? "owner " : "");
 		list_for_each_safe($4->entries, entry, tmp) {
 			entry->next = NULL;
@@ -730,10 +731,10 @@ rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
 			else if ($2.owner == 2)
 				entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 
-			if ($2.audit && !entry->deny)
-				entry->audit = true;
-			else if (!$2.audit && entry->deny)
-				entry->audit = true;
+			if ($2.audit == AUDIT_FORCE && !entry->deny)
+				entry->audit.audit_mode = AUDIT_FORCE;
+			else if ($2.audit != AUDIT_FORCE && entry->deny)
+				entry->audit.audit_mode = AUDIT_FORCE;
 			add_entry_to_policy($1, entry);
 		}
 		$4->entries = NULL;
@@ -768,21 +769,21 @@ rules: rules opt_prefix network_rule
 				/* setting mask instead of a bit */
 				if ($2.deny) {
 					$1->net.deny[entry->family] |= entry->type;
-					if (!$2.audit)
+					if ($2.audit != AUDIT_FORCE)
 						$1->net.quiet[entry->family] |= entry->type;
 				} else {
 					$1->net.allow[entry->family] |= entry->type;
-					if ($2.audit)
+					if ($2.audit == AUDIT_FORCE)
 						$1->net.audit[entry->family] |= entry->type;
 				}
 			} else {
 				if ($2.deny) {
 					$1->net.deny[entry->family] |= 1 << entry->type;
-					if (!$2.audit)
+					if ($2.audit != AUDIT_FORCE)
 						$1->net.quiet[entry->family] |= 1 << entry->type;
 				} else {
 					$1->net.allow[entry->family] |= 1 << entry->type;
-					if ($2.audit)
+					if ($2.audit == AUDIT_FORCE)
 						$1->net.audit[entry->family] |= 1 << entry->type;
 				}
 			}
@@ -796,13 +797,13 @@ rules:  rules opt_prefix mnt_rule
 	{
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on mount rules"));
-		if ($2.deny && $2.audit) {
+		if ($2.deny && $2.audit == AUDIT_FORCE) {
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = true;
-		} else if ($2.audit) {
-			$3->audit = true;
+			$3->audit.audit_mode = AUDIT_FORCE;
+		} else if ($2.audit != AUDIT_UNSPECIFIED) {
+			$3->audit.audit_mode = $2.audit;
 		}
 
 		$1->rule_ents.push_back($3);
@@ -813,13 +814,13 @@ rules:  rules opt_prefix dbus_rule
 	{
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on dbus rules"));
-		if ($2.deny && $2.audit) {
+		if ($2.deny && $2.audit == AUDIT_FORCE) {
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = true;
-		} else if ($2.audit) {
-			$3->audit = true;
+			$3->audit.audit_mode = AUDIT_FORCE;
+		} else if ($2.audit != AUDIT_UNSPECIFIED) {
+			$3->audit.audit_mode = $2.audit;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -829,13 +830,13 @@ rules:  rules opt_prefix signal_rule
 	{
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on signal rules"));
-		if ($2.deny && $2.audit) {
+		if ($2.deny && $2.audit == AUDIT_FORCE) {
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = true;
-		} else if ($2.audit) {
-			$3->audit = true;
+			$3->audit.audit_mode = AUDIT_FORCE;
+		} else if ($2.audit != AUDIT_UNSPECIFIED) {
+			$3->audit.audit_mode = $2.audit;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -845,13 +846,13 @@ rules:  rules opt_prefix ptrace_rule
 	{
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on ptrace rules"));
-		if ($2.deny && $2.audit) {
+		if ($2.deny && $2.audit == AUDIT_FORCE) {
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = true;
-		} else if ($2.audit) {
-			$3->audit = true;
+			$3->audit.audit_mode = AUDIT_FORCE;
+		} else if ($2.audit != AUDIT_UNSPECIFIED) {
+			$3->audit.audit_mode = $2.audit;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -861,13 +862,13 @@ rules:  rules opt_prefix unix_rule
 	{
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on unix rules"));
-		if ($2.deny && $2.audit) {
+		if ($2.deny && $2.audit == AUDIT_FORCE) {
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = true;
-		} else if ($2.audit) {
-			$3->audit = true;
+			$3->audit.audit_mode = AUDIT_FORCE;
+		} else if ($2.audit != AUDIT_UNSPECIFIED) {
+			$3->audit.audit_mode = $2.audit;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -881,9 +882,9 @@ rules:  rules opt_prefix userns_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = true;
-		} else if ($2.audit) {
-			$3->audit = true;
+			$3->audit.audit_mode = AUDIT_FORCE;
+		} else if ($2.audit == AUDIT_FORCE) {
+			$3->audit.audit_mode = AUDIT_FORCE;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -897,13 +898,13 @@ rules:	rules opt_prefix change_profile
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on unix rules"));
-		if ($2.deny && $2.audit) {
+		if ($2.deny && $2.audit == AUDIT_FORCE) {
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = true;
-		} else if ($2.audit) {
-			$3->audit = true;
+			$3->audit.audit_mode = AUDIT_FORCE;
+		} else if ($2.audit != AUDIT_UNSPECIFIED) {
+			$3->audit.audit_mode = $2.audit;
 		}
 		add_entry_to_policy($1, $3);
 		$$ = $1;
@@ -914,14 +915,14 @@ rules:  rules opt_prefix capability
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on capability rules"));
 
-		if ($2.deny && $2.audit) {
+		if ($2.deny && $2.audit == AUDIT_FORCE) {
 			$1->caps.deny |= $3;
 		} else if ($2.deny) {
 			$1->caps.deny |= $3;
 			$1->caps.quiet |= $3;
 		} else {
 			$1->caps.allow |= $3;
-			if ($2.audit)
+			if ($2.audit != AUDIT_UNSPECIFIED)
 				$1->caps.audit |= $3;
 		}
 
@@ -936,9 +937,9 @@ rules:  rules opt_prefix mqueue_rule
 			$3->deny = 1;
 		} else if ($2.deny) {
 			$3->deny = 1;
-			$3->audit = true;
-		} else if ($2.audit) {
-			$3->audit = true;
+			$3->audit.audit_mode = AUDIT_FORCE;
+		} else if ($2.audit == AUDIT_FORCE) {
+			$3->audit.audit_mode = AUDIT_FORCE;
 		}
 		$1->rule_ents.push_back($3);
 		$$ = $1;
@@ -1821,7 +1822,7 @@ void add_local_entry(Profile *prof)
 		sprintf(name, "%s//%s", prof->parent->name, prof->name);
 
 		entry = new_entry(name, prof->local_perms, NULL);
-		entry->audit = prof->local_audit;
+		entry->audit.audit_mode = prof->local_audit.audit_mode;
 		entry->nt_name = trans;
 		if (!entry)
 			yyerror(_("Memory allocation error."));

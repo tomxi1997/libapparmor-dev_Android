@@ -144,7 +144,7 @@ public:
 	std::vector<unsigned int> flagsv, opt_flagsv;
 
 	perms_t perms;
-	bool audit;
+	struct { audit_t audit_mode; } audit;
 	int deny;
 
 	mnt_rule(struct cond_entry *src_conds, char *device_p,

@@ -961,7 +961,7 @@ struct cod_entry *new_entry(char *id, perms_t perms, char *link_id)
 	entry->name = id;
 	entry->link_name = link_id;
 	entry->perms = perms;
-	entry->audit = false;
+	entry->audit.audit_mode = AUDIT_UNSPECIFIED;
 	entry->deny = FALSE;
 
 	entry->pattern_type = ePatternInvalid;
@@ -985,7 +985,7 @@ struct cod_entry *copy_cod_entry(struct cod_entry *orig)
 	DUP_STRING(orig, entry, link_name, err);
 	DUP_STRING(orig, entry, nt_name, err);
 	entry->perms = orig->perms;
-	entry->audit = orig->audit;
+	entry->audit.audit_mode = orig->audit.audit_mode;
 	entry->deny = orig->deny;
 
 	/* XXX - need to create copies of the patterns, too */

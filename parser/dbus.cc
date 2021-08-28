@@ -69,7 +69,7 @@ void dbus_rule::move_conditionals(struct cond_entry *conds)
 dbus_rule::dbus_rule(perms_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds):
 	bus(NULL), name(NULL), peer_label(NULL), path(NULL), interface(NULL), member(NULL),
-	perms(0), audit(false), deny(0)
+	perms(0), audit({AUDIT_UNSPECIFIED}), deny(0)
 {
 	int name_is_subject_cond = 0, message_rule = 0, service_rule = 0;
 
@@ -122,7 +122,7 @@ dbus_rule::dbus_rule(perms_t perms_p, struct cond_entry *conds,
 
 ostream &dbus_rule::dump(ostream &os)
 {
-	if (audit)
+	if (audit.audit_mode == AUDIT_FORCE)
 		os << "audit ";
 	if (deny)
 		os << "deny ";
@@ -279,21 +279,21 @@ int dbus_rule::gen_policy_re(Profile &prof)
 
 	if (perms & AA_DBUS_BIND) {
 		if (!prof.policy.rules->add_rule_vec(deny, perms & AA_DBUS_BIND,
-						     audit ? perms & AA_DBUS_BIND : 0,
+						     audit.audit_mode == AUDIT_FORCE ? perms & AA_DBUS_BIND : 0,
 						    2, vec, dfaflags, false))
 			goto fail;
 	}
 	if (perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE)) {
 		if (!prof.policy.rules->add_rule_vec(deny,
 				       perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE),
-						     audit ? perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE) : 0,
+						     audit.audit_mode == AUDIT_FORCE ? perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE) : 0,
 				       6, vec, dfaflags, false))
 			goto fail;
 	}
 	if (perms & AA_DBUS_EAVESDROP) {
 		if (!prof.policy.rules->add_rule_vec(deny,
 						    perms & AA_DBUS_EAVESDROP,
-						     audit ? perms & AA_DBUS_EAVESDROP : 0,
+						     audit.audit_mode == AUDIT_FORCE ? perms & AA_DBUS_EAVESDROP : 0,
 						    1, vec, dfaflags, false))
 			goto fail;
 	}

@@ -88,7 +88,7 @@ public:
 	char *qname;
 	char *label;
 	perms_t perms;
-	bool audit;
+	struct { audit_t audit_mode; } audit;
 	int deny;
 
 	mqueue_rule(perms_t perms, struct cond_entry *conds, char *qname = NULL);
