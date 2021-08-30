@@ -27,7 +27,7 @@ class userns_rule: public rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
 	perms_t perms;
-	struct { audit_t audit_mode; } audit;
+	audit_t audit;
 	int deny;
 
 	userns_rule(perms_t perms, struct cond_entry *conds);

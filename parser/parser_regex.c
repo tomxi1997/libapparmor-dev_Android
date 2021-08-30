@@ -632,12 +632,12 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		    !is_change_profile_perms(entry->perms) &&
 		    !dfarules->add_rule(tbuf.c_str(), entry->deny,
 					entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE),
-					entry->audit.audit_mode == AUDIT_FORCE ? entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE) : 0,
+					entry->audit == AUDIT_FORCE ? entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE) : 0,
 					dfaflags))
 			return FALSE;
 	} else if (!is_change_profile_perms(entry->perms)) {
 		if (!dfarules->add_rule(tbuf.c_str(), entry->deny, entry->perms,
-					entry->audit.audit_mode == AUDIT_FORCE ? entry->perms : 0, dfaflags))
+					entry->audit == AUDIT_FORCE ? entry->perms : 0, dfaflags))
 			return FALSE;
 	}
 
@@ -660,7 +660,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 			perms |= LINK_TO_LINK_SUBSET(perms);
 			vec[1] = "/[^/].*";
 		}
-		if (!dfarules->add_rule_vec(entry->deny, perms, entry->audit.audit_mode == AUDIT_FORCE ? perms & AA_LINK_BITS : 0, 2, vec, dfaflags, false))
+		if (!dfarules->add_rule_vec(entry->deny, perms, entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0, 2, vec, dfaflags, false))
 			return FALSE;
 	}
 	if (is_change_profile_perms(entry->perms)) {
@@ -671,7 +671,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		int index = 1;
 		uint32_t onexec_perms = AA_ONEXEC;
 
-		if ((warnflags & WARN_RULE_DOWNGRADED) && entry->audit.audit_mode == AUDIT_FORCE && warn_change_profile) {
+		if ((warnflags & WARN_RULE_DOWNGRADED) && entry->audit == AUDIT_FORCE && warn_change_profile) {
 			/* don't have profile name here, so until this code
 			 * gets refactored just throw out a generic warning
 			 */

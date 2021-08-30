@@ -131,7 +131,7 @@ struct cod_entry {
 	Profile *prof;		 	/* Special profile defined
 					 * just for this executable */
 	perms_t perms;			/* perms is 'or' of AA_* bits */
-	struct { audit_t audit_mode; } audit;
+	audit_t audit;
 	int deny;			/* TRUE or FALSE */
 
 	int alias_ignore;		/* ignore for alias processing */

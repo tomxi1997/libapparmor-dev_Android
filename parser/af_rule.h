@@ -45,12 +45,12 @@ public:
 	char *label;
 	char *peer_label;
 	perms_t perms;
-	struct { audit_t audit_mode; } audit;
+	audit_t audit;
 	bool deny;
 
 	af_rule(const char *name): af_name(name), sock_type(NULL),
 		sock_type_n(-1), proto(NULL), proto_n(0), label(NULL),
-		peer_label(NULL), perms(0), audit({AUDIT_UNSPECIFIED}), deny(0)
+		peer_label(NULL), perms(0), audit(AUDIT_UNSPECIFIED), deny(0)
 	{}
 
 	virtual ~af_rule()
