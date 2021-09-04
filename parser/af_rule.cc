@@ -90,15 +90,6 @@ int af_rule::move_base_cond(struct cond_entry *ent, bool peer)
 	return true;
 }
 
-ostream &af_rule::dump_prefix(ostream &os)
-{
-	if (audit == AUDIT_FORCE)
-		os << "audit ";
-	if (deny)
-		os << "deny ";
-	return os;
-}
-
 ostream &af_rule::dump_local(ostream &os)
 {
 	if (perms != AA_VALID_NET_PERMS) {
@@ -148,7 +139,7 @@ ostream &af_rule::dump_peer(ostream &os)
 
 ostream &af_rule::dump(ostream &os)
 {
-	dump_prefix(os);
+	prefix_rule_t::dump(os);
 	os << af_name;
 	dump_local(os);
 	if (has_peer_conds()) {

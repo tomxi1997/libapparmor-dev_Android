@@ -81,15 +81,12 @@ typedef enum mqueue_type {
 
 int parse_mqueue_perms(const char *str_perms, perms_t *perms, int fail);
 
-class mqueue_rule: public rule_t {
+class mqueue_rule: public perms_rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
 	mqueue_type qtype;
 	char *qname;
 	char *label;
-	perms_t perms;
-	audit_t audit;
-	int deny;
 
 	mqueue_rule(perms_t perms, struct cond_entry *conds, char *qname = NULL);
 	virtual ~mqueue_rule()
@@ -98,6 +95,14 @@ public:
 		free(label);
 	};
 
+	virtual bool valid_prefix(prefixes &p, const char *&error) {
+		// not yet, but soon
+		if (p.owner) {
+			error = _("owner prefix not allowed on mqueue rules");
+			return false;
+		}
+		return true;
+	};
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);

@@ -40,8 +40,7 @@ void userns_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds):
-	audit(AUDIT_UNSPECIFIED), deny(0)
+userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds)
 {
 	if (perms_p) {
 		if (perms_p & ~AA_VALID_USERNS_PERMS)
@@ -59,10 +58,7 @@ userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds):
 
 ostream &userns_rule::dump(ostream &os)
 {
-	if (audit == AUDIT_FORCE)
-		os << "audit ";
-	if (deny)
-		os << "deny ";
+	prefix_rule_t::dump(os);
 
 	os << "userns ";
 

@@ -68,8 +68,7 @@ void dbus_rule::move_conditionals(struct cond_entry *conds)
 
 dbus_rule::dbus_rule(perms_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds):
-	bus(NULL), name(NULL), peer_label(NULL), path(NULL), interface(NULL), member(NULL),
-	perms(0), audit(AUDIT_UNSPECIFIED), deny(0)
+	bus(NULL), name(NULL), peer_label(NULL), path(NULL), interface(NULL), member(NULL)
 {
 	int name_is_subject_cond = 0, message_rule = 0, service_rule = 0;
 
@@ -122,13 +121,11 @@ dbus_rule::dbus_rule(perms_t perms_p, struct cond_entry *conds,
 
 ostream &dbus_rule::dump(ostream &os)
 {
-	if (audit == AUDIT_FORCE)
-		os << "audit ";
-	if (deny)
-		os << "deny ";
+	prefix_rule_t::dump(os);
 
 	os << "dbus ( ";
 
+	/* override default perms */
 	if (perms & AA_DBUS_SEND)
 		os << "send ";
 	if (perms & AA_DBUS_RECEIVE)

@@ -35,7 +35,7 @@ struct supported_cond {
 	enum cond_side side ;
 };
 
-class af_rule: public rule_t {
+class af_rule: public perms_rule_t {
 public:
 	std::string af_name;
 	char *sock_type;
@@ -44,13 +44,10 @@ public:
 	int proto_n;
 	char *label;
 	char *peer_label;
-	perms_t perms;
-	audit_t audit;
-	bool deny;
 
 	af_rule(const char *name): af_name(name), sock_type(NULL),
 		sock_type_n(-1), proto(NULL), proto_n(0), label(NULL),
-		peer_label(NULL), perms(0), audit(AUDIT_UNSPECIFIED), deny(0)
+		peer_label(NULL)
 	{}
 
 	virtual ~af_rule()
@@ -66,7 +63,6 @@ public:
 	int move_base_cond(struct cond_entry *conds, bool peer);
 
 	virtual bool has_peer_conds(void) { return peer_label ? true : false; }
-	virtual ostream &dump_prefix(ostream &os);
 	virtual ostream &dump_local(ostream &os);
 	virtual ostream &dump_peer(ostream &os);
 	virtual ostream &dump(ostream &os);

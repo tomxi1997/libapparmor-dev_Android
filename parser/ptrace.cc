@@ -48,7 +48,7 @@ void ptrace_rule::move_conditionals(struct cond_entry *conds)
 }
 
 ptrace_rule::ptrace_rule(perms_t perms_p, struct cond_entry *conds):
-	peer_label(NULL), audit(AUDIT_UNSPECIFIED), deny(0)
+	peer_label(NULL)
 {
 	if (perms_p) {
 		if (perms_p & ~AA_VALID_PTRACE_PERMS)
@@ -64,13 +64,11 @@ ptrace_rule::ptrace_rule(perms_t perms_p, struct cond_entry *conds):
 
 ostream &ptrace_rule::dump(ostream &os)
 {
-	if (audit == AUDIT_FORCE)
-		os << "audit ";
-	if (deny)
-		os << "deny ";
+	prefix_rule_t::dump(os);
 
 	os << "ptrace";
 
+	/* override default perm dump */
 	if (perms != AA_VALID_PTRACE_PERMS) {
 		os << " (";
 

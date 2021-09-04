@@ -23,6 +23,8 @@
 
 #include "policydb.h"
 
+using namespace std;
+
 class Profile;
 
 #define RULE_NOT_SUPPORTED 0
@@ -50,6 +52,114 @@ protected:
 std::ostream &operator<<(std::ostream &os, rule_t &rule);
 
 typedef std::list<rule_t *> RuleList;
+
+/* Not classes so they can be used in the bison front end */
+typedef uint32_t perms_t;
+typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
+
+/* NOTE: we can not have a constructor for class prefixes. This is
+ * because it will break bison, and we would need to transition to
+ * the C++ bison bindings. Instead get around this by using a
+ * special rule class that inherits prefixes and handles the
+ * contruction
+ */
+class prefixes {
+public:
+	audit_t audit;
+	int deny;
+	int owner;
+
+	ostream &dump(ostream &os)
+	{
+		bool output = true;
+
+		switch (audit) {
+		case AUDIT_FORCE:
+			os << "audit";
+			break;
+		case AUDIT_QUIET:
+			os << "quiet";
+			break;
+		default:
+			output = false;
+		}
+
+		if (deny) {
+			if (output)
+				os << " ";
+
+			os << "deny";
+			output = true;
+		}
+
+		if (owner) {
+			if (output)
+				os << " ";
+			os << "owner";
+			output = true;
+		}
+
+		if (output)
+			os << " ";
+
+		return os;
+	}
+};
+
+class prefix_rule_t: public rule_t, public prefixes {
+public:
+	prefix_rule_t()
+	{
+		/* Must construct prefix here see note on prefixes */
+		audit = AUDIT_UNSPECIFIED;
+		deny = 0;
+		owner = 0;
+	};
+
+	virtual bool valid_prefix(prefixes &p, const char *&error) = 0;
+
+	virtual bool add_prefix(prefixes &p, const char *&error) {
+		if (!valid_prefix(p, error))
+			return false;
+		if (p.audit != AUDIT_UNSPECIFIED && audit != p.audit) {
+			if (audit != AUDIT_UNSPECIFIED) {
+				error = "conflicting audit prefix";
+				return false;
+			}
+		}
+		if (p.deny && p.audit == AUDIT_FORCE) {
+			deny = 1;
+		} else if (p.deny) {
+			deny = 1;
+			audit = AUDIT_FORCE;
+		} else if (p.audit != AUDIT_UNSPECIFIED) {
+			audit = p.audit;
+		}
+		owner = p.owner;
+		return true;
+	}
+
+	virtual ostream &dump(ostream &os) {
+		prefixes::dump(os);
+
+		return os;
+	}
+
+};
+
+class perms_rule_t: public prefix_rule_t {
+public:
+	perms_rule_t(): perms(0) { };
+
+	/* defaut perms, override/mask off if none default used */
+	virtual ostream &dump(ostream &os) {
+
+		return os;
+	}
+
+	perms_t perms;
+
+};
 
 #endif /* __AA_RULE_H */
 

@@ -25,7 +25,7 @@
 
 extern int parse_dbus_perms(const char *str_mode, perms_t *mode, int fail);
 
-class dbus_rule: public rule_t {
+class dbus_rule: public perms_rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
 	char *bus;
@@ -39,9 +39,6 @@ public:
 	char *path;
 	char *interface;
 	char *member;
-	perms_t perms;
-	audit_t audit;
-	int deny;
 
 	dbus_rule(perms_t perms_p, struct cond_entry *conds,
 		  struct cond_entry *peer_conds);
@@ -52,6 +49,13 @@ public:
 		free(path);
 		free(interface);
 		free(member);
+	};
+	virtual bool valid_prefix(prefixes &p, const char *&error) {
+		if (p.owner) {
+			error = "owner prefix not allowed on dbus rules";
+			return false;
+		}
+		return true;
 	};
 
 	virtual ostream &dump(ostream &os);

@@ -87,7 +87,7 @@ void mqueue_rule::move_conditionals(struct cond_entry *conds)
 }
 
 mqueue_rule::mqueue_rule(perms_t perms_p, struct cond_entry *conds, char *qname_p):
-	qtype(mqueue_unspecified), qname(qname_p), label(NULL), audit(AUDIT_UNSPECIFIED), deny(0)
+	qtype(mqueue_unspecified), qname(qname_p), label(NULL)
 {
 	move_conditionals(conds);
 	free_cond_list(conds);
@@ -115,10 +115,7 @@ mqueue_rule::mqueue_rule(perms_t perms_p, struct cond_entry *conds, char *qname_
 
 ostream &mqueue_rule::dump(ostream &os)
 {
-	if (audit == AUDIT_FORCE)
-		os << "audit ";
-	if (deny)
-		os << "deny ";
+	prefix_rule_t::dump(os);
 
 	os << "mqueue ";
 

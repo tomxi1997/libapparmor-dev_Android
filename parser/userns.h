@@ -23,18 +23,22 @@
 #define AA_USERNS_CREATE	8
 #define AA_VALID_USERNS_PERMS (AA_USERNS_CREATE)
 
-class userns_rule: public rule_t {
+class userns_rule: public perms_rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
-	perms_t perms;
-	audit_t audit;
-	int deny;
 
 	userns_rule(perms_t perms, struct cond_entry *conds);
 	virtual ~userns_rule()
 	{
 	};
 
+	virtual bool valid_prefix(prefixes &p, const char *&error) {
+		if (p.owner) {
+			error = _("owner prefix not allowed on userns rules");
+			return false;
+		}
+		return true;
+	};
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);

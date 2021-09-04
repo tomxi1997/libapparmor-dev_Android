@@ -174,7 +174,7 @@ void signal_rule::move_conditionals(struct cond_entry *conds)
 }
 
 signal_rule::signal_rule(perms_t perms_p, struct cond_entry *conds):
-	signals(), peer_label(NULL), audit(AUDIT_UNSPECIFIED), deny(0)
+	signals(), peer_label(NULL)
 {
 	if (perms_p) {
 		perms = perms_p;
@@ -191,10 +191,7 @@ signal_rule::signal_rule(perms_t perms_p, struct cond_entry *conds):
 
 ostream &signal_rule::dump(ostream &os)
 {
-	if (audit == AUDIT_FORCE)
-		os << "audit ";
-	if (deny)
-		os << "deny ";
+	prefix_rule_t::dump(os);
 
 	os << "signal";
 

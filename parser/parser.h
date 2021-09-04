@@ -36,17 +36,14 @@
 #include "immunix.h"
 #include "libapparmor_re/apparmor_re.h"
 #include "libapparmor_re/aare_rules.h"
+#include "rule.h"
 
 #include <string>
 
 using namespace std;
 
 #include <set>
-class Profile;
-class rule_t;
 
-typedef uint32_t perms_t;
-typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
 
 #define MODULE_NAME "apparmor"
 
@@ -91,11 +88,6 @@ extern dfaflags_t werrflags;
 
 typedef enum pattern_t pattern_t;
 
-struct prefixes {
-	audit_t audit;
-	int deny;
-	int owner;
-};
 
 struct cod_pattern {
 	char *regex;		// posix regex

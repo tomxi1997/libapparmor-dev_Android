@@ -33,20 +33,24 @@ typedef set<int> Signals;
 
 int parse_signal_perms(const char *str_perms, perms_t *perms, int fail);
 
-class signal_rule: public rule_t {
+class signal_rule: public perms_rule_t {
 	void extract_sigs(struct value_list **list);
 	void move_conditionals(struct cond_entry *conds);
 public:
 	Signals signals;
 	char *peer_label;
-	perms_t perms;
-	audit_t  audit;
-	int deny;
 
 	signal_rule(perms_t perms, struct cond_entry *conds);
 	virtual ~signal_rule() {
 		signals.clear();
 		free(peer_label);
+	};
+	virtual bool valid_prefix(prefixes &p, const char *&error) {
+		if (p.owner) {
+			error = "owner prefix not allowed on signal rules";
+			return false;
+		}
+		return true;
 	};
 
 	virtual ostream &dump(ostream &os);

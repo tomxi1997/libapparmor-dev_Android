@@ -794,97 +794,54 @@ rules: rules opt_prefix network_rule
 
 rules:  rules opt_prefix mnt_rule
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on mount rules"));
-		if ($2.deny && $2.audit == AUDIT_FORCE) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit != AUDIT_UNSPECIFIED) {
-			$3->audit = $2.audit;
-		}
-
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
 
 rules:  rules opt_prefix dbus_rule
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on dbus rules"));
-		if ($2.deny && $2.audit == AUDIT_FORCE) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit != AUDIT_UNSPECIFIED) {
-			$3->audit = $2.audit;
-		}
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
 
 rules:  rules opt_prefix signal_rule
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on signal rules"));
-		if ($2.deny && $2.audit == AUDIT_FORCE) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit != AUDIT_UNSPECIFIED) {
-			$3->audit = $2.audit;
-		}
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
 
 rules:  rules opt_prefix ptrace_rule
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on ptrace rules"));
-		if ($2.deny && $2.audit == AUDIT_FORCE) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit != AUDIT_UNSPECIFIED) {
-			$3->audit = $2.audit;
-		}
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
 
 rules:  rules opt_prefix unix_rule
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on unix rules"));
-		if ($2.deny && $2.audit == AUDIT_FORCE) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit != AUDIT_UNSPECIFIED) {
-			$3->audit = $2.audit;
-		}
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
 
 rules:  rules opt_prefix userns_rule
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on userns rules"));
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit == AUDIT_FORCE) {
-			$3->audit = AUDIT_FORCE;
-		}
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
@@ -930,16 +887,9 @@ rules:  rules opt_prefix capability
 
 rules:  rules opt_prefix mqueue_rule
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on mqueue rules")); //is this true?
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit == AUDIT_FORCE) {
-			$3->audit = AUDIT_FORCE;
-		}
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	};

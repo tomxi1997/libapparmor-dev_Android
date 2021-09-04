@@ -46,6 +46,13 @@ public:
 		free(peer_addr);
 	};
 
+	virtual bool valid_prefix(prefixes &p, const char *&error) {
+		if (p.owner) {
+			error = "owner prefix not allowed on unix rules";
+			return false;
+		}
+		return true;
+	};
 	virtual bool has_peer_conds(void) {
 		return af_rule::has_peer_conds() || peer_addr;
 	}

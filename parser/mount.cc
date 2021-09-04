@@ -469,7 +469,7 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 		   struct cond_entry *dst_conds unused, char *mnt_point_p,
 		   perms_t perms_p):
 	mnt_point(mnt_point_p), device(device_p), trans(NULL), opts(NULL),
-	flagsv(0), opt_flagsv(0), audit(AUDIT_UNSPECIFIED), deny(0)
+	flagsv(0), opt_flagsv(0)
 {
 	/* FIXME: dst_conds are ignored atm */
 	dev_type = extract_fstype(&src_conds);
@@ -551,6 +551,8 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 
 ostream &mnt_rule::dump(ostream &os)
 {
+	prefix_rule_t::dump(os);
+
 	if (perms & AA_MAY_MOUNT)
 		os << "mount";
 	else if (perms & AA_MAY_UMOUNT)
@@ -580,8 +582,8 @@ ostream &mnt_rule::dump(ostream &os)
 	if (trans)
 		os << " -> " << trans;
 
-	const char *prefix = deny ? "deny" : "";
-	os << " " << prefix << "(0x" << hex << perms << "/0x" << (audit != AUDIT_UNSPECIFIED ? perms : 0) << ")";
+
+	os << " " << "(0x" << hex << perms << "/0x" << (audit != AUDIT_UNSPECIFIED ? perms : 0) << ")";
 	os << ",\n";
 
 	return os;
