@@ -200,6 +200,7 @@ void add_local_entry(Profile *prof);
 	unix_rule *unix_entry;
 	userns_rule *userns_entry;
 	mqueue_rule *mqueue_entry;
+	prefix_rule_t *prefix_entry;
 
 	flagvals flags;
 	perms_t fperms;
@@ -264,6 +265,7 @@ void add_local_entry(Profile *prof);
 %type <fperms>	dbus_perms
 %type <fperms>	opt_dbus_perm
 %type <dbus_entry>	dbus_rule
+%type <prefix_entry>	prefix_rule
 %type <fperms>	signal_perm
 %type <fperms>	signal_perms
 %type <fperms>	opt_signal_perm
@@ -792,52 +794,15 @@ rules: rules opt_prefix network_rule
 		$$ = $1;
 	}
 
-rules:  rules opt_prefix mnt_rule
-	{
-		const char *error;
-		if (!$3->add_prefix($2, error))
-			yyerror(error);
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
+prefix_rule : mnt_rule { $$ = $1; }
+	| dbus_rule { $$ = $1; }
+	| signal_rule { $$ = $1; }
+	| ptrace_rule { $$ = $1; }
+	| unix_rule { $$ = $1; }
+	| userns_rule { $$ = $1; }
+	| mqueue_rule { $$ = $1; }
 
-rules:  rules opt_prefix dbus_rule
-	{
-		const char *error;
-		if (!$3->add_prefix($2, error))
-			yyerror(error);
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix signal_rule
-	{
-		const char *error;
-		if (!$3->add_prefix($2, error))
-			yyerror(error);
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix ptrace_rule
-	{
-		const char *error;
-		if (!$3->add_prefix($2, error))
-			yyerror(error);
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix unix_rule
-	{
-		const char *error;
-		if (!$3->add_prefix($2, error))
-			yyerror(error);
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix userns_rule
+rules:  rules opt_prefix prefix_rule
 	{
 		const char *error;
 		if (!$3->add_prefix($2, error))
@@ -882,15 +847,6 @@ rules:  rules opt_prefix capability
 				$1->caps.audit |= $3;
 		}
 
-		$$ = $1;
-	};
-
-rules:  rules opt_prefix mqueue_rule
-	{
-		const char *error;
-		if (!$3->add_prefix($2, error))
-			yyerror(error);
-		$1->rule_ents.push_back($3);
 		$$ = $1;
 	};
 
