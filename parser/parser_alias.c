@@ -141,7 +141,7 @@ static void process_entries(const void *nodep, VISIT value, int level unused)
 			dup->link_name = n;
 		}
 		if (dup) {
-			dup->alias_ignore = 1;
+			dup->alias_ignore = true;
 			/* adds to the front of the list, list iteratition
 			 * will skip it
 			 */

@@ -126,7 +126,7 @@ struct cod_entry {
 	audit_t audit;
 	int deny;			/* TRUE or FALSE */
 
-	int alias_ignore;		/* ignore for alias processing */
+	bool alias_ignore;		/* ignore for alias processing */
 
 	int subset;
 
