@@ -44,7 +44,7 @@ static int file_comp(const void *c1, const void *c2)
 		return res;
 
 	if ((*e1)->link_name)
-		res = (*e2)->subset - (*e1)->subset;
+		res = ((int) (*e2)->subset) - ((int) (*e1)->subset);
 	if (res)
 		return res;
 

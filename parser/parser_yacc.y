@@ -648,9 +648,9 @@ flagval:	TOK_VALUE
 		$$ = fv;
 	};
 
-opt_subset_flag: { /* nothing */ $$ = 0; }
-	| TOK_SUBSET { $$ = 1; }
-	| TOK_LE { $$ = 1; }
+opt_subset_flag: { /* nothing */ $$ = false; }
+	| TOK_SUBSET { $$ = true; }
+	| TOK_LE { $$ = true; }
 
 opt_audit_flag: { /* nothing */ $$ = AUDIT_UNSPECIFIED; }
 	| TOK_AUDIT { $$ = AUDIT_FORCE; };

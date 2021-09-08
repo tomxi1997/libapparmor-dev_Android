@@ -128,7 +128,7 @@ struct cod_entry {
 
 	bool alias_ignore;		/* ignore for alias processing */
 
-	int subset;
+	bool subset;
 
 	pattern_t pattern_type;
 	struct cod_pattern pat;
