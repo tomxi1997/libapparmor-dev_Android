@@ -37,9 +37,23 @@ public:
 
 	//virtual bool operator<(rule_t const &rhs)const = 0;
 	virtual std::ostream &dump(std::ostream &os) = 0;
+
+	// Follow methods in order of being called by the parse
+
+	// called when profile is finished parsing
+	virtual void post_parse_profile(Profile &prof __attribute__ ((unused))) { };
+
+	// called before final expansion of variables. So implied rules
+	// can reference variables
+	virtual void add_implied_rules(Profile &prof __attribute__ ((unused))) { };
+
+	// currently only called post parse
+	// needs to change to being interatively called during parse
+	// to support expansion in include names and profile names
 	virtual int expand_variables(void) = 0;
+
+	// called late frontend to generate data for regex backend
 	virtual int gen_policy_re(Profile &prof) = 0;
-	virtual void post_process(Profile &prof) = 0;
 
 protected:
 	const char *warned_name = NULL;

@@ -397,8 +397,7 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list flags TOK_OPEN
 			 */
 			prof->flags.mode = MODE_COMPLAIN;
 
-		post_process_file_entries(prof);
-		post_process_rule_entries(prof);
+		prof->post_parse_profile();
 		prof->flags.debug(cerr);
 
 		/* restore previous blocks include cache */

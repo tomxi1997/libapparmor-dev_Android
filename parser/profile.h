@@ -314,6 +314,9 @@ public:
 	{
 		cout << get_name(fqp);;
 	}
+
+	void post_parse_profile(void);
+	void add_implied_rules(void);
 };
 
 

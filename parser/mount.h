@@ -166,7 +166,7 @@ public:
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
-	virtual void post_process(Profile &prof unused);
+	virtual void post_parse_profile(Profile &prof unused);
 
 protected:
 	virtual void warn_once(const char *name) override;

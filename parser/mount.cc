@@ -1067,7 +1067,7 @@ fail:
 	return RULE_ERROR;
 }
 
-void mnt_rule::post_process(Profile &prof)
+void mnt_rule::post_parse_profile(Profile &prof)
 {
 	if (trans) {
 		perms_t perms = 0;

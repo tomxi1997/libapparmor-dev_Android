@@ -499,8 +499,6 @@ extern void add_to_list(Profile *profile);
 extern void add_hat_to_policy(Profile *policy, Profile *hat);
 extern int add_entry_to_x_table(Profile *prof, char *name);
 extern void add_entry_to_policy(Profile *policy, struct cod_entry *entry);
-extern void post_process_file_entries(Profile *prof);
-extern void post_process_rule_entries(Profile *prof);
 extern int post_process_policy(int debug_only);
 extern int process_profile_regex(Profile *prof);
 extern int process_profile_variables(Profile *prof);

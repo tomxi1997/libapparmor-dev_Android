@@ -43,7 +43,6 @@ public:
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
-	virtual void post_process(Profile &prof unused) { };
 
 	virtual bool valid_prefix(prefixes &p, const char *&error) {
 		if (p.owner) {
