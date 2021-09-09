@@ -48,8 +48,8 @@ static int file_comp(const void *c1, const void *c2)
 	if (res)
 		return res;
 
-	if ((*e1)->deny != (*e2)->deny)
-		return (*e1)->deny < (*e2)->deny ? -1 : 1;
+	if ((*e1)->rule_mode != (*e2)->rule_mode)
+		return (*e1)->rule_mode < (*e2)->rule_mode ? -1 : 1;
 
 	if ((*e1)->audit != (*e2)->audit)
 		return (*e1)->audit < (*e2)->audit ? -1 : 1;

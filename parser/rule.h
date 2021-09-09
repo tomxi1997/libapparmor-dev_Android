@@ -70,6 +70,7 @@ typedef std::list<rule_t *> RuleList;
 /* Not classes so they can be used in the bison front end */
 typedef uint32_t perms_t;
 typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
+typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY } rule_mode_t;
 
 /* NOTE: we can not have a constructor for class prefixes. This is
  * because it will break bison, and we would need to transition to
@@ -80,7 +81,7 @@ typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
 class prefixes {
 public:
 	audit_t audit;
-	int deny;
+	rule_mode_t rule_mode;
 	int owner;
 
 	ostream &dump(ostream &os)
@@ -98,12 +99,16 @@ public:
 			output = false;
 		}
 
-		if (deny) {
+		switch (rule_mode) {
+		case RULE_DENY:
 			if (output)
 				os << " ";
 
 			os << "deny";
 			output = true;
+			break;
+		default:
+			break;
 		}
 
 		if (owner) {
@@ -126,7 +131,7 @@ public:
 	{
 		/* Must construct prefix here see note on prefixes */
 		audit = AUDIT_UNSPECIFIED;
-		deny = 0;
+		rule_mode = RULE_UNSPECIFIED;
 		owner = 0;
 	};
 
@@ -141,10 +146,10 @@ public:
 				return false;
 			}
 		}
-		if (p.deny && p.audit == AUDIT_FORCE) {
-			deny = 1;
-		} else if (p.deny) {
-			deny = 1;
+		if (p.rule_mode == RULE_DENY && p.audit == AUDIT_FORCE) {
+			rule_mode = RULE_DENY;
+		} else if (p.rule_mode == RULE_DENY) {
+			rule_mode = RULE_DENY;
 			audit = AUDIT_FORCE;
 		} else if (p.audit != AUDIT_UNSPECIFIED) {
 			audit = p.audit;

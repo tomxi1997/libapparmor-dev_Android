@@ -216,6 +216,7 @@ void add_local_entry(Profile *prof);
 	struct prefixes prefix;
 	IncludeCache_t *includecache;
 	audit_t audit;
+	rule_mode_t rule_mode;
 }
 
 %type <id> 	TOK_ID
@@ -258,7 +259,7 @@ void add_local_entry(Profile *prof);
 %type <boolean> opt_owner_flag
 %type <boolean> opt_profile_flag
 %type <boolean> opt_flags
-%type <boolean> opt_perm_mode
+%type <rule_mode> opt_rule_mode
 %type <id>	opt_id
 %type <prefix>  opt_prefix
 %type <fperms>	dbus_perm
@@ -659,14 +660,14 @@ opt_owner_flag: { /* nothing */ $$ = 0; }
 	| TOK_OWNER { $$ = 1; };
 	| TOK_OTHER { $$ = 2; };
 
-opt_perm_mode: { /* nothing */ $$ = 0; }
-	| TOK_ALLOW { $$ = 0; }
-	| TOK_DENY { $$ = 1; }
+opt_rule_mode: { /* nothing */ $$ = RULE_UNSPECIFIED; }
+	| TOK_ALLOW { $$ = RULE_ALLOW; }
+	| TOK_DENY { $$ = RULE_DENY; }
 
-opt_prefix: opt_audit_flag opt_perm_mode opt_owner_flag
+opt_prefix: opt_audit_flag opt_rule_mode opt_owner_flag
 	{
 		$$.audit = $1;
-		$$.deny = $2;
+		$$.rule_mode = $2;
 		$$.owner = $3;
 	}
 
@@ -687,11 +688,11 @@ rules:  rules opt_prefix rule
 		PDEBUG("rules rule: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `rule' returned NULL."));
-		$3->deny = $2.deny;
-		if (($2.deny && ($3->perms & AA_EXEC_BITS) &&
+		$3->rule_mode = $2.rule_mode;
+		if ((($2.rule_mode == RULE_DENY) && ($3->perms & AA_EXEC_BITS) &&
 		     ($3->perms & ALL_AA_EXEC_TYPE)))
 			yyerror(_("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
-		else if (!$2.deny && ($3->perms & AA_EXEC_BITS) &&
+		else if (($2.rule_mode != RULE_DENY) && ($3->perms & AA_EXEC_BITS) &&
 			 !($3->perms & ALL_AA_EXEC_TYPE) &&
 			 !($3->nt_name))
 			yyerror(_("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', 'c', or 'u'"));
@@ -701,7 +702,7 @@ rules:  rules opt_prefix rule
 		else if ($2.owner == 2)
 			$3->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 		/* only set audit ctl quieting if the rule is not audited */
-		if (($2.deny && $2.audit != AUDIT_FORCE) || (!$2.deny && $2.audit == AUDIT_FORCE))
+		if ((($2.rule_mode == RULE_DENY) && $2.audit != AUDIT_FORCE) || (($2.rule_mode != RULE_DENY) && $2.audit == AUDIT_FORCE))
 			$3->audit = AUDIT_FORCE;
 		add_entry_to_policy($1, $3);
 		$$ = $1;
@@ -711,18 +712,18 @@ rules:  rules opt_prefix rule
 rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
 	{
 		struct cod_entry *entry, *tmp;
-		if ($2.deny)
+		if ($2.rule_mode == RULE_DENY)
 			yyerror(_("deny prefix not allowed"));
 
 		PDEBUG("matched: %s%s%sblock\n", $2.audit == AUDIT_FORCE ? "audit " : "",
-		       $2.deny ? "deny " : "", $2.owner ? "owner " : "");
+		       $2.rule_mode == RULE_DENY ? "deny " : "", $2.owner ? "owner " : "");
 		list_for_each_safe($4->entries, entry, tmp) {
 			entry->next = NULL;
 			if (entry->perms & AA_EXEC_BITS) {
-				if (entry->deny &&
+				if ((entry->rule_mode == RULE_DENY) &&
 				    (entry->perms & ALL_AA_EXEC_TYPE))
 					yyerror(_("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
-				else if (!entry->deny &&
+				else if ((entry->rule_mode != RULE_DENY) &&
 					 !(entry->perms & ALL_AA_EXEC_TYPE))
 					yyerror(_("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'"));
 			}
@@ -731,9 +732,9 @@ rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
 			else if ($2.owner == 2)
 				entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 
-			if ($2.audit == AUDIT_FORCE && !entry->deny)
+			if ($2.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
 				entry->audit = AUDIT_FORCE;
-			else if ($2.audit != AUDIT_FORCE && entry->deny)
+			else if ($2.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
 				entry->audit = AUDIT_FORCE;
 			add_entry_to_policy($1, entry);
 		}
@@ -760,14 +761,14 @@ rules: rules opt_prefix network_rule
 			 * downgrade if needed
 			 */
 			if (entry->family == AF_UNIX) {
-				unix_rule *rule = new unix_rule(entry->type, $2.audit, $2.deny);
+				unix_rule *rule = new unix_rule(entry->type, $2.audit, $2.rule_mode);
 				if (!rule)
 					yyerror(_("Memory allocation error."));
 				$1->rule_ents.push_back(rule);
 			}
 			if (entry->type > SOCK_PACKET) {
 				/* setting mask instead of a bit */
-				if ($2.deny) {
+				if ($2.rule_mode == RULE_DENY) {
 					$1->net.deny[entry->family] |= entry->type;
 					if ($2.audit != AUDIT_FORCE)
 						$1->net.quiet[entry->family] |= entry->type;
@@ -777,7 +778,7 @@ rules: rules opt_prefix network_rule
 						$1->net.audit[entry->family] |= entry->type;
 				}
 			} else {
-				if ($2.deny) {
+				if ($2.rule_mode == RULE_DENY) {
 					$1->net.deny[entry->family] |= 1 << entry->type;
 					if ($2.audit != AUDIT_FORCE)
 						$1->net.quiet[entry->family] |= 1 << entry->type;
@@ -818,10 +819,10 @@ rules:	rules opt_prefix change_profile
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on unix rules"));
-		if ($2.deny && $2.audit == AUDIT_FORCE) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
+		if (($2.rule_mode == RULE_DENY) && $2.audit == AUDIT_FORCE) {
+			$3->rule_mode = RULE_DENY;
+		} else if ($2.rule_mode == RULE_DENY) {
+			$3->rule_mode = RULE_DENY;
 			$3->audit = AUDIT_FORCE;
 		} else if ($2.audit != AUDIT_UNSPECIFIED) {
 			$3->audit = $2.audit;
@@ -835,9 +836,9 @@ rules:  rules opt_prefix capability
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on capability rules"));
 
-		if ($2.deny && $2.audit == AUDIT_FORCE) {
+		if ($2.rule_mode == RULE_DENY && $2.audit == AUDIT_FORCE) {
 			$1->caps.deny |= $3;
-		} else if ($2.deny) {
+		} else if ($2.rule_mode == RULE_DENY) {
 			$1->caps.deny |= $3;
 			$1->caps.quiet |= $3;
 		} else {

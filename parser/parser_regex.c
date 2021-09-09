@@ -627,17 +627,19 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 	 * than link in the entry.
 	 * TODO: split link and change_profile entries earlier
 	 */
-	if (entry->deny) {
+	if (entry->rule_mode == RULE_DENY) {
 		if ((entry->perms & ~AA_LINK_BITS) &&
 		    !is_change_profile_perms(entry->perms) &&
-		    !dfarules->add_rule(tbuf.c_str(), entry->deny,
+		    !dfarules->add_rule(tbuf.c_str(), entry->rule_mode == RULE_DENY,
 					entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE),
 					entry->audit == AUDIT_FORCE ? entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE) : 0,
 					dfaflags))
 			return FALSE;
 	} else if (!is_change_profile_perms(entry->perms)) {
-		if (!dfarules->add_rule(tbuf.c_str(), entry->deny, entry->perms,
-					entry->audit == AUDIT_FORCE ? entry->perms : 0, dfaflags))
+		if (!dfarules->add_rule(tbuf.c_str(),
+				entry->rule_mode == RULE_DENY, entry->perms,
+				entry->audit == AUDIT_FORCE ? entry->perms : 0,
+				dfaflags))
 			return FALSE;
 	}
 
@@ -660,7 +662,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 			perms |= LINK_TO_LINK_SUBSET(perms);
 			vec[1] = "/[^/].*";
 		}
-		if (!dfarules->add_rule_vec(entry->deny, perms, entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0, 2, vec, dfaflags, false))
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, perms, entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0, 2, vec, dfaflags, false))
 			return FALSE;
 	}
 	if (is_change_profile_perms(entry->perms)) {
@@ -711,13 +713,13 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		}
 
 		/* regular change_profile rule */
-		if (!dfarules->add_rule_vec(entry->deny,
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY,
 					    AA_CHANGE_PROFILE | onexec_perms,
 					    0, index - 1, &vec[1], dfaflags, false))
 			return FALSE;
 
 		/* onexec rules - both rules are needed for onexec */
-		if (!dfarules->add_rule_vec(entry->deny, onexec_perms,
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, onexec_perms,
 					    0, 1, vec, dfaflags, false))
 			return FALSE;
 
@@ -726,7 +728,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		 * unsafe exec transitions
 		 */
 		onexec_perms |= (entry->perms & (AA_EXEC_BITS | ALL_AA_EXEC_UNSAFE));
-		if (!dfarules->add_rule_vec(entry->deny, onexec_perms,
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, onexec_perms,
 					    0, index, vec, dfaflags, false))
 			return FALSE;
 	}

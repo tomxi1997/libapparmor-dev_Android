@@ -37,7 +37,7 @@ public:
 	char *addr;
 	char *peer_addr;
 
-	unix_rule(unsigned int type_p, audit_t audit_p, bool denied);
+	unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode_p);
 	unix_rule(perms_t perms, struct cond_entry *conds,
 		  struct cond_entry *peer_conds);
 	virtual ~unix_rule()

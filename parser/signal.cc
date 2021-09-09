@@ -289,7 +289,7 @@ int signal_rule::gen_policy_re(Profile &prof)
 
 	buf = buffer.str();
 	if (perms & (AA_MAY_SEND | AA_MAY_RECEIVE)) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny, perms, audit == AUDIT_FORCE ? perms : 0,
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, perms, audit == AUDIT_FORCE ? perms : 0,
 						 dfaflags))
 			goto fail;
 	}

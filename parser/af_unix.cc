@@ -95,7 +95,7 @@ void unix_rule::move_peer_conditionals(struct cond_entry *conds)
 	}
 }
 
-unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, bool denied):
+unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode_p):
 	af_rule("unix"), addr(NULL), peer_addr(NULL)
 {
 	if (type_p != 0xffffffff) {
@@ -106,7 +106,7 @@ unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, bool denied):
 	}
 	perms = AA_VALID_NET_PERMS;
 	audit = audit_p;
-	deny = denied;
+	rule_mode = rule_mode_p;
 }
 
 unix_rule::unix_rule(perms_t perms_p, struct cond_entry *conds,
@@ -193,7 +193,7 @@ void unix_rule::downgrade_rule(Profile &prof) {
 		yyerror(_("Memory allocation error."));
 	if (sock_type_n != -1)
 		mask = 1 << sock_type_n;
-	if (!deny) {
+	if (rule_mode != RULE_DENY) {
 		prof.net.allow[AF_UNIX] |= mask;
 		if (audit == AUDIT_FORCE)
 			prof.net.audit[AF_UNIX] |= mask;
@@ -334,7 +334,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 	write_to_prot(buffer);
 	if ((mask & AA_NET_CREATE) && !has_peer_conds()) {
 		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny,
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
 						 map_perms(AA_NET_CREATE),
 						 map_perms(audit == AUDIT_FORCE ? AA_NET_CREATE : 0),
 						 dfaflags))
@@ -359,7 +359,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 		tmp << "\\x00";
 
 		buf = tmp.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny,
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
 						 map_perms(AA_NET_BIND),
 						 map_perms(audit == AUDIT_FORCE ? AA_NET_BIND : 0),
 						 dfaflags))
@@ -384,7 +384,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 					AA_LOCAL_NET_PERMS & ~AA_LOCAL_NET_CMD;
 		if (mask & local_mask) {
 			buf = buffer.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), deny,
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
 							 map_perms(mask & local_mask),
 							 map_perms(audit == AUDIT_FORCE ? mask & local_mask : 0),
 							 dfaflags))
@@ -398,7 +398,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			/* TODO: backlog conditional: for now match anything*/
 			tmp << "..";
 			buf = tmp.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), deny,
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
 							 map_perms(AA_NET_LISTEN),
 							 map_perms(audit == AUDIT_FORCE ? AA_NET_LISTEN : 0),
 							 dfaflags))
@@ -411,7 +411,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			/* TODO: sockopt conditional: for now match anything */
 			tmp << "..";
 			buf = tmp.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), deny,
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
 							 map_perms(AA_NET_OPT),
 							 map_perms(audit == AUDIT_FORCE ? AA_NET_OPT : 0),
 							 dfaflags))
@@ -432,7 +432,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			goto fail;
 
 		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), deny, map_perms(perms & AA_PEER_NET_PERMS), map_perms(audit == AUDIT_FORCE ? perms & AA_PEER_NET_PERMS : 0), dfaflags))
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms & AA_PEER_NET_PERMS), map_perms(audit == AUDIT_FORCE ? perms & AA_PEER_NET_PERMS : 0), dfaflags))
 			goto fail;
 	}
 

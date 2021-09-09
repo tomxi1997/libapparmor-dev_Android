@@ -124,7 +124,7 @@ struct cod_entry {
 					 * just for this executable */
 	perms_t perms;			/* perms is 'or' of AA_* bits */
 	audit_t audit;
-	int deny;			/* TRUE or FALSE */
+	rule_mode_t rule_mode;
 
 	bool alias_ignore;		/* ignore for alias processing */
 
