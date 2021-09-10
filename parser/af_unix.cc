@@ -96,7 +96,7 @@ void unix_rule::move_peer_conditionals(struct cond_entry *conds)
 }
 
 unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode_p):
-	af_rule("unix"), addr(NULL), peer_addr(NULL)
+	af_rule(AF_UNIX), addr(NULL), peer_addr(NULL)
 {
 	if (type_p != 0xffffffff) {
 		sock_type_n = type_p;
@@ -111,7 +111,7 @@ unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode
 
 unix_rule::unix_rule(perms_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds):
-	af_rule("unix"), addr(NULL), peer_addr(NULL)
+	af_rule(AF_UNIX), addr(NULL), peer_addr(NULL)
 {
 	move_conditionals(conds);
 	move_peer_conditionals(peer_conds);

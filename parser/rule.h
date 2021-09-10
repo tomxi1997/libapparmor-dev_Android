@@ -190,9 +190,27 @@ public:
 
 };
 
-class perms_rule_t: public prefix_rule_t {
+class class_rule_t: public prefix_rule_t {
 public:
-	perms_rule_t(): perms(0) { };
+	int aa_class;
+
+	class_rule_t(int c) {
+		aa_class = c;
+	}
+
+	virtual ostream &dump(ostream &os) {
+		prefix_rule_t::dump(os);
+
+		os << aa_class_table[aa_class];
+
+		return os;
+	}
+
+};
+
+class perms_rule_t: public class_rule_t {
+public:
+	perms_rule_t(int c): class_rule_t(c), perms(0) { };
 
 	/* defaut perms, override/mask off if none default used */
 	virtual ostream &dump(ostream &os) {

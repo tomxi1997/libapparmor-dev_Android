@@ -87,6 +87,9 @@ void mqueue_rule::move_conditionals(struct cond_entry *conds)
 }
 
 mqueue_rule::mqueue_rule(perms_t perms_p, struct cond_entry *conds, char *qname_p):
+	// mqueue uses multiple classes, arbitrary choice to represent group
+	// withing the AST
+	perms_rule_t(AA_CLASS_POSIX_MQUEUE),
 	qtype(mqueue_unspecified), qname(qname_p), label(NULL)
 {
 	move_conditionals(conds);
@@ -115,19 +118,17 @@ mqueue_rule::mqueue_rule(perms_t perms_p, struct cond_entry *conds, char *qname_
 
 ostream &mqueue_rule::dump(ostream &os)
 {
-	prefix_rule_t::dump(os);
-
-	os << "mqueue ";
+	class_rule_t::dump(os);
 
 	// do we want to always put type out or leave it implied if there
 	// is a qname
 	if (qtype == mqueue_posix)
-		os << "type=posix";
+		os << " type=posix";
 	else if (qtype == mqueue_sysv)
-		os << "type=sysv";
+		os << " type=sysv";
 
 	if (perms != AA_VALID_MQUEUE_PERMS) {
-		os << "(";
+		os << " ( ";
 
 		if (perms & AA_MQUEUE_WRITE)
 			os << "write ";

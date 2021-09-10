@@ -25,6 +25,8 @@
 
 #include "rule.h"
 
+#define AF_ANY -1
+
 enum cond_side { local_cond, peer_cond, either_cond };
 
 struct supported_cond {
@@ -37,7 +39,7 @@ struct supported_cond {
 
 class af_rule: public perms_rule_t {
 public:
-	std::string af_name;
+	int af;
 	char *sock_type;
 	int sock_type_n;
 	char *proto;
@@ -45,10 +47,11 @@ public:
 	char *label;
 	char *peer_label;
 
-	af_rule(const char *name): af_name(name), sock_type(NULL),
+	af_rule(int f):
+		perms_rule_t(AA_CLASS_NET),
+		af(f), sock_type(NULL),
 		sock_type_n(-1), proto(NULL), proto_n(0), label(NULL),
-		peer_label(NULL)
-	{}
+		peer_label(NULL) { }
 
 	virtual ~af_rule()
 	{
@@ -58,6 +61,11 @@ public:
 		free(peer_label);
 	};
 
+	const char *af_name(void) {
+		if (af != AF_ANY)
+			return net_find_af_name(af);
+		return "*";
+	}
 	bool cond_check(struct supported_cond *cond, struct cond_entry *ent,
 			bool peer, const char *rname);
 	int move_base_cond(struct cond_entry *conds, bool peer);

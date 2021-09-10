@@ -140,7 +140,7 @@ ostream &af_rule::dump_peer(ostream &os)
 ostream &af_rule::dump(ostream &os)
 {
 	prefix_rule_t::dump(os);
-	os << af_name;
+	os << af_name();
 	dump_local(os);
 	if (has_peer_conds()) {
 		os << " peer=(";

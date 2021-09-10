@@ -40,7 +40,8 @@ void userns_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds)
+userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds):
+	perms_rule_t(AA_CLASS_NS)
 {
 	if (perms_p) {
 		if (perms_p & ~AA_VALID_USERNS_PERMS)
@@ -58,13 +59,11 @@ userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds)
 
 ostream &userns_rule::dump(ostream &os)
 {
-	prefix_rule_t::dump(os);
-
-	os << "userns ";
+	class_rule_t::dump(os);
 
 	if (perms != AA_VALID_USERNS_PERMS) {
 		if (perms & AA_USERNS_CREATE)
-			os << "create ";
+			os << " create";
 	}
 
 	os << ",\n";

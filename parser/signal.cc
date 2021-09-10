@@ -174,7 +174,7 @@ void signal_rule::move_conditionals(struct cond_entry *conds)
 }
 
 signal_rule::signal_rule(perms_t perms_p, struct cond_entry *conds):
-	signals(), peer_label(NULL)
+	perms_rule_t(AA_CLASS_SIGNAL), signals(), peer_label(NULL)
 {
 	if (perms_p) {
 		perms = perms_p;
@@ -191,9 +191,7 @@ signal_rule::signal_rule(perms_t perms_p, struct cond_entry *conds):
 
 ostream &signal_rule::dump(ostream &os)
 {
-	prefix_rule_t::dump(os);
-
-	os << "signal";
+	class_rule_t::dump(os);
 
 	if (perms != AA_VALID_SIGNAL_PERMS) {
 		os << " (";
