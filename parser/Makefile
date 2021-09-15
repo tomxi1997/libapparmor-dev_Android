@@ -103,9 +103,16 @@ SRCS = parser_common.c parser_include.c parser_interface.c parser_lex.c \
        mount.cc dbus.cc profile.cc rule.cc signal.cc ptrace.cc \
        af_rule.cc af_unix.cc policy_cache.c default_features.c userns.cc \
        mqueue.cc
-HDRS = parser.h parser_include.h immunix.h mount.h dbus.h lib.h profile.h \
-       rule.h common_optarg.h signal.h ptrace.h network.h af_rule.h af_unix.h \
-       policy_cache.h file_cache.h userns.h mqueue.h
+STATIC_HDRS = af_rule.h af_unix.h capability.h common_optarg.h dbus.h \
+       file_cache.h immunix.h lib.h mount.h network.h parser.h \
+       parser_include.h parser_version.h policy_cache.h policydb.h \
+       profile.h ptrace.h rule.h signal.h userns.h mqueue.h
+
+SPECIAL_HDRS = parser_yacc.h unit_test.h base_cap_names.h
+GENERATED_HDRS = af_names.h generated_af_names.h \
+       cap_names.h generated_cap_names.h parser_version.h
+LIBAA_HDRS = libapparmor_re/apparmor_re.h libapparmor_re/aare_rules.h
+
 TOOLS = apparmor_parser
 
 OBJECTS = $(patsubst %.cc, %.o, $(SRCS:.c=.o))
@@ -167,8 +174,11 @@ else
 endif
 export Q VERBOSE BUILD_OUTPUT
 
-po/${NAME}.pot: ${SRCS} ${HDRS}
-	$(MAKE) -C po ${NAME}.pot NAME=${NAME} SOURCES="${SRCS} ${HDRS}"
+HDRS=$(STATIC_HDRS) $(GENERATED_HDRS) parser_yacc.h $(LIBAA_HDRS) $(APPARMOR_H)
+
+
+po/${NAME}.pot: ${SRCS} ${STATIC_HDRS}
+	$(MAKE) -C po ${NAME}.pot NAME=${NAME} SOURCES="${SRCS} ${STATIC_HDRS}"
 
 techdoc.pdf: techdoc.tex
 	timestamp=$(shell date --utc "+%Y%m%d%H%M%S%z" -r $< );\
@@ -218,94 +228,94 @@ apparmor_parser: $(OBJECTS) $(AAREOBJECTS) $(LIBAPPARMOR_A)
 	$(CXX) $(LDFLAGS) $(EXTRA_CFLAGS) -o $@ $(OBJECTS) $(LIBS) \
 	      ${LEXLIB}  $(AAREOBJECTS) $(AARE_LDFLAGS) $(AALIB)
 
-parser_yacc.c parser_yacc.h: parser_yacc.y parser.h profile.h file_cache.h
+parser_yacc.c parser_yacc.h: parser_yacc.y $(STATIC_HDRS) $(DYNAMIC_HDRS)
 	$(YACC) $(YFLAGS) -o parser_yacc.c parser_yacc.y
 
-parser_lex.c: parser_lex.l parser_yacc.h parser.h profile.h mount.h dbus.h policy_cache.h file_cache.h
+parser_lex.c: parser_lex.l $(HDRS)
 	$(LEX) ${LEXFLAGS} -o$@ $<
 
-parser_lex.o: parser_lex.c parser.h parser_yacc.h
+parser_lex.o: parser_lex.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_misc.o: parser_misc.c parser.h parser_yacc.h profile.h cap_names.h $(APPARMOR_H)
+parser_misc.o: parser_misc.c $(HDRS) unit_test.h
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_yacc.o: parser_yacc.c parser_yacc.h $(APPARMOR_H)
+parser_yacc.o: parser_yacc.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_main.o: parser_main.c parser.h parser_version.h policy_cache.h file_cache.h libapparmor_re/apparmor_re.h $(APPARMOR_H)
+parser_main.o: parser_main.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_interface.o: parser_interface.c parser.h profile.h libapparmor_re/apparmor_re.h
+parser_interface.o: parser_interface.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_include.o: parser_include.c parser.h parser_include.h file_cache.h
+parser_include.o: parser_include.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_merge.o: parser_merge.c parser.h profile.h
+parser_merge.o: parser_merge.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_regex.o: parser_regex.c parser.h profile.h libapparmor_re/apparmor_re.h libapparmor_re/aare_rules.h $(APPARMOR_H)
+parser_regex.o: parser_regex.c $(HDRS) unit_test.h
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_symtab.o: parser_symtab.c parser.h
+parser_symtab.o: parser_symtab.c $(HDRS) unit_test.h
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_variable.o: parser_variable.c parser.h profile.h
+parser_variable.o: parser_variable.c $(HDRS) unit_test.h
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_policy.o: parser_policy.c parser.h parser_yacc.h profile.h
+parser_policy.o: parser_policy.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_alias.o: parser_alias.c parser.h profile.h
+parser_alias.o: parser_alias.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-parser_common.o: parser_common.c parser.h file_cache.h
+parser_common.o: parser_common.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-mount.o: mount.cc mount.h parser.h immunix.h rule.h
+mount.o: mount.cc mount.h $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-common_optarg.o: common_optarg.c common_optarg.h parser.h libapparmor_re/apparmor_re.h
+common_optarg.o: common_optarg.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-policy_cache.o: policy_cache.c policy_cache.h parser.h lib.h
+policy_cache.o: policy_cache.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-lib.o: lib.c lib.h parser.h
+lib.o: lib.c $(HDRS) unit_test.h
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-dbus.o: dbus.cc dbus.h parser.h immunix.h parser_yacc.h rule.h $(APPARMOR_H)
+dbus.o: dbus.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-signal.o: signal.cc signal.h parser.h immunix.h parser_yacc.h rule.h $(APPARMOR_H)
+signal.o: signal.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-ptrace.o: ptrace.cc ptrace.h parser.h immunix.h parser_yacc.h rule.h $(APPARMOR_H)
+ptrace.o: ptrace.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-network.o: network.c network.h parser.h immunix.h parser_yacc.h rule.h af_names.h $(APPARMOR_H)
+network.o: network.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-default_features.o: default_features.c parser.h
+default_features.o: default_features.c $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-af_rule.o: af_rule.cc af_rule.h network.h parser.h profile.h immunix.h parser_yacc.h rule.h $(APPARMOR_H)
+af_rule.o: af_rule.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-af_unix.o: af_unix.cc af_unix.h network.h af_rule.h parser.h profile.h immunix.h parser_yacc.h $(APPARMOR_H)
+af_unix.o: af_unix.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-profile.o: profile.cc profile.h parser.h network.h
+profile.o: profile.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-rule.o: rule.cc rule.h policydb.h
+rule.o: rule.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-userns.o: userns.cc userns.h parser.h parser_yacc.h rule.h $(APPARMOR_H)
+userns.o: userns.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-mqueue.o: mqueue.cc mqueue.h parser.h immunix.h profile.h parser_yacc.h rule.h $(APPARMOR_H)
+mqueue.o: mqueue.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
 parser_version.h: Makefile
@@ -320,7 +330,7 @@ generated_af_names.h: ../common/list_af_names.sh
 	../common/list_af_names.sh > $@
 
 af_names.h: generated_af_names.h base_af_names.h
-	cat base_af_names.h | diff -u - generated_af_names.h | grep -v '^.AF_MAX' | grep '^\+[^+]' ; \
+	@cat base_af_names.h | diff -u - generated_af_names.h | grep -v '^.AF_MAX' | grep '^\+[^+]' ; \
 	if [ $$? -eq 1 ] ; then \
 		cat base_af_names.h | LC_ALL=C sed -n -e 's/[ \t]\?AF_MAX[ \t]\+[0-9]\+,//g'  -e 's/[ \t]\+\?AF_\([A-Z0-9_]\+\)[ \t]\+\([0-9]\+\),/#ifndef AF_\1\n#  define AF_\1 \2\n#endif\nAA_GEN_NET_ENT("\L\1", \UAF_\1)\n/pg' > $@ ; \
 		cat base_af_names.h | LC_ALL=C sed -n -e 's/AF_MAX[ \t]\+\([0-9]\+\),\?.*/\n#define AA_AF_MAX \1\n/p' >> $@ ; \
@@ -450,10 +460,8 @@ clean: pod_clean
 	rm -f $(TOOLS) $(TESTS)
 	rm -f $(LEX_C_FILES)
 	rm -f $(YACC_C_FILES)
-	rm -f parser_version.h
 	rm -f $(NAME)*.tar.gz $(NAME)*.tgz
-	rm -f af_names.h generated_af_names.h
-	rm -f cap_names.h generated_cap_names.h
+	rm -f $(GENERATED_HDRS)
 	rm -rf techdoc.aux techdoc.out techdoc.log techdoc.pdf techdoc.toc techdoc.txt techdoc/
 	$(MAKE) -s -C $(AAREDIR) clean
 	$(MAKE) -s -C po clean
