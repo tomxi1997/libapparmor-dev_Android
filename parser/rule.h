@@ -38,11 +38,21 @@ class Profile;
 #define RULE_TYPE_CLASS		3
 
 
+typedef enum { RULE_FLAG_NONE = 0,
+	       RULE_FLAG_DELETED = 1,	// rule deleted - skip
+	       RULE_FLAG_MERGED = 2,	// rule merged with another rule
+	       RULE_FLAG_EXPANDED = 4,	// variable expanded
+	       RULE_FLAG_SUB = 8,	// rule expanded to subrule(s)
+	       RULE_FLAG_IMPLIED = 16,	// rule not specified in policy but
+					// added because it is implied
+} rule_flags_t;
+
 class rule_t {
 public:
 	int rule_type;
+	rule_flags_t flags;
 
-	rule_t(int t): rule_type(t) { }
+	rule_t(int t): rule_type(t), flags(RULE_FLAG_NONE) { }
 	virtual ~rule_t() { };
 
 	bool is_type(int type) { return rule_type == type; }

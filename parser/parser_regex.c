@@ -843,6 +843,8 @@ int clear_and_convert_entry(std::string& buffer, char *entry)
 int post_process_policydb_ents(Profile *prof)
 {
 	for (RuleList::iterator i = prof->rule_ents.begin(); i != prof->rule_ents.end(); i++) {
+		if ((*i)->flags & RULE_FLAG_DELETED)
+			continue;
 		if ((*i)->gen_policy_re(*prof) == RULE_ERROR)
 			return FALSE;
 	}
