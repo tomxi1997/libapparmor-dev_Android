@@ -64,6 +64,13 @@ public:
 	// to support expansion in include names and profile names
 	virtual int expand_variables(void) = 0;
 
+	// called by duplicate rule merge/elimination after final expand_vars
+	virtual bool is_mergeable(void) { return false; }
+	virtual bool operator<(rule_t const &rhs) const {
+		return rule_type < rhs.rule_type;
+	}
+	virtual bool merge(rule_t &rhs __attribute__ ((unused))) { return false; };
+
 	// called late frontend to generate data for regex backend
 	virtual int gen_policy_re(Profile &prof) = 0;
 
@@ -192,6 +199,23 @@ public:
 		}
 
 		return true;
+	}
+
+	virtual bool operator<(prefixes const &rhs) const {
+		if ((uint) audit < (uint) rhs.audit)
+			return true;
+		if ((uint) rule_mode < (uint) rhs.rule_mode)
+			return true;
+		if (owner < rhs.owner)
+			return true;
+		return false;
+	}
+	virtual bool operator<(prefix_rule_t const &rhs) const {
+		if (rule_type < rhs.rule_type)
+			return true;
+		if (rhs.rule_type < rule_type)
+			return false;
+		return *this < (prefixes const &)rhs;
 	}
 
 	virtual ostream &dump(ostream &os) {
