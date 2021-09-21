@@ -31,9 +31,21 @@ class Profile;
 #define RULE_ERROR -1
 #define RULE_OK 1
 
+#define RULE_TYPE_RULE		0
+#define RULE_TYPE_PREFIX	1
+#define RULE_TYPE_PERMS		2
+// RULE_TYPE_CLASS needs to be last because various class follow it
+#define RULE_TYPE_CLASS		3
+
+
 class rule_t {
 public:
+	int rule_type;
+
+	rule_t(int t): rule_type(t) { }
 	virtual ~rule_t() { };
+
+	bool is_type(int type) { return rule_type == type; }
 
 	//virtual bool operator<(rule_t const &rhs)const = 0;
 	virtual std::ostream &dump(std::ostream &os) = 0;
@@ -127,7 +139,7 @@ public:
 
 class prefix_rule_t: public rule_t, public prefixes {
 public:
-	prefix_rule_t()
+	prefix_rule_t(int t = RULE_TYPE_PREFIX) : rule_t(t)
 	{
 		/* Must construct prefix here see note on prefixes */
 		audit = AUDIT_UNSPECIFIED;
@@ -190,18 +202,17 @@ public:
 
 };
 
+/* NOTE: rule_type is RULE_TYPE_CLASS + AA_CLASS */
 class class_rule_t: public prefix_rule_t {
 public:
-	int aa_class;
+	class_rule_t(int c): prefix_rule_t(RULE_TYPE_CLASS + c) { }
 
-	class_rule_t(int c) {
-		aa_class = c;
-	}
+	int aa_class(void) { return rule_type - RULE_TYPE_CLASS; }
 
 	virtual ostream &dump(ostream &os) {
 		prefix_rule_t::dump(os);
 
-		os << aa_class_table[aa_class];
+		os << aa_class_table[aa_class()];
 
 		return os;
 	}
