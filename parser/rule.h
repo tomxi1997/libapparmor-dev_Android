@@ -76,8 +76,11 @@ public:
 
 	// called by duplicate rule merge/elimination after final expand_vars
 	virtual bool is_mergeable(void) { return false; }
-	virtual bool operator<(rule_t const &rhs) const {
+	virtual int cmp(rule_t const &rhs) const {
 		return rule_type < rhs.rule_type;
+	}
+	virtual bool operator<(rule_t const &rhs) const {
+		return cmp(rhs) < 0;
 	}
 	virtual bool merge(rule_t &rhs __attribute__ ((unused))) { return false; };
 
