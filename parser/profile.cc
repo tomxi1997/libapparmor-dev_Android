@@ -18,6 +18,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
+#include <algorithm>
 
 const char *profile_mode_table[] = {
 	"",
@@ -118,6 +120,41 @@ Profile::~Profile()
 	if (net.quiet)
 		free(net.quiet);
 }
+
+static bool comp (rule_t *lhs, rule_t *rhs) { return (*lhs < *rhs); }
+
+bool Profile::merge_rules(void)
+{
+	int count = 0;
+
+	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); ) {
+		if ((*i)->is_mergeable())
+			count++;
+	}
+	if (count < 2)
+		return 0;
+
+	std::vector<rule_t *> table(count);
+	int n = 0;
+	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); ) {
+		if ((*i)->is_mergeable())
+			table[n++] = *i;
+	}
+
+	std::sort(table.begin(), table.end(), comp);
+
+	for (int i = 0, j = 1; j < count; j++) {
+		if (table[i]->cmp(*table[j]) == 0) {
+			if (!table[i]->merge(*table[j]))
+				return false;
+			continue;
+		}
+		i = j;
+	}
+
+	return true;
+}
+
 
 int add_entry_to_x_table(Profile *prof, char *name)
 {

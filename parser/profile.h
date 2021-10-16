@@ -251,6 +251,12 @@ public:
 		return strcmp(name, rhs.name) < 0;
 	}
 
+	/*
+	 * Requires the merged rules have customized methods
+	 * cmp(), is_mergeable() and merge()
+	 */
+	virtual bool merge_rules(void);
+
 	void dump(void)
 	{
 		if (ns)
