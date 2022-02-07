@@ -39,6 +39,7 @@ parser/libapparmor_re/hfa.o
 parser/libapparmor_re/libapparmor_re.a
 parser/libapparmor_re/parse.o
 parser/mount.o
+parser/mqueue.o
 parser/network.o
 parser/parser_alias.o
 parser/parser_common.o
