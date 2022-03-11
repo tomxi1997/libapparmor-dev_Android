@@ -266,6 +266,8 @@ tests/regression/apparmor/open
 tests/regression/apparmor/openat
 tests/regression/apparmor/pipe
 tests/regression/apparmor/pivot_root
+tests/regression/apparmor/posix_mq_rcv
+tests/regression/apparmor/posix_mq_snd
 tests/regression/apparmor/ptrace
 tests/regression/apparmor/ptrace_helper
 tests/regression/apparmor/pwrite
