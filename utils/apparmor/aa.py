@@ -2104,6 +2104,7 @@ def match_line_against_rule_classes(line, profile, file, lineno, in_preamble):
             'rlimit',
             'signal',
             'userns',
+            'mqueue',
     ):
 
         if rule_name in ruletypes:

@@ -52,6 +52,7 @@ RE_PROFILE_PTRACE = re.compile(RE_AUDIT_DENY + r'(ptrace\s*,|ptrace(?P<details>\
 RE_PROFILE_PIVOT_ROOT = re.compile(RE_AUDIT_DENY + r'(pivot_root\s*,|pivot_root\s+[^#]*\s*,)' + RE_EOL)
 RE_PROFILE_UNIX = re.compile(RE_AUDIT_DENY + r'(unix\s*,|unix\s+[^#]*\s*,)' + RE_EOL)
 RE_PROFILE_USERNS = re.compile(RE_AUDIT_DENY + r'(userns\s*,|userns(?P<details>\s+[^#]*)\s*,)' + RE_EOL)
+RE_PROFILE_MQUEUE = re.compile(RE_AUDIT_DENY + r'(mqueue\s*,|mqueue(?P<details>\s+[^#]*)\s*,)' + RE_EOL)
 
 # match anything that's not " or #, or matching quotes with anything except quotes inside
 __re_no_or_quoted_hash = '([^#"]|"[^"]*")*'
