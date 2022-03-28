@@ -191,7 +191,7 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 
 	if (qtype == mqueue_posix && !features_supports_posix_mqueue) {
 		warn_once(prof.name);
-	//	return RULE_NOT_SUPPORTED;
+		return RULE_NOT_SUPPORTED;
 	} else if (qtype == mqueue_sysv && !features_supports_sysv_mqueue) {
 		warn_once(prof.name);
 		//	return RULE_NOT_SUPPORTED;
@@ -231,8 +231,13 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 		}
 
 		if (mode & AA_VALID_POSIX_MQ_PERMS) {
-			if (!prof.policy.rules->add_rule_vec(deny, mode, audit, size, vec,
-							     dfaflags, false))
+			/* store perms at name match so label doesn't need
+			 * to be checked
+			 */
+			if (!label && !prof.policy.rules->add_rule_vec(deny, mode, audit, 1, vec, dfaflags, false))
+				goto fail;
+			/* also provide label match with perm */
+			if (!prof.policy.rules->add_rule_vec(deny, mode, audit, size, vec, dfaflags, false))
 				goto fail;
 		}
 	}
