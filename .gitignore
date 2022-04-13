@@ -291,6 +291,8 @@ tests/regression/apparmor/syscall_setpriority
 tests/regression/apparmor/syscall_setscheduler
 tests/regression/apparmor/syscall_sysctl
 tests/regression/apparmor/sysctl_proc
+tests/regression/apparmor/sysv_mq_rcv
+tests/regression/apparmor/sysv_mq_snd
 tests/regression/apparmor/tcp
 tests/regression/apparmor/transition
 tests/regression/apparmor/unix_fd_client

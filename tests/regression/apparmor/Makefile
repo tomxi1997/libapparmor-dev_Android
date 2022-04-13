@@ -137,6 +137,8 @@ SRC=access.c \
     syscall_setdomainname.c \
     syscall_setscheduler.c \
     sysctl_proc.c \
+    sysv_mq_rcv.c \
+    sysv_mq_snd.c \
     tcp.c \
     transition.c \
     unix_fd_client.c \
@@ -252,6 +254,7 @@ TESTS=aa_exec \
       setattr \
       symlink \
       syscall \
+      sysv_ipc \
       tcp \
       unix_fd_server \
       unix_socket_pathname \
