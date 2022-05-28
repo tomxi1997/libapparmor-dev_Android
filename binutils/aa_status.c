@@ -7,6 +7,7 @@
  */
 
 #define _GNU_SOURCE /* for asprintf() */
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -87,6 +88,13 @@ do {									       \
 } while (0)
 
 
+/**
+ * get_profiles - get a listing of profiles on the system
+ * @profiles: return: list of profiles
+ * @n: return: number of elements in @profiles
+ *
+ * Return: 0 on success, shell error on failure
+ */
 static int get_profiles(struct profile **profiles, size_t *n) {
 	autofree char *apparmorfs = NULL;
 	autofree char *apparmor_profiles = NULL;
@@ -182,6 +190,16 @@ static int compare_profiles(const void *a, const void *b) {
 		      ((struct profile *)b)->name);
 }
 
+/**
+ * filter_profiles - create a filtered profile list
+ * @profiles: list of profiles
+ * @n: number of elements in @profiles
+ * @filter: string to match against profile mode, if NULL no filter
+ * @filtered: return: new list of profiles that match the filter
+ * @nfiltered: return: number of elements in @filtered
+ *
+ * Return: 0 on success, shell error on failure
+ */
 static int filter_profiles(struct profile *profiles,
 			   size_t n,
 			   const char *filter,
@@ -216,6 +234,17 @@ static int filter_profiles(struct profile *profiles,
 	return ret;
 }
 
+/**
+ * get_processes - get a list of processes that are confined
+ * @profiles: list of profiles, used to filter out unconfined processes
+ * @n: number of entries in @procfiles
+ * @processes: return: list of confined processes
+ * @nprocesses: return: number of entries in @processes
+ *
+ * Return: 0 on success, shell exit code on failure
+ *
+ * profiles is used to find prcesses that should be confined but aren't.
+ */
 static int get_processes(struct profile *profiles,
 			 size_t n,
 			 struct process **processes,
@@ -293,6 +322,8 @@ static int get_processes(struct profile *profiles,
 		if (mode == NULL) {
 			// is unconfined so keep only if this has a
 			// matching profile. TODO: fix to use attachment
+			// ideally would walk process tree and apply
+			// according to x rules and attachments
 			for (i = 0; i < n; i++) {
 				if (strcmp(profiles[i].name, real_exe) == 0) {
 					profile = strdup(real_exe);
@@ -330,6 +361,16 @@ exit:
 	return ret;
 }
 
+/**
+ * filter_processes: create a new filtered process list by applying @filter
+ * @processes: list of processes to filter
+ * @n: number of entries in @processes
+ * @filter: mode string to filter @processes against, if NULL no filter
+ * @filtered: return: new list of processes matching filter
+ * @nfiltered: number of entries in @filtered
+ *
+ * Return: 0 on success, shell exit value on failure
+ */
 static int filter_processes(struct process *processes,
 			    size_t n,
 			    const char *filter,
@@ -360,11 +401,15 @@ static int filter_processes(struct process *processes,
 			*nfiltered = *nfiltered + 1;
 		}
 	}
+
 	return ret;
 }
 
 /**
- * Returns error code if AppArmor is not enabled
+ * simple_filtered_count - count the number of profiles with mode == filter
+ * @filter: mode string to filter profiles on
+ *
+ * Return: 0 on success, else shell error code
  */
 static int simple_filtered_count(const char *filter) {
 	size_t n;
@@ -383,6 +428,12 @@ static int simple_filtered_count(const char *filter) {
 	return ret;
 }
 
+/**
+ * simple_filtered_process_count - count processes with mode == filter
+ * @filter: mode string to filter processes on
+ *
+ * Return: 0 on success, else shell error code
+ */
 static int simple_filtered_process_count(const char *filter) {
 	size_t nprocesses, nprofiles;
         struct profile *profiles = NULL;
@@ -405,36 +456,6 @@ static int simple_filtered_process_count(const char *filter) {
         return ret;
 }
 
-static int cmd_enabled(__unused const char *command) {
-	int res = aa_is_enabled();
-	return res == 1 ? 0 : 1;
-}
-
-
-static int cmd_profiled(__unused const char *command) {
-	return simple_filtered_count(NULL);
-}
-
-static int cmd_enforced(__unused const char *command) {
-	return simple_filtered_count("enforce");
-}
-
-static int cmd_complaining(__unused const char *command) {
-	return simple_filtered_count("complain");
-}
-
-static int cmd_kill(__unused const char *command) {
-        return simple_filtered_count("kill");
-}
-
-static int cmd_unconfined(__unused const char *command) {
-        return simple_filtered_count("unconfined");
-}
-
-static int cmd_process_mixed(__unused const char *command) {
-        return simple_filtered_process_count("mixed");
-}
-
 
 static int compare_processes_by_profile(const void *a, const void *b) {
 	return strcmp(((struct process *)a)->profile,
@@ -446,6 +467,12 @@ static int compare_processes_by_executable(const void *a, const void *b) {
                       ((struct process *)b)->exe);
 }
 
+/**
+ * detailed_out - output a detailed listing of apparmor status
+ * @json: if specified file to output json to other wise regular text output
+ *
+ * Return: 0 on success, else shell error
+ */
 static int detailed_output(FILE *json) {
 	size_t nprofiles = 0, nprocesses = 0;
 	struct profile *profiles = NULL;
@@ -555,12 +582,14 @@ exit:
 	return ret == 0 ? (nprofiles > 0 ? AA_EXIT_ENABLED : AA_EXIT_NO_POLICY) : ret;
 }
 
-static int cmd_json(__unused const char *command) {
-	detailed_output(stdout);
-	return 0;
-}
-
-static int cmd_pretty_json(__unused const char *command) {
+/**
+ * cmd_pretty_json - output nicelye formatted json to stdout
+ * @command: command name - currently unused
+ *
+ * Return: 0 on success, shell error on failure
+ */
+static int cmd_pretty_json()
+{
 	autofree char *buffer = NULL;
 	autofree char *pretty = NULL;
 	cJSON *json;
@@ -595,13 +624,14 @@ static int cmd_pretty_json(__unused const char *command) {
 	return AA_EXIT_ENABLED;
 }
 
-static int cmd_verbose(__unused const char *command) {
-	verbose = 1;
-	return detailed_output(NULL);
-}
-
-static int print_usage(const char *command)
+static int print_usage(const char *command, bool error)
 {
+	int status = EXIT_SUCCESS;
+
+	if (error) {
+		status = EXIT_FAILURE;
+	}
+
 	printf("Usage: %s [OPTIONS]\n"
 	 "Displays various information about the currently loaded AppArmor policy.\n"
 	 "OPTIONS (one only):\n"
@@ -617,58 +647,107 @@ static int print_usage(const char *command)
 	 "  --verbose       (default) displays multiple data points about loaded policy set\n"
 	 "  --help          this message\n",
 	 command);
+
+	exit(status);
+
 	return 0;
 }
 
-struct command {
-	const char * const name;
-	int (*cmd)(const char *command);
-};
 
-static struct command commands[] = {
-	{"--enabled", cmd_enabled},
-	{"--profiled", cmd_profiled},
-	{"--enforced", cmd_enforced},
-	{"--complaining", cmd_complaining},
-	{"--kill", cmd_kill},
-	{"--special-unconfined", cmd_unconfined},
-	{"--process-mixed", cmd_process_mixed},
-	{"--json", cmd_json},
-	{"--pretty-json", cmd_pretty_json},
-	{"--verbose", cmd_verbose},
-	{"-v", cmd_verbose},
-	{"--help", print_usage},
-	{"-h", print_usage},
-};
+#define ARG_ENABLED	129
+#define ARG_PROFILED	130
+#define ARG_ENFORCED	131
+#define ARG_COMPLAIN	132
+#define ARG_KILL	133
+#define ARG_UNCONFINED	134
+#define ARG_PS_MIXED	135
+#define ARG_JSON	136
+#define ARG_PRETTY	137
+#define ARG_VERBOSE 'v'
+#define ARG_HELP 'h'
+
+static char **parse_args(int argc, char **argv)
+{
+	int opt;
+	struct option long_opts[] = {
+		{"enabled", no_argument, 0, ARG_ENABLED},
+		{"profiled", no_argument, 0, ARG_PROFILED},
+		{"enforced", no_argument, 0, ARG_ENFORCED},
+		{"complaining", no_argument, 0, ARG_COMPLAIN},
+		{"kill", no_argument, 0, ARG_KILL},
+		{"special-unconfined", no_argument, 0, ARG_UNCONFINED},
+		{"process-mixed", no_argument, 0, ARG_PS_MIXED},
+		{"json", no_argument, 0, ARG_JSON},
+		{"pretty-json", no_argument, 0, ARG_PRETTY},
+		{"verbose", no_argument, 0, ARG_VERBOSE},
+		{"help", no_argument, 0, ARG_HELP},
+		{NULL, 0, 0, 0},
+	};
+
+	// Using exit here is temporary
+	while ((opt = getopt_long(argc, argv, "+vh", long_opts, NULL)) != -1) {
+		switch (opt) {
+		case ARG_ENABLED:
+			exit(aa_is_enabled() == 1 ? 0 : AA_EXIT_DISABLED);
+			break;
+		case ARG_VERBOSE:
+			verbose = 1;
+			exit(detailed_output(NULL));
+			break;
+		case ARG_HELP:
+			print_usage(argv[0], false);
+			break;
+		case ARG_PROFILED:
+			exit(simple_filtered_count(NULL));
+			break;
+		case ARG_ENFORCED:
+			exit(simple_filtered_count("enforce"));
+			break;
+		case ARG_COMPLAIN:
+			exit(simple_filtered_count("complain"));
+			break;
+		case ARG_UNCONFINED:
+			exit(simple_filtered_count("unconfined"));
+			break;
+		case ARG_KILL:
+			exit(simple_filtered_count("kill"));
+			break;
+		case ARG_PS_MIXED:
+			exit(simple_filtered_process_count("mixed"));
+			break;
+		case ARG_JSON:
+			exit(detailed_output(stdout));
+			break;
+		case ARG_PRETTY:
+			exit(cmd_pretty_json());
+			break;
+		default:
+			dfprintf(stderr, "Error: Invalid command.\n");
+			print_usage(argv[0], true);
+			break;
+		}
+	}
+
+	return argv + optind;
+
+}
 
 int main(int argc, char **argv)
 {
 	int ret = EXIT_SUCCESS;
-	int _ret;
-	int (*cmd)(const char*) = cmd_verbose;
+	const char *progname = argv[0];
 
 	if (argc > 2) {
 		dfprintf(stderr, "Error: Too many options.\n");
-		cmd = print_usage;
-		ret = EXIT_FAILURE;
+		print_usage(progname, true);
 	} else if (argc == 2) {
-		int (*_cmd)(const char*) = NULL;
-		size_t i;
-		for (i = 0; i < ARRAY_SIZE(commands); i++) {
-			if (strcmp(argv[1], commands[i].name) == 0) {
-				_cmd = commands[i].cmd;
-				break;
-			}
-		}
-		if (_cmd == NULL) {
-			dfprintf(stderr, "Error: Invalid command.\n");
-			cmd = print_usage;
-			ret = EXIT_FAILURE;
-		} else {
-			cmd = _cmd;
-		}
+		argv = parse_args(argc, argv);
+		// temporary if we get here its an error
+		ret = EXIT_FAILURE;
+	} else {
+		verbose = 1;
+		ret = detailed_output(NULL);
 	}
 
-	_ret = cmd(argv[0]);
-	exit(ret == EXIT_FAILURE ? ret : _ret);
+	exit(ret);
 }
