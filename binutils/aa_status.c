@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <regex.h>
 
 #include <sys/apparmor.h>
 #include <sys/apparmor_private.h>
@@ -80,12 +81,13 @@ static void free_processes(struct process *processes, size_t n) {
 #define SHOW_PROFILES 1
 #define SHOW_PROCESSES 2
 
-static int verbose = 0;
+static int verbose = 1;
 int opt_show = SHOW_PROFILES | SHOW_PROCESSES;
 bool opt_json = false;
 bool opt_pretty = false;
 bool opt_count = false;
-const char *opt_mode = NULL;
+const char *opt_mode = ".*";
+
 
 const char *profile_statuses[] = {"enforce", "complain", "kill", "unconfined"};
 const char *process_statuses[] = {"enforce", "complain", "kill", "unconfined", "mixed"};
@@ -208,7 +210,7 @@ static int compare_profiles(const void *a, const void *b) {
  * filter_profiles - create a filtered profile list
  * @profiles: list of profiles
  * @n: number of elements in @profiles
- * @filter: string to match against profile mode, if NULL no filter
+ * @mode_filter: filter for the mode
  * @filtered: return: new list of profiles that match the filter
  * @nfiltered: return: number of elements in @filtered
  *
@@ -216,7 +218,7 @@ static int compare_profiles(const void *a, const void *b) {
  */
 static int filter_profiles(struct profile *profiles,
 			   size_t n,
-			   const char *filter,
+			   regex_t *mode_filter,
 			   struct profile **filtered,
 			   size_t *nfiltered)
 {
@@ -227,7 +229,7 @@ static int filter_profiles(struct profile *profiles,
 	*nfiltered = 0;
 
 	for (i = 0; i < n; i++) {
-		if (filter == NULL || strcmp(profiles[i].status, filter) == 0) {
+		if (regexec(mode_filter, profiles[i].status, 0, NULL, 0) == 0) {
 			struct profile *_filtered = realloc(*filtered, (*nfiltered + 1) * sizeof(**filtered));
 			if (_filtered == NULL) {
 				free_profiles(*filtered, *nfiltered);
@@ -379,7 +381,7 @@ exit:
  * filter_processes: create a new filtered process list by applying @filter
  * @processes: list of processes to filter
  * @n: number of entries in @processes
- * @filter: mode string to filter @processes against, if NULL no filter
+ * @mode_filter: regex to filter @processes modes against
  * @filtered: return: new list of processes matching filter
  * @nfiltered: number of entries in @filtered
  *
@@ -387,7 +389,7 @@ exit:
  */
 static int filter_processes(struct process *processes,
 			    size_t n,
-			    const char *filter,
+			    regex_t *mode_filter,
 			    struct process **filtered,
 			    size_t *nfiltered)
 {
@@ -398,7 +400,7 @@ static int filter_processes(struct process *processes,
 	*nfiltered = 0;
 
 	for (i = 0; i < n; i++) {
-		if (filter == NULL || strcmp(processes[i].mode, filter) == 0) {
+		if (regexec(mode_filter, processes[i].mode, 0, NULL, 0) == 0) {
 			struct process *_filtered = realloc(*filtered, (*nfiltered + 1) * sizeof(**filtered));
 			if (_filtered == NULL) {
 				free_processes(*filtered, *nfiltered);
@@ -422,20 +424,20 @@ static int filter_processes(struct process *processes,
 /**
  * simple_filtered_count - count the number of profiles with mode == filter
  * @outf: output file destination
- * @filter: mode string to filter profiles on
+ * @mode_filter: mode string to filter profiles on
  * @profiles: profiles list to filter
  * @nprofiles: number of entries in @profiles
  *
  * Return: 0 on success, else shell error code
  */
-static int simple_filtered_count(FILE *outf, const char *filter,
+static int simple_filtered_count(FILE *outf, regex_t *mode_filter,
 				 struct profile *profiles, size_t nprofiles)
 {
 	struct profile *filtered = NULL;
 	size_t nfiltered;
 	int ret;
 
-	ret = filter_profiles(profiles, nprofiles, filter,
+	ret = filter_profiles(profiles, nprofiles, mode_filter,
 			      &filtered, &nfiltered);
 	fprintf(outf, "%zd\n", nfiltered);
 	free_profiles(filtered, nfiltered);
@@ -446,19 +448,20 @@ static int simple_filtered_count(FILE *outf, const char *filter,
 /**
  * simple_filtered_process_count - count processes with mode == filter
  * @outf: output file destination
- * @filter: mode string to filter processes on
+ * @mode_filter: mode string to filter processes on
  * @processes: process list to filter
  * @nprocesses: number of entries in @processes
  *
  * Return: 0 on success, else shell error code
  */
-static int simple_filtered_process_count(FILE *outf, const char *filter,
+static int simple_filtered_process_count(FILE *outf, regex_t *mode_filter,
 					 struct process *processes, size_t nprocesses) {
 	struct process *filtered = NULL;
 	size_t nfiltered;
 	int ret;
 
-	ret = filter_processes(processes, nprocesses, filter, &filtered, &nfiltered);
+	ret = filter_processes(processes, nprocesses, mode_filter, &filtered,
+			       &nfiltered);
 	fprintf(outf, "%zd\n", nfiltered);
 	free_processes(filtered, nfiltered);
 
@@ -496,7 +499,7 @@ static void json_footer(FILE *outf)
  *
  * Return: 0 on success, else shell error
  */
-static int detailed_profiles(FILE *outf, const char *filter, bool json,
+static int detailed_profiles(FILE *outf, regex_t *mode_filter, bool json,
 			     struct profile *profiles, size_t nprofiles) {
 	int ret;
 	size_t i;
@@ -510,10 +513,20 @@ static int detailed_profiles(FILE *outf, const char *filter, bool json,
 	for (i = 0; i < ARRAY_SIZE(profile_statuses); i++) {
 		size_t nfiltered = 0, j;
 		struct profile *filtered = NULL;
-		if (filter && strcmp(filter, profile_statuses[i]) != 0)
+		regex_t sub_filter;
+		if (regexec(mode_filter, profile_statuses[i], 0, NULL, 0) == REG_NOMATCH)
 			/* skip processing for entries that don't match filter*/
 			continue;
-		ret = filter_profiles(profiles, nprofiles, profile_statuses[i], &filtered, &nfiltered);
+		/* need sub_filter as we want to split on matches to specific
+		 * status
+		 */
+		if (regcomp(&sub_filter, profile_statuses[i], REG_NOSUB) != 0) {
+			dfprintf(stderr, "Error: failed to compile sub filter '%s'\n",
+				 profile_statuses[i]);
+			return AA_EXIT_INTERNAL_ERROR;
+		}
+		ret = filter_profiles(profiles, nprofiles, &sub_filter, &filtered, &nfiltered);
+		regfree(&sub_filter);
 		if (ret != 0) {
 			return ret;
 		}
@@ -542,14 +555,14 @@ static int detailed_profiles(FILE *outf, const char *filter, bool json,
 /**
  * detailed_processses - output a detailed listing of apparmor process status
  * @outf: output file
- * @filter: mode filter
+ * @mode_filter: mode filter regex
  * @json: whether output should be in json format
  * @processes: list of processes to output
  * @nprocesses: number of processes in @processes
  *
  * Return: 0 on success, else shell error
  */
-static int detailed_processes(FILE *outf, const char *filter, bool json,
+static int detailed_processes(FILE *outf, regex_t *mode_filter, bool json,
 			      struct process *processes, size_t nprocesses) {
 	int ret;
 	size_t i;
@@ -563,10 +576,20 @@ static int detailed_processes(FILE *outf, const char *filter, bool json,
 	for (i = 0; i < ARRAY_SIZE(process_statuses); i++) {
 		size_t nfiltered = 0, j;
 		struct process *filtered = NULL;
-		if (filter && strcmp(filter, process_statuses[i]) != 0)
+		regex_t sub_filter;
+		if (regexec(mode_filter, process_statuses[i], 0, NULL, 0) == REG_NOMATCH)
 			/* skip processing for entries that don't match filter*/
 			continue;
-		ret = filter_processes(processes, nprocesses, process_statuses[i], &filtered, &nfiltered);
+		/* need sub_filter as we want to split on matches to specific
+		 * status
+		 */
+		if (regcomp(&sub_filter, process_statuses[i], REG_NOSUB) != 0) {
+			dfprintf(stderr, "Error: failed to compile sub filter '%s'\n",
+				 profile_statuses[i]);
+			return AA_EXIT_INTERNAL_ERROR;
+		}
+		ret = filter_processes(processes, nprocesses, &sub_filter, &filtered, &nfiltered);
+		regfree(&sub_filter);
 		if (ret != 0)
 			goto exit;
 
@@ -618,6 +641,43 @@ exit:
 }
 
 
+static int print_legacy(const char *command)
+{
+	printf("Usage: %s [OPTIONS]\n"
+	 "Legacy options and their equivalent command\n"
+	 "  --profiled             --count --profiles\n"
+	 "  --enforced             --count --profiles --mode=enforced\n"
+	 "  --complaining          --count --profiles --mode=complain\n"
+	 "  --kill                 --count --profiles --mode=kill\n"
+	 "  --special-unconfined   --count --profiles --mode=unconfined\n"
+	 "  --process-mixed        --count --ps --mode=mixed\n",
+	command);
+
+	exit(0);
+	return 0;
+}
+
+static int usage_filters(void)
+{
+	long unsigned int i;
+
+	printf("Usage of filters\n"
+	 "Filters are used to reduce the output of information to only\n"
+	 "those entries that will match the filter. Filters use posix\n"
+	 "regular expression syntax. The possible values for exes that\n"
+	 "support filters are below\n\n"
+	 "  --mode:      regular expression to match the profile mode"
+	 "               modes: enforce, complain, kill, unconfined, mixed\n"
+	);
+	for (i = 0; i < ARRAY_SIZE(process_statuses); i++) {
+		printf("%s%s", i ? ", " : "", process_statuses[i]);
+	}
+	printf("\n");
+
+	exit(0);
+	return 0;
+}
+
 static int print_usage(const char *command, bool error)
 {
 	int status = EXIT_SUCCESS;
@@ -634,16 +694,13 @@ static int print_usage(const char *command, bool error)
 	 "  --enabled       returns error code if AppArmor not enabled\n"
 	 "  --show=X        What information to show. {profiles,processes,all}\n"
 	 "  --count         print the number of entries. Implies --quiet\n"
-	 "  --profiled      prints the number of loaded policies\n"
-	 "  --enforced      prints the number of loaded enforcing policies\n"
-	 "  --complaining   prints the number of loaded non-enforcing policies\n"
-	 "  --kill          prints the number of loaded enforcing policies that kill tasks on policy violations\n"
-	 "  --special-unconfined   prints the number of loaded non-enforcing policies in the special unconfined mode\n"
-	 "  --process-mixed prints the number processes with mixed profile modes\n"
+	 "  --mode=filter   regular expression to match profile modes. see filters\n"
+	 "                  or a regular expression\n"
 	 "  --json          displays multiple data points in machine-readable JSON format\n"
 	 "  --pretty-json   same data as --json, formatted for human consumption as well\n"
-	 "  --verbose       (default) displays multiple data points about loaded policy set\n"
-	 "  --help          this message\n",
+	 "  --verbose       (default) displays data points about loaded policy set\n"
+	 "  -h [(legacy|filter)]    this message, or info on the specified option\n"
+	 " --help[=(legacy|filter)] this message, or info on the specified option\n",
 	 command);
 
 	exit(status);
@@ -667,7 +724,7 @@ static int print_usage(const char *command, bool error)
 #define ARG_VERBOSE 'v'
 #define ARG_HELP 'h'
 
-static char **parse_args(int argc, char **argv)
+static int parse_args(int argc, char **argv)
 {
 	int opt;
 	struct option long_opts[] = {
@@ -681,9 +738,10 @@ static char **parse_args(int argc, char **argv)
 		{"json", no_argument, 0, ARG_JSON},
 		{"pretty-json", no_argument, 0, ARG_PRETTY},
 		{"verbose", no_argument, 0, ARG_VERBOSE},
-		{"help", no_argument, 0, ARG_HELP},
+		{"help", 2, 0, ARG_HELP},
 		{"count", no_argument, 0, ARG_COUNT},
 		{"show", 1, 0, ARG_SHOW},
+		{"mode", 1, 0, ARG_MODE},
 		{NULL, 0, 0, 0},
 	};
 
@@ -699,34 +757,50 @@ static char **parse_args(int argc, char **argv)
 			/* default opt_show */
 			break;
 		case ARG_HELP:
-			print_usage(argv[0], false);
+			if (!optarg) {
+				print_usage(argv[0], false);
+			} else if (strcmp(optarg, "legacy") == 0) {
+				print_legacy(argv[0]);
+			} else if (strcmp(optarg, "filters") == 0) {
+				usage_filters();
+			} else {
+				dfprintf(stderr, "Error: Invalid --help option '%s'.\n", optarg);
+				print_usage(argv[0], true);
+				break;
+			}
 			break;
 		case ARG_PROFILED:
+			verbose = false;
 			opt_count = true;
 			opt_show = SHOW_PROFILES;
 			/* default opt_mode */
 			break;
 		case ARG_ENFORCED:
+			verbose = false;
 			opt_count = true;
 			opt_show = SHOW_PROFILES;
 			opt_mode = "enforce";
 			break;
 		case ARG_COMPLAIN:
+			verbose = false;
 			opt_count = true;
 			opt_show = SHOW_PROFILES;
 			opt_mode = "complain";
 			break;
 		case ARG_UNCONFINED:
+			verbose = false;
 			opt_count = true;
 			opt_show = SHOW_PROFILES;
 			opt_mode = "unconfined";
 			break;
 		case ARG_KILL:
+			verbose = false;
 			opt_count = true;
 			opt_show = SHOW_PROFILES;
 			opt_mode = "kill";
 			break;
 		case ARG_PS_MIXED:
+			verbose = false;
 			opt_count = true;
 			opt_show = SHOW_PROCESSES;
 			opt_mode = "mixed";
@@ -757,6 +831,10 @@ static char **parse_args(int argc, char **argv)
 				break;
 			}
 			break;
+		case ARG_MODE:
+			opt_mode = optarg;
+			break;
+			
 		default:
 			dfprintf(stderr, "Error: Invalid command.\n");
 			print_usage(argv[0], true);
@@ -764,8 +842,7 @@ static char **parse_args(int argc, char **argv)
 		}
 	}
 
-	return argv + optind;
-
+	return optind;
 }
 
 
@@ -779,12 +856,14 @@ int main(int argc, char **argv)
 	int ret = EXIT_SUCCESS;
 	const char *progname = argv[0];
 	FILE *outf = stdout, *outf_save = NULL;
+	regex_t mode_filter;
 
-	if (argc > 2) {
-		dfprintf(stderr, "Error: Too many options.\n");
-		print_usage(progname, true);
-	} else if (argc == 2) {
-		argv = parse_args(argc, argv);
+	if (argc > 1) {
+		int pos = parse_args(argc, argv);
+		if (pos < argc) {
+			dfprintf(stderr, "Error: Unknown options.\n");
+			print_usage(progname, true);
+		}
 	} else {
 		verbose = 1;
 		/* default opt_show */
@@ -792,6 +871,12 @@ int main(int argc, char **argv)
 		/* default opt_json */
 	}
 
+	if (regcomp(&mode_filter, opt_mode, REG_NOSUB) != 0) {
+		dfprintf(stderr, "Error: failed to compile mode filter '%s'\n",
+			 opt_mode);
+		return AA_EXIT_INTERNAL_ERROR;
+	}
+	
 	/* check apparmor is available and we have permissions */
 	ret = open_profiles(&fp);
 	if (ret != 0)
@@ -820,10 +905,10 @@ int main(int argc, char **argv)
 		json_header(outf);
 	if (opt_show & SHOW_PROFILES) {
 		if (opt_count) {
-			ret = simple_filtered_count(outf, opt_mode,
+			ret = simple_filtered_count(outf, &mode_filter,
 						    profiles, nprofiles);
 		} else {
-			ret = detailed_profiles(outf, opt_mode, opt_json,
+			ret = detailed_profiles(outf, &mode_filter, opt_json,
 						profiles, nprofiles);
 		}
 		if (ret != 0)
@@ -838,10 +923,10 @@ int main(int argc, char **argv)
 		if (ret != 0) {
 			dfprintf(stderr, "Failed to get processes: %d....\n", ret);
 		} else if (opt_count) {
-			ret = simple_filtered_process_count(outf, opt_mode,
+			ret = simple_filtered_process_count(outf, &mode_filter,
 							processes, nprocesses);
 		} else {
-			ret = detailed_processes(outf, opt_mode, opt_json,
+			ret = detailed_processes(outf, &mode_filter, opt_json,
 						 processes, nprocesses);
 		}
 		free_processes(processes, nprocesses);
@@ -880,6 +965,7 @@ int main(int argc, char **argv)
 
 out:
 	free_profiles(profiles, nprofiles);
+	regfree(&mode_filter);
 
 	exit(ret);
 }
