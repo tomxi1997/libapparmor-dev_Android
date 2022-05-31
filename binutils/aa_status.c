@@ -469,11 +469,12 @@ static int compare_processes_by_executable(const void *a, const void *b) {
 
 /**
  * detailed_out - output a detailed listing of apparmor status
- * @json: if specified file to output json to other wise regular text output
+ * @outf: output file
+ * @json: whether output should be in json format
  *
  * Return: 0 on success, else shell error
  */
-static int detailed_output(FILE *json) {
+static int detailed_output(FILE *outf, bool json) {
 	size_t nprofiles = 0, nprocesses = 0;
 	struct profile *profiles = NULL;
 	struct process *processes = NULL;
@@ -493,9 +494,9 @@ static int detailed_output(FILE *json) {
 	}
 
 	if (json) {
-		fprintf(json, "{\"version\": \"%s\", \"profiles\": {", aa_status_json_version);
+		fprintf(outf, "{\"version\": \"%s\", \"profiles\": {", aa_status_json_version);
 	} else {
-		dprintf("%zd profiles are loaded.\n", nprofiles);
+		dfprintf(outf, "%zd profiles are loaded.\n", nprofiles);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(profile_statuses); i++) {
@@ -506,24 +507,24 @@ static int detailed_output(FILE *json) {
 			goto exit;
 		}
 		if (!json) {
-			dprintf("%zd profiles are in %s mode.\n", nfiltered, profile_statuses[i]);
+			dfprintf(outf, "%zd profiles are in %s mode.\n", nfiltered, profile_statuses[i]);
 		}
 
 		for (j = 0; j < nfiltered; j++) {
 			if (json) {
-				fprintf(json, "%s\"%s\": \"%s\"",
+				fprintf(outf, "%s\"%s\": \"%s\"",
 				       i == 0 && j == 0 ? "" : ", ", filtered[j].name, profile_statuses[i]);
 			} else {
-				dprintf("   %s\n", filtered[j].name);
+				dfprintf(outf, "   %s\n", filtered[j].name);
 			}
 		}
 
 		free_profiles(filtered, nfiltered);
 	}
 	if (json) {
-		fprintf(json, "}, \"processes\": {");
+		fprintf(outf, "}, \"processes\": {");
 	} else {
-		dprintf("%zd processes have profiles defined.\n", nprocesses);
+		dfprintf(outf, "%zd processes have profiles defined.\n", nprocesses);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(process_statuses); i++) {
@@ -535,16 +536,16 @@ static int detailed_output(FILE *json) {
 		}
 		if (!json) {
 			if (strcmp(process_statuses[i], "unconfined") == 0) {
-				dprintf("%zd processes are unconfined but have a profile defined.\n", nfiltered);
+				dfprintf(outf, "%zd processes are unconfined but have a profile defined.\n", nfiltered);
 			} else {
-				dprintf("%zd processes are in %s mode.\n", nfiltered, process_statuses[i]);
+				dfprintf(outf, "%zd processes are in %s mode.\n", nfiltered, process_statuses[i]);
 			}
 		}
 
 		if (!json) {
 			qsort(filtered, nfiltered, sizeof(*filtered), compare_processes_by_profile);
 			for (j = 0; j < nfiltered; j++) {
-				dprintf("   %s (%s) %s\n", filtered[j].exe, filtered[j].pid,
+				dfprintf(outf, "   %s (%s) %s\n", filtered[j].exe, filtered[j].pid,
 					// hide profile name if matches executable
 					(strcmp(filtered[j].profile, filtered[j].exe) == 0 ?
 					 "" :
@@ -556,10 +557,10 @@ static int detailed_output(FILE *json) {
 			for (j = 0; j < nfiltered; j++) {
 				if (j > 0 && strcmp(filtered[j].exe, filtered[j - 1].exe) == 0) {
 					// same executable
-					fprintf(json, ", {\"profile\": \"%s\", \"pid\": \"%s\", \"status\": \"%s\"}",
+					fprintf(outf, ", {\"profile\": \"%s\", \"pid\": \"%s\", \"status\": \"%s\"}",
 					       filtered[j].profile, filtered[j].pid, filtered[j].mode);
 				} else {
-					fprintf(json, "%s\"%s\": [{\"profile\": \"%s\", \"pid\": \"%s\", \"status\": \"%s\"}",
+					fprintf(outf, "%s\"%s\": [{\"profile\": \"%s\", \"pid\": \"%s\", \"status\": \"%s\"}",
 					       // first element will be a unique executable
 					       j == 0 ? "" : "], ",
 					       filtered[j].exe, filtered[j].profile, filtered[j].pid, filtered[j].mode);
@@ -567,13 +568,13 @@ static int detailed_output(FILE *json) {
 
 			}
 			if (j > 0) {
-				fprintf(json, "]");
+				fprintf(outf, "]");
 			}
 		}
 		free_processes(filtered, nfiltered);
 	}
 	if (json) {
-		fprintf(json, "}}\n");
+		fprintf(outf, "}}\n");
 	}
 
 exit:
@@ -603,7 +604,7 @@ static int cmd_pretty_json()
 		return AA_EXIT_INTERNAL_ERROR;
 	}
 
-	ret = detailed_output(f);
+	ret = detailed_output(f, true);
 	fclose(f);
 	if (ret)
 		return ret;
@@ -692,7 +693,7 @@ static char **parse_args(int argc, char **argv)
 			break;
 		case ARG_VERBOSE:
 			verbose = 1;
-			exit(detailed_output(NULL));
+			exit(detailed_output(stdout, false));
 			break;
 		case ARG_HELP:
 			print_usage(argv[0], false);
@@ -716,7 +717,7 @@ static char **parse_args(int argc, char **argv)
 			exit(simple_filtered_process_count("mixed"));
 			break;
 		case ARG_JSON:
-			exit(detailed_output(stdout));
+			exit(detailed_output(stdout, true));
 			break;
 		case ARG_PRETTY:
 			exit(cmd_pretty_json());
@@ -746,7 +747,7 @@ int main(int argc, char **argv)
 		ret = EXIT_FAILURE;
 	} else {
 		verbose = 1;
-		ret = detailed_output(NULL);
+		ret = detailed_output(stdout, false);
 	}
 
 	exit(ret);
