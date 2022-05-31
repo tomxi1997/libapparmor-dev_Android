@@ -47,6 +47,8 @@ struct profile {
 };
 
 static void free_profiles(struct profile *profiles, size_t n) {
+	if (!profiles)
+		return;
 	while (n > 0) {
 		n--;
 		free(profiles[n].name);
@@ -63,6 +65,8 @@ struct process {
 };
 
 static void free_processes(struct process *processes, size_t n) {
+	if (!processes)
+		return;
 	while (n > 0) {
 		n--;
 		free(processes[n].pid);
@@ -73,7 +77,18 @@ static void free_processes(struct process *processes, size_t n) {
 	free(processes);
 }
 
+#define SHOW_PROFILES 1
+#define SHOW_PROCESSES 2
+
 static int verbose = 0;
+int opt_show = SHOW_PROFILES | SHOW_PROCESSES;
+bool opt_json = false;
+bool opt_pretty = false;
+bool opt_count = false;
+const char *opt_mode = NULL;
+
+const char *profile_statuses[] = {"enforce", "complain", "kill", "unconfined"};
+const char *process_statuses[] = {"enforce", "complain", "kill", "unconfined", "mixed"};
 
 #define dprintf(...)                                                           \
 do {									       \
@@ -88,57 +103,59 @@ do {									       \
 } while (0)
 
 
-/**
- * get_profiles - get a listing of profiles on the system
- * @profiles: return: list of profiles
- * @n: return: number of elements in @profiles
- *
- * Return: 0 on success, shell error on failure
- */
-static int get_profiles(struct profile **profiles, size_t *n) {
+static int open_profiles(FILE **fp)
+{
 	autofree char *apparmorfs = NULL;
 	autofree char *apparmor_profiles = NULL;
 	struct stat st;
-	autofclose FILE *fp = NULL;
-	autofree char *line = NULL;
-	size_t len = 0;
 	int ret;
-
-	*profiles = NULL;
-	*n = 0;
 
 	ret = stat("/sys/module/apparmor", &st);
 	if (ret != 0) {
 		dfprintf(stderr, "apparmor not present.\n");
-		ret = AA_EXIT_DISABLED;
-		goto exit;
+		return AA_EXIT_DISABLED;
 	}
 	dprintf("apparmor module is loaded.\n");
 
 	ret = aa_find_mountpoint(&apparmorfs);
 	if (ret == -1) {
 		dfprintf(stderr, "apparmor filesystem is not mounted.\n");
-		ret = AA_EXIT_NO_CONTROL;
-		goto exit;
+		return AA_EXIT_NO_CONTROL;
 	}
 
 	apparmor_profiles = malloc(strlen(apparmorfs) + 10); // /profiles\0
 	if (apparmor_profiles == NULL) {
-		ret = AA_EXIT_INTERNAL_ERROR;
-		goto exit;
+		return AA_EXIT_INTERNAL_ERROR;
 	}
 	sprintf(apparmor_profiles, "%s/profiles", apparmorfs);
 
-	fp = fopen(apparmor_profiles, "r");
-	if (fp == NULL) {
+	*fp = fopen(apparmor_profiles, "r");
+	if (*fp == NULL) {
 		if (errno == EACCES) {
 			dfprintf(stderr, "You do not have enough privilege to read the profile set.\n");
 		} else {
 			dfprintf(stderr, "Could not open %s: %s", apparmor_profiles, strerror(errno));
 		}
-		ret = AA_EXIT_NO_PERM;
-		goto exit;
+		return AA_EXIT_NO_PERM;
 	}
+
+	return 0;
+}
+
+/**
+ * get_profiles - get a listing of profiles on the system
+ * @fp: opened apparmor profiles file
+ * @profiles: return: list of profiles
+ * @n: return: number of elements in @profiles
+ *
+ * Return: 0 on success, shell error on failure
+ */
+static int get_profiles(FILE *fp, struct profile **profiles, size_t *n) {
+	autofree char *line = NULL;
+	size_t len = 0;
+
+	*profiles = NULL;
+	*n = 0;
 
 	while (getline(&line, &len, fp) != -1) {
 		struct profile *_profiles;
@@ -148,8 +165,8 @@ static int get_profiles(struct profile **profiles, size_t *n) {
 
 		if (!tmpname) {
 			dfprintf(stderr, "Error: failed profile name split of '%s'.\n", line);
-			ret = AA_EXIT_INTERNAL_ERROR;
 			// skip this entry and keep processing
+			// else would be AA_EXIT_INTERNAL_ERROR;
 			continue;
 		}
 		name = strdup(tmpname);
@@ -157,21 +174,13 @@ static int get_profiles(struct profile **profiles, size_t *n) {
 		if (status)
 			status = strdup(status);
 		// give up if out of memory
-		if (name == NULL || status == NULL) {
-			free_profiles(*profiles, *n);
-			*profiles = NULL;
-			*n = 0;
-			ret = AA_EXIT_INTERNAL_ERROR;
-			break;
-		}
+		if (name == NULL || status == NULL)
+			goto err;
+
 		_profiles = realloc(*profiles, (*n + 1) * sizeof(**profiles));
-		if (_profiles == NULL) {
-			free_profiles(*profiles, *n);
-			*profiles = NULL;
-			*n = 0;
-			ret = AA_EXIT_INTERNAL_ERROR;
-			break;
-		}
+		if (_profiles == NULL)
+			goto err;
+
 		// steal name and status
 		_profiles[*n].name = name;
 		_profiles[*n].status = status;
@@ -181,8 +190,13 @@ static int get_profiles(struct profile **profiles, size_t *n) {
 		*profiles = _profiles;
 	}
 
-exit:
-	return ret == 0 ? (*n > 0 ? AA_EXIT_ENABLED : AA_EXIT_NO_POLICY) : ret;
+	return *n > 0 ? AA_EXIT_ENABLED : AA_EXIT_NO_POLICY;
+
+err:
+	free_profiles(*profiles, *n);
+	*profiles = NULL;
+	*n = 0;
+	return AA_EXIT_INTERNAL_ERROR;
 }
 
 static int compare_profiles(const void *a, const void *b) {
@@ -409,23 +423,23 @@ static int filter_processes(struct process *processes,
  * simple_filtered_count - count the number of profiles with mode == filter
  * @outf: output file destination
  * @filter: mode string to filter profiles on
+ * @profiles: profiles list to filter
+ * @nprofiles: number of entries in @profiles
  *
  * Return: 0 on success, else shell error code
  */
-static int simple_filtered_count(FILE *outf, const char *filter) {
-	size_t n;
-	struct profile *profiles;
+static int simple_filtered_count(FILE *outf, const char *filter,
+				 struct profile *profiles, size_t nprofiles)
+{
+	struct profile *filtered = NULL;
+	size_t nfiltered;
 	int ret;
 
-	ret = get_profiles(&profiles, &n);
-	if (ret == 0) {
-		size_t nfiltered;
-		struct profile *filtered = NULL;
-		ret = filter_profiles(profiles, n, filter, &filtered, &nfiltered);
-		fprintf(outf, "%zd\n", nfiltered);
-		free_profiles(filtered, nfiltered);
-	}
-	free_profiles(profiles, n);
+	ret = filter_profiles(profiles, nprofiles, filter,
+			      &filtered, &nfiltered);
+	fprintf(outf, "%zd\n", nfiltered);
+	free_profiles(filtered, nfiltered);
+
 	return ret;
 }
 
@@ -433,28 +447,21 @@ static int simple_filtered_count(FILE *outf, const char *filter) {
  * simple_filtered_process_count - count processes with mode == filter
  * @outf: output file destination
  * @filter: mode string to filter processes on
+ * @processes: process list to filter
+ * @nprocesses: number of entries in @processes
  *
  * Return: 0 on success, else shell error code
  */
-static int simple_filtered_process_count(FILE *outf, const char *filter) {
-	size_t nprocesses, nprofiles;
-	struct profile *profiles = NULL;
-	struct process *processes = NULL;
+static int simple_filtered_process_count(FILE *outf, const char *filter,
+					 struct process *processes, size_t nprocesses) {
+	struct process *filtered = NULL;
+	size_t nfiltered;
 	int ret;
 
-	ret = get_profiles(&profiles, &nprofiles);
-	if (ret != 0)
-		return ret;
-	ret = get_processes(profiles, nprofiles, &processes, &nprocesses);
-	if (ret == 0) {
-		size_t nfiltered;
-		struct process *filtered = NULL;
-		ret = filter_processes(processes, nprocesses, filter, &filtered, &nfiltered);
-		fprintf(outf, "%zd\n", nfiltered);
-		free_processes(filtered, nfiltered);
-	}
-	free_profiles(profiles, nprofiles);
-	free_processes(processes, nprocesses);
+	ret = filter_processes(processes, nprocesses, filter, &filtered, &nfiltered);
+	fprintf(outf, "%zd\n", nfiltered);
+	free_processes(filtered, nfiltered);
+
 	return ret;
 }
 
@@ -469,34 +476,33 @@ static int compare_processes_by_executable(const void *a, const void *b) {
 		      ((struct process *)b)->exe);
 }
 
+static void json_header(FILE *outf)
+{
+	fprintf(outf, "{\"version\": \"%s\", ", aa_status_json_version);
+}
+
+static void json_footer(FILE *outf)
+{
+	fprintf(outf, "}\n");
+}
+
 /**
- * detailed_out - output a detailed listing of apparmor status
+ * detailed_profiles - output a detailed listing of apparmor profile status
  * @outf: output file
+ * @filter: mode filter
  * @json: whether output should be in json format
+ * @profiles: list of profiles to output
+ * @nprofiles: number of profiles in @profiles
  *
  * Return: 0 on success, else shell error
  */
-static int detailed_output(FILE *outf, bool json) {
-	size_t nprofiles = 0, nprocesses = 0;
-	struct profile *profiles = NULL;
-	struct process *processes = NULL;
-	const char *profile_statuses[] = {"enforce", "complain", "kill", "unconfined"};
-	const char *process_statuses[] = {"enforce", "complain", "unconfined", "mixed", "kill"};
+static int detailed_profiles(FILE *outf, const char *filter, bool json,
+			     struct profile *profiles, size_t nprofiles) {
 	int ret;
 	size_t i;
 
-	ret = get_profiles(&profiles, &nprofiles);
-	if (ret != 0) {
-		goto exit;
-	}
-	ret = get_processes(profiles, nprofiles, &processes, &nprocesses);
-	if (ret != 0) {
-		dfprintf(stderr, "Failed to get processes: %d....\n", ret);
-		goto exit;
-	}
-
 	if (json) {
-		fprintf(outf, "{\"version\": \"%s\", \"profiles\": {", aa_status_json_version);
+		fprintf(outf, "\"profiles\": {");
 	} else {
 		dfprintf(outf, "%zd profiles are loaded.\n", nprofiles);
 	}
@@ -504,9 +510,12 @@ static int detailed_output(FILE *outf, bool json) {
 	for (i = 0; i < ARRAY_SIZE(profile_statuses); i++) {
 		size_t nfiltered = 0, j;
 		struct profile *filtered = NULL;
+		if (filter && strcmp(filter, profile_statuses[i]) != 0)
+			/* skip processing for entries that don't match filter*/
+			continue;
 		ret = filter_profiles(profiles, nprofiles, profile_statuses[i], &filtered, &nfiltered);
 		if (ret != 0) {
-			goto exit;
+			return ret;
 		}
 		if (!json) {
 			dfprintf(outf, "%zd profiles are in %s mode.\n", nfiltered, profile_statuses[i]);
@@ -523,8 +532,30 @@ static int detailed_output(FILE *outf, bool json) {
 
 		free_profiles(filtered, nfiltered);
 	}
+	if (json)
+		fprintf(outf, "}, ");
+
+	return AA_EXIT_ENABLED;
+}
+
+
+/**
+ * detailed_processses - output a detailed listing of apparmor process status
+ * @outf: output file
+ * @filter: mode filter
+ * @json: whether output should be in json format
+ * @processes: list of processes to output
+ * @nprocesses: number of processes in @processes
+ *
+ * Return: 0 on success, else shell error
+ */
+static int detailed_processes(FILE *outf, const char *filter, bool json,
+			      struct process *processes, size_t nprocesses) {
+	int ret;
+	size_t i;
+
 	if (json) {
-		fprintf(outf, "}, \"processes\": {");
+		fprintf(outf, "\"processes\": {");
 	} else {
 		dfprintf(outf, "%zd processes have profiles defined.\n", nprocesses);
 	}
@@ -532,10 +563,13 @@ static int detailed_output(FILE *outf, bool json) {
 	for (i = 0; i < ARRAY_SIZE(process_statuses); i++) {
 		size_t nfiltered = 0, j;
 		struct process *filtered = NULL;
+		if (filter && strcmp(filter, process_statuses[i]) != 0)
+			/* skip processing for entries that don't match filter*/
+			continue;
 		ret = filter_processes(processes, nprocesses, process_statuses[i], &filtered, &nfiltered);
-		if (ret != 0) {
+		if (ret != 0)
 			goto exit;
-		}
+
 		if (!json) {
 			if (strcmp(process_statuses[i], "unconfined") == 0) {
 				dfprintf(outf, "%zd processes are unconfined but have a profile defined.\n", nfiltered);
@@ -580,52 +614,9 @@ static int detailed_output(FILE *outf, bool json) {
 	}
 
 exit:
-	free_processes(processes, nprocesses);
-	free_profiles(profiles, nprofiles);
-	return ret == 0 ? (nprofiles > 0 ? AA_EXIT_ENABLED : AA_EXIT_NO_POLICY) : ret;
+	return ret;
 }
 
-/**
- * cmd_pretty_json - output nicelye formatted json to stdout
- * @command: command name - currently unused
- *
- * Return: 0 on success, shell error on failure
- */
-static int cmd_pretty_json(FILE *outf)
-{
-	autofree char *buffer = NULL;
-	autofree char *pretty = NULL;
-	cJSON *json;
-	FILE *f;	/* no autofclose - want explicit close to sync */
-	size_t size;
-	int ret;
-
-	f = open_memstream(&buffer, &size);
-	if (!f) {
-		dfprintf(stderr, "Failed to open memstream: %m\n");
-		return AA_EXIT_INTERNAL_ERROR;
-	}
-
-	ret = detailed_output(f, true);
-	fclose(f);
-	if (ret)
-		return ret;
-
-	json = cJSON_Parse(buffer);
-	if (!json) {
-		dfprintf(stderr, "Failed to parse json output");
-		return AA_EXIT_INTERNAL_ERROR;
-	}
-
-	pretty = cJSON_Print(json);
-	if (!pretty) {
-		dfprintf(stderr, "Failed to print pretty json");
-		return AA_EXIT_INTERNAL_ERROR;
-	}
-	fprintf(outf, "%s\n", pretty);
-
-	return AA_EXIT_ENABLED;
-}
 
 static int print_usage(const char *command, bool error)
 {
@@ -695,34 +686,50 @@ static char **parse_args(int argc, char **argv)
 			break;
 		case ARG_VERBOSE:
 			verbose = 1;
-			exit(detailed_output(stdout, false));
+			/* default opt_mode */
+			/* default opt_show */
 			break;
 		case ARG_HELP:
 			print_usage(argv[0], false);
 			break;
 		case ARG_PROFILED:
-			exit(simple_filtered_count(stdout, NULL));
+			opt_count = true;
+			opt_show = SHOW_PROFILES;
+			/* default opt_mode */
 			break;
 		case ARG_ENFORCED:
-			exit(simple_filtered_count(stdout, "enforce"));
+			opt_count = true;
+			opt_show = SHOW_PROFILES;
+			opt_mode = "enforce";
 			break;
 		case ARG_COMPLAIN:
-			exit(simple_filtered_count(stdout, "complain"));
+			opt_count = true;
+			opt_show = SHOW_PROFILES;
+			opt_mode = "complain";
 			break;
 		case ARG_UNCONFINED:
-			exit(simple_filtered_count(stdout, "unconfined"));
+			opt_count = true;
+			opt_show = SHOW_PROFILES;
+			opt_mode = "unconfined";
 			break;
 		case ARG_KILL:
-			exit(simple_filtered_count(stdout, "kill"));
+			opt_count = true;
+			opt_show = SHOW_PROFILES;
+			opt_mode = "kill";
 			break;
 		case ARG_PS_MIXED:
-			exit(simple_filtered_process_count(stdout, "mixed"));
+			opt_count = true;
+			opt_show = SHOW_PROCESSES;
+			opt_mode = "mixed";
 			break;
 		case ARG_JSON:
-			exit(detailed_output(stdout, true));
+			opt_json = true;
+			/* default opt_show */
 			break;
 		case ARG_PRETTY:
-			exit(cmd_pretty_json(stdout));
+			opt_pretty = true;
+			opt_json = true;
+			/* default opt_show */
 			break;
 		default:
 			dfprintf(stderr, "Error: Invalid command.\n");
@@ -735,22 +742,118 @@ static char **parse_args(int argc, char **argv)
 
 }
 
+
 int main(int argc, char **argv)
 {
+	autofree char *buffer = NULL;	/* pretty print buffer */
+	size_t buffer_size;
+	autofclose FILE *fp = NULL;
+	size_t nprofiles = 0;
+	struct profile *profiles = NULL;
 	int ret = EXIT_SUCCESS;
 	const char *progname = argv[0];
+	FILE *outf = stdout, *outf_save = NULL;
 
 	if (argc > 2) {
 		dfprintf(stderr, "Error: Too many options.\n");
 		print_usage(progname, true);
 	} else if (argc == 2) {
 		argv = parse_args(argc, argv);
-		// temporary if we get here its an error
-		ret = EXIT_FAILURE;
 	} else {
 		verbose = 1;
-		ret = detailed_output(stdout, false);
+		/* default opt_show */
+		/* default opt_mode */
+		/* default opt_json */
 	}
+
+	/* check apparmor is available and we have permissions */
+	ret = open_profiles(&fp);
+	if (ret != 0)
+		goto out;
+
+	if (opt_pretty) {
+		outf_save = outf;
+		outf = open_memstream(&buffer, &buffer_size);
+		if (!outf) {
+			dfprintf(stderr, "Failed to open memstream: %m\n");
+			return AA_EXIT_INTERNAL_ERROR;
+		}
+	}
+
+	/* always get policy even if not displayed because getting processes
+	 * requires it to filter out unconfined tasks that don't or shouldn't
+	 * have policy associated.
+	 */
+	ret = get_profiles(fp, &profiles, &nprofiles);
+	if (ret != 0) {
+		dfprintf(stderr, "Failed to get profiles: %d....\n", ret);
+		goto out;
+	}
+
+	if (opt_json)
+		json_header(outf);
+	if (opt_show & SHOW_PROFILES) {
+		if (opt_count) {
+			ret = simple_filtered_count(outf, opt_mode,
+						    profiles, nprofiles);
+		} else {
+			ret = detailed_profiles(outf, opt_mode, opt_json,
+						profiles, nprofiles);
+		}
+		if (ret != 0)
+			goto out;
+	}
+
+	if (opt_show & SHOW_PROCESSES) {
+		struct process *processes = NULL;
+		size_t nprocesses = 0;
+
+		ret = get_processes(profiles, nprofiles, &processes, &nprocesses);
+		if (ret != 0) {
+			dfprintf(stderr, "Failed to get processes: %d....\n", ret);
+		} else if (opt_count) {
+			ret = simple_filtered_process_count(outf, opt_mode,
+							processes, nprocesses);
+		} else {
+			ret = detailed_processes(outf, opt_mode, opt_json,
+						 processes, nprocesses);
+		}
+		free_processes(processes, nprocesses);
+
+		if (ret != 0)
+			goto out;
+	}
+
+	if (opt_json)
+		json_footer(outf);
+
+	if (opt_pretty) {
+		autofree char *pretty = NULL;
+		cJSON *json;
+
+		/* explicit close to sync */
+		fclose(outf);
+		outf = outf_save;
+		json = cJSON_Parse(buffer);
+		if (!json) {
+			dfprintf(stderr, "Failed to parse json output");
+			ret = AA_EXIT_INTERNAL_ERROR;
+			goto out;
+		}
+
+		pretty = cJSON_Print(json);
+		if (!pretty) {
+			dfprintf(stderr, "Failed to print pretty json");
+			ret = AA_EXIT_INTERNAL_ERROR;
+			goto out;
+		}
+		fprintf(outf, "%s\n", pretty);
+
+		ret = AA_EXIT_ENABLED;
+	}
+
+out:
+	free_profiles(profiles, nprofiles);
 
 	exit(ret);
 }
