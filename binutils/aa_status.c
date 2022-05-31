@@ -407,11 +407,12 @@ static int filter_processes(struct process *processes,
 
 /**
  * simple_filtered_count - count the number of profiles with mode == filter
+ * @outf: output file destination
  * @filter: mode string to filter profiles on
  *
  * Return: 0 on success, else shell error code
  */
-static int simple_filtered_count(const char *filter) {
+static int simple_filtered_count(FILE *outf, const char *filter) {
 	size_t n;
 	struct profile *profiles;
 	int ret;
@@ -421,7 +422,7 @@ static int simple_filtered_count(const char *filter) {
 		size_t nfiltered;
 		struct profile *filtered = NULL;
 		ret = filter_profiles(profiles, n, filter, &filtered, &nfiltered);
-		printf("%zd\n", nfiltered);
+		fprintf(outf, "%zd\n", nfiltered);
 		free_profiles(filtered, nfiltered);
 	}
 	free_profiles(profiles, n);
@@ -430,11 +431,12 @@ static int simple_filtered_count(const char *filter) {
 
 /**
  * simple_filtered_process_count - count processes with mode == filter
+ * @outf: output file destination
  * @filter: mode string to filter processes on
  *
  * Return: 0 on success, else shell error code
  */
-static int simple_filtered_process_count(const char *filter) {
+static int simple_filtered_process_count(FILE *outf, const char *filter) {
 	size_t nprocesses, nprofiles;
 	struct profile *profiles = NULL;
 	struct process *processes = NULL;
@@ -448,7 +450,7 @@ static int simple_filtered_process_count(const char *filter) {
 		size_t nfiltered;
 		struct process *filtered = NULL;
 		ret = filter_processes(processes, nprocesses, filter, &filtered, &nfiltered);
-		printf("%zd\n", nfiltered);
+		fprintf(outf, "%zd\n", nfiltered);
 		free_processes(filtered, nfiltered);
 	}
 	free_profiles(profiles, nprofiles);
@@ -699,22 +701,22 @@ static char **parse_args(int argc, char **argv)
 			print_usage(argv[0], false);
 			break;
 		case ARG_PROFILED:
-			exit(simple_filtered_count(NULL));
+			exit(simple_filtered_count(stdout, NULL));
 			break;
 		case ARG_ENFORCED:
-			exit(simple_filtered_count("enforce"));
+			exit(simple_filtered_count(stdout, "enforce"));
 			break;
 		case ARG_COMPLAIN:
-			exit(simple_filtered_count("complain"));
+			exit(simple_filtered_count(stdout, "complain"));
 			break;
 		case ARG_UNCONFINED:
-			exit(simple_filtered_count("unconfined"));
+			exit(simple_filtered_count(stdout, "unconfined"));
 			break;
 		case ARG_KILL:
-			exit(simple_filtered_count("kill"));
+			exit(simple_filtered_count(stdout, "kill"));
 			break;
 		case ARG_PS_MIXED:
-			exit(simple_filtered_process_count("mixed"));
+			exit(simple_filtered_process_count(stdout, "mixed"));
 			break;
 		case ARG_JSON:
 			exit(detailed_output(stdout, true));
