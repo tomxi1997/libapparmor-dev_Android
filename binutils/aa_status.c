@@ -589,7 +589,7 @@ exit:
  *
  * Return: 0 on success, shell error on failure
  */
-static int cmd_pretty_json()
+static int cmd_pretty_json(FILE *outf)
 {
 	autofree char *buffer = NULL;
 	autofree char *pretty = NULL;
@@ -620,7 +620,7 @@ static int cmd_pretty_json()
 		dfprintf(stderr, "Failed to print pretty json");
 		return AA_EXIT_INTERNAL_ERROR;
 	}
-	fprintf(stdout, "%s\n", pretty);
+	fprintf(outf, "%s\n", pretty);
 
 	return AA_EXIT_ENABLED;
 }
@@ -720,7 +720,7 @@ static char **parse_args(int argc, char **argv)
 			exit(detailed_output(stdout, true));
 			break;
 		case ARG_PRETTY:
-			exit(cmd_pretty_json());
+			exit(cmd_pretty_json(stdout));
 			break;
 		default:
 			dfprintf(stderr, "Error: Invalid command.\n");
