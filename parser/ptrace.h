@@ -44,7 +44,7 @@ public:
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
 
-	virtual bool valid_prefix(prefixes &p, const char *&error) {
+	virtual bool valid_prefix(const prefixes &p, const char *&error) {
 		if (p.owner) {
 			error = "owner prefix not allowed on ptrace rules";
 			return false;

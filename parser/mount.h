@@ -156,7 +156,7 @@ public:
 		free(trans);
 	}
 
-	virtual bool valid_prefix(prefixes &p, const char *&error) {
+	virtual bool valid_prefix(const prefixes &p, const char *&error) {
 		if (p.owner) {
 			error = "owner prefix not allowed on mount rules";
 			return false;

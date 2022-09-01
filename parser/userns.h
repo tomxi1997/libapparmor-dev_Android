@@ -31,7 +31,7 @@ public:
 	{
 	};
 
-	virtual bool valid_prefix(prefixes &p, const char *&error) {
+	virtual bool valid_prefix(const prefixes &p, const char *&error) {
 		if (p.owner) {
 			error = _("owner prefix not allowed on userns rules");
 			return false;

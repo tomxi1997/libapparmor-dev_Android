@@ -46,7 +46,7 @@ public:
 		free(peer_addr);
 	};
 
-	virtual bool valid_prefix(prefixes &p, const char *&error) {
+	virtual bool valid_prefix(const prefixes &p, const char *&error) {
 		if (p.owner) {
 			error = "owner prefix not allowed on unix rules";
 			return false;

@@ -135,9 +135,9 @@ public:
 		owner = 0;
 	};
 
-	virtual bool valid_prefix(prefixes &p, const char *&error) = 0;
+	virtual bool valid_prefix(const prefixes &p, const char *&error) = 0;
 
-	virtual bool add_prefix(prefixes &p, const char *&error) {
+	virtual bool add_prefix(const prefixes &p, const char *&error) {
 		if (!valid_prefix(p, error))
 			return false;
 		if (p.audit != AUDIT_UNSPECIFIED && audit != p.audit) {

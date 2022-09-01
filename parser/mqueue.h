@@ -95,7 +95,7 @@ public:
 		free(label);
 	};
 
-	virtual bool valid_prefix(prefixes &p, const char *&error) {
+	virtual bool valid_prefix(const prefixes &p, const char *&error) {
 		// not yet, but soon
 		if (p.owner) {
 			error = _("owner prefix not allowed on mqueue rules");
