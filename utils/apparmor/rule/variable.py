@@ -113,9 +113,6 @@ class VariableRule(BaseRule):
     def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-variable rule: %s' % str(rule_obj))
-
         if self.varname != rule_obj.varname:
             return False
 

@@ -217,10 +217,7 @@ class RlimitRule(BaseRule):
     def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-rlimit rule: %s' % str(rule_obj))
-
-        if (self.rlimit != rule_obj.rlimit):
+        if self.rlimit != rule_obj.rlimit:
             return False
 
         if (self.value_as_int != rule_obj.value_as_int

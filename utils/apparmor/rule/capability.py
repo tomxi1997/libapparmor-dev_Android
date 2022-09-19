@@ -110,9 +110,6 @@ class CapabilityRule(BaseRule):
     def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-capability rule: %s' % str(rule_obj))
-
         if (self.capability != rule_obj.capability
                 or self.all_caps != rule_obj.all_caps):
             return False

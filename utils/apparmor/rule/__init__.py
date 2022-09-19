@@ -50,6 +50,8 @@ class BaseRule(metaclass=ABCMeta):
     # defines if the '(O)wner permissions on/off' option is displayed
     can_owner = False
 
+    rule_name = 'base'
+
     def __init__(self, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
         """initialize variables needed by all rule types"""
@@ -216,6 +218,9 @@ class BaseRule(metaclass=ABCMeta):
             or self.raw_rule != rule_obj.raw_rule
         ):
             return False
+
+        if type(rule_obj) is not type(self):
+            raise AppArmorBug('Passed non-{} rule: {}'.format(self.rule_name, rule_obj))
 
         return self._is_equal_localvars(rule_obj, strict)
 

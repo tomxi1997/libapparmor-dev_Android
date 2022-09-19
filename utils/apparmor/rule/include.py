@@ -103,16 +103,13 @@ class IncludeRule(BaseRule):
     def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-%s rule: %s' % (self.rule_name, str(rule_obj)))
-
-        if (self.path != rule_obj.path):
+        if self.path != rule_obj.path:
             return False
 
-        if (self.ifexists != rule_obj.ifexists):
+        if self.ifexists != rule_obj.ifexists:
             return False
 
-        if (self.ismagic != rule_obj.ismagic):
+        if self.ismagic != rule_obj.ismagic:
             return False
 
         return True

@@ -162,9 +162,6 @@ class NetworkRule(BaseRule):
     def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-network rule: %s' % str(rule_obj))
-
         if (self.domain != rule_obj.domain
                 or self.all_domains != rule_obj.all_domains):
             return False
