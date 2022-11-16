@@ -98,11 +98,7 @@ class BaseRule(metaclass=ABCMeta):
         """return True if raw_rule matches the class (main) regex, False otherwise
            Note: This function just provides an answer to "is this your job?".
                  It does not guarantee that the rule is completely valid."""
-
-        if cls._match(raw_rule):
-            return True
-        else:
-            return False
+        return bool(cls._match(raw_rule))
 
     @classmethod
     @abstractmethod
