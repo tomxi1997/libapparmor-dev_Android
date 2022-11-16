@@ -24,6 +24,7 @@ class AliasRule(BaseRule):
     """Class to handle and store a single alias rule"""
 
     rule_name = 'alias'
+    _match_re = RE_PROFILE_ALIAS
 
     def __init__(self, orig_path, target, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -53,10 +54,6 @@ class AliasRule(BaseRule):
 
         self.orig_path = orig_path
         self.target = target
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_ALIAS.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

@@ -34,6 +34,7 @@ class CapabilityRule(BaseRule):
     ALL = __CapabilityAll
 
     rule_name = 'capability'
+    _match_re = RE_PROFILE_CAP
 
     def __init__(self, cap_list, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -58,10 +59,6 @@ class CapabilityRule(BaseRule):
             for cap in self.capability:
                 if not cap.strip():
                     raise AppArmorBug('Passed empty capability to %s: %s' % (type(self).__name__, str(cap_list)))
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_CAP.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

@@ -25,21 +25,6 @@ _ = init_translation()
 class BaseRule(metaclass=ABCMeta):
     """Base class to handle and store a single rule"""
 
-    # type specific rules should inherit from this class.
-    # Methods that subclasses need to implement:
-    #   __init__
-    #   _match(cls, raw_rule) (as a class method)
-    #     - parses a raw rule and returns a regex match object
-    #   _create_instance(cls, raw_rule) (as a class method)
-    #     - parses a raw rule and returns an object of the Rule subclass
-    #   get_clean(depth)
-    #     - return rule in clean format
-    #   is_covered(self, other_rule)
-    #     - check if other_rule is covered by this rule (i.e. is a
-    #       subset of this rule's permissions)
-    #   _is_equal_localvars(self, other_rule)
-    #     - equality check for the rule-specific fields
-
     # decides if the (G)lob and Glob w/ (E)xt options are displayed
     can_glob = False
     can_glob_ext = False
@@ -51,6 +36,8 @@ class BaseRule(metaclass=ABCMeta):
     can_owner = False
 
     rule_name = 'base'
+
+    _match_re = None
 
     def __init__(self, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -101,10 +88,14 @@ class BaseRule(metaclass=ABCMeta):
         return bool(cls._match(raw_rule))
 
     @classmethod
-    @abstractmethod
     def _match(cls, raw_rule):
         """parse raw_rule and return regex match object"""
-        raise NotImplementedError("'%s' needs to implement _match(), but didn't" % (str(cls)))
+        if cls._match_re is None:
+            if cls is BaseRule:
+                raise AppArmorBug("BaseRule class methods should not be called directly.")
+            else:
+                raise NotImplementedError("'%s' needs to implement _match(), but didn't" % (str(cls)))
+        return cls._match_re.search(raw_rule)
 
     @classmethod
     def create_instance(cls, raw_rule):

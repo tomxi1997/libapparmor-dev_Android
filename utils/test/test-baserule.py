@@ -22,9 +22,6 @@ class TestBaserule(AATest):
 
     class ValidSubclass(BaseRule):
         @classmethod
-        def _match(cls, raw_rule): pass
-
-        @classmethod
         def _create_instance(cls, raw_rule, matches): pass
 
         def get_clean(self, depth=0): pass
@@ -53,16 +50,20 @@ class TestBaserule(AATest):
             BaseRule._create_instance('foo', None)
 
     def test_abstract__create_instance_2(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AppArmorBug):
             BaseRule.create_instance('foo')
 
     def test_abstract__match(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AppArmorBug):
             BaseRule._match('foo')
 
     def test_abstract__match2(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AppArmorBug):
             BaseRule.match('foo')
+
+    def test_abstract__match3(self):
+        with self.assertRaises(NotImplementedError):
+            self.ValidSubclass.match('foo')
 
     def test_parse_modifiers_invalid(self):
         regex = re.compile('^\s*(?P<audit>audit\s+)?(?P<allow>allow\s+|deny\s+|invalid\s+)?')

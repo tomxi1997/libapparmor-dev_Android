@@ -25,6 +25,7 @@ class BooleanRule(BaseRule):
     """Class to handle and store a single variable rule"""
 
     rule_name = 'boolean'
+    _match_re = RE_PROFILE_BOOLEAN
 
     def __init__(self, varname, value, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -54,10 +55,6 @@ class BooleanRule(BaseRule):
 
         self.varname = varname
         self.value = value
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_BOOLEAN.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

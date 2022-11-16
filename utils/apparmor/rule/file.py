@@ -43,6 +43,7 @@ class FileRule(BaseRule):
     ANY_EXEC = __FileAnyExec
 
     rule_name = 'file'
+    _match_re = RE_PROFILE_FILE_ENTRY
 
     def __init__(self, path, perms, exec_perms, target, owner, file_keyword=False, leading_perms=False,
                  audit=False, deny=False, allow_keyword=False, comment='', log_event=None):
@@ -131,10 +132,6 @@ class FileRule(BaseRule):
 # elif
         if self.all_paths and (self.exec_perms or self.target):
             raise AppArmorBug('exec perms or target specified for bare file rule')
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_FILE_ENTRY.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

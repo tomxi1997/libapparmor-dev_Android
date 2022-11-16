@@ -25,6 +25,7 @@ class IncludeRule(BaseRule):
     """Class to handle and store a single include rule"""
 
     rule_name = 'include'
+    _match_re = RE_INCLUDE
 
     def __init__(self, path, ifexists, ismagic, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -50,10 +51,6 @@ class IncludeRule(BaseRule):
         self.path = path
         self.ifexists = ifexists
         self.ismagic = ismagic
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_INCLUDE.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

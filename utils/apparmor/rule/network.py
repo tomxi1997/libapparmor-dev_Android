@@ -54,6 +54,7 @@ class NetworkRule(BaseRule):
     ALL = __NetworkAll
 
     rule_name = 'network'
+    _match_re = RE_PROFILE_NETWORK
 
     def __init__(self, domain, type_or_protocol, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -86,10 +87,6 @@ class NetworkRule(BaseRule):
                 raise AppArmorBug('Passed unknown type_or_protocol to %s: %s' % (type(self).__name__, type_or_protocol))
         else:
             raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(type_or_protocol)))
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_NETWORK.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

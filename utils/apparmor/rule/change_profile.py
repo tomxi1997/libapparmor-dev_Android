@@ -33,8 +33,8 @@ class ChangeProfileRule(BaseRule):
     ALL = __ChangeProfileAll
 
     rule_name = 'change_profile'
-
     equiv_execmodes = ['safe', '', None]
+    _match_re = RE_PROFILE_CHANGE_PROFILE
 
     def __init__(self, execmode, execcond, targetprofile, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -75,10 +75,6 @@ class ChangeProfileRule(BaseRule):
                 raise AppArmorBug('Empty target profile in change_profile rule')
         else:
             raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(targetprofile)))
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_CHANGE_PROFILE.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

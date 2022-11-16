@@ -46,6 +46,7 @@ class RlimitRule(BaseRule):
     ALL = __RlimitAll
 
     rule_name = 'rlimit'
+    _match_re = RE_PROFILE_RLIMIT
 
     def __init__(self, rlimit, value, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -102,10 +103,6 @@ class RlimitRule(BaseRule):
             self.value = value
         else:
             raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(value)))
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_RLIMIT.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

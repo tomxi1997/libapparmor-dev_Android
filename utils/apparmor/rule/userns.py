@@ -41,6 +41,7 @@ class UserNamespaceRule(BaseRule):
     ALL = __UserNamespaceAll
 
     rule_name = 'userns'
+    _match_re = RE_PROFILE_USERNS
 
     def __init__(self, access, audit=False, deny=False,
                  allow_keyword=False, comment='', log_event=None):
@@ -53,10 +54,6 @@ class UserNamespaceRule(BaseRule):
         self.access, self.all_access, unknown_items = check_and_split_list(access, access_keyword, self.ALL, type(self).__name__, 'access')
         if unknown_items:
             raise AppArmorException(_('Passed unknown access keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_USERNS.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

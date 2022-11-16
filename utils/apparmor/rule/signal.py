@@ -75,6 +75,7 @@ class SignalRule(BaseRule):
     ALL = __SignalAll
 
     rule_name = 'signal'
+    _match_re = RE_PROFILE_SIGNAL
 
     def __init__(self, access, signal, peer, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -97,10 +98,6 @@ class SignalRule(BaseRule):
                     raise AppArmorException(_('Passed unknown signal keyword to %s: %s') % (type(self).__name__, item))
 
         self.peer, self.all_peers = self._aare_or_all(peer, 'peer', is_path=False, log_event=log_event)
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_SIGNAL.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

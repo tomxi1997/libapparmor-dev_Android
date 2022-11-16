@@ -27,6 +27,7 @@ class VariableRule(BaseRule):
     """Class to handle and store a single variable rule"""
 
     rule_name = 'variable'
+    _match_re = RE_PROFILE_VARIABLE
 
     def __init__(self, varname, mode, values, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -60,10 +61,6 @@ class VariableRule(BaseRule):
         self.varname = varname
         self.mode = mode
         self.values = values
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_VARIABLE.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

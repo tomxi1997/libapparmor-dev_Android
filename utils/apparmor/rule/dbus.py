@@ -77,6 +77,7 @@ class DbusRule(BaseRule):
     ALL = __DbusAll
 
     rule_name = 'dbus'
+    _match_re = RE_PROFILE_DBUS
 
     def __init__(self, access, bus, path, name, interface, member, peername, peerlabel,
                 audit=False, deny=False, allow_keyword=False, comment='', log_event=None):
@@ -106,10 +107,6 @@ class DbusRule(BaseRule):
             for msg in message_keywords:
                 if msg in self.access:
                     raise AppArmorException(_('dbus %s rules must not contain a name conditional') % '/'.join(self.access))
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_DBUS.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

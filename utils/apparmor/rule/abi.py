@@ -26,6 +26,7 @@ class AbiRule(IncludeRule):
     """Class to handle and store a single abi rule"""
 
     rule_name = 'abi'
+    _match_re = RE_ABI
 
     def __init__(self, path, ifexists, ismagic, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -37,10 +38,6 @@ class AbiRule(IncludeRule):
         # abi doesn't support 'if exists'
         if ifexists:
             raise AppArmorBug('Attempt to use %s rule with if exists flag' % self.__class__.__name__)
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_ABI.search(raw_rule)
 
     def get_clean(self, depth=0):
         """return rule (in clean/default formatting)"""

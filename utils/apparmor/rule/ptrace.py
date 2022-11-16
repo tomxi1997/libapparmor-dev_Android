@@ -50,6 +50,7 @@ class PtraceRule(BaseRule):
     ALL = __PtraceAll
 
     rule_name = 'ptrace'
+    _match_re = RE_PROFILE_PTRACE
 
     def __init__(self, access, peer, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -63,10 +64,6 @@ class PtraceRule(BaseRule):
             raise AppArmorException(_('Passed unknown access keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
 
         self.peer, self.all_peers = self._aare_or_all(peer, 'peer', is_path=False, log_event=log_event)
-
-    @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_PTRACE.search(raw_rule)
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):
