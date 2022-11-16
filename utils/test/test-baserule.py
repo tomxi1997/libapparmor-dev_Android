@@ -25,7 +25,7 @@ class TestBaserule(AATest):
         def _match(cls, raw_rule): pass
 
         @classmethod
-        def _create_instance(cls, raw_rule): pass
+        def _create_instance(cls, raw_rule, matches): pass
 
         def get_clean(self, depth=0): pass
 
@@ -50,7 +50,7 @@ class TestBaserule(AATest):
 
     def test_abstract__create_instance(self):
         with self.assertRaises(NotImplementedError):
-            BaseRule._create_instance('foo')
+            BaseRule._create_instance('foo', None)
 
     def test_abstract__create_instance_2(self):
         with self.assertRaises(NotImplementedError):

@@ -16,7 +16,7 @@
 from abc import ABCMeta, abstractmethod
 
 from apparmor.aare import AARE
-from apparmor.common import AppArmorBug
+from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -113,13 +113,17 @@ class BaseRule(metaclass=ABCMeta):
     @classmethod
     def create_instance(cls, raw_rule):
         """parse raw_rule and return instance of this class"""
-        rule = cls._create_instance(raw_rule)
+        matches = cls._match(raw_rule)
+        if not matches:
+            raise AppArmorException(_("Invalid %s rule '%s'") % (cls.rule_name, raw_rule))
+
+        rule = cls._create_instance(raw_rule, matches)
         rule.raw_rule = raw_rule.strip()
         return rule
 
     @classmethod
     @abstractmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """returns a Rule object created from parsing the raw rule.
            required to be implemented by subclasses; raise exception if not"""
         raise NotImplementedError("'%s' needs to implement _create_instance(), but didn't" % (str(cls)))

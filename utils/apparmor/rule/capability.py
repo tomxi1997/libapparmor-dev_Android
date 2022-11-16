@@ -15,7 +15,7 @@
 
 import re
 
-from apparmor.common import AppArmorBug, AppArmorException
+from apparmor.common import AppArmorBug
 from apparmor.regex import RE_PROFILE_CAP
 from apparmor.rule import BaseRule, BaseRuleset, logprof_value_or_all, parse_modifiers
 from apparmor.translations import init_translation
@@ -64,16 +64,10 @@ class CapabilityRule(BaseRule):
         return RE_PROFILE_CAP.search(raw_rule)
 
     @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
 
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid capability rule '%s'") % raw_rule)
-
         audit, deny, allow_keyword, comment = parse_modifiers(matches)
-
-        capability = []
 
         if matches.group('capability'):
             capability = matches.group('capability').strip()

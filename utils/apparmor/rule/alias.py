@@ -59,12 +59,8 @@ class AliasRule(BaseRule):
         return RE_PROFILE_ALIAS.search(raw_rule)
 
     @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid alias rule '%s'") % raw_rule)
 
         comment = parse_comment(matches)
 
