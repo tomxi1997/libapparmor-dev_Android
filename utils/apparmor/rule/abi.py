@@ -52,7 +52,7 @@ class AbiRule(IncludeRule):
         else:
             return ('%s%s "%s",%s' % (space, self.rule_name, self.path, self.comment))
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         return [_('Abi'), self.get_clean()]
 
 

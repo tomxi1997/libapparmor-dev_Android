@@ -131,7 +131,7 @@ class ChangeProfileRule(BaseRule):
 
         return ('%s%schange_profile%s%s%s,%s' % (space, self.modifiers_str(), execmode, execcond, targetprofile, self.comment))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if (self.execmode != other_rule.execmode
@@ -149,7 +149,7 @@ class ChangeProfileRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
         if type(rule_obj) is not type(self):
@@ -170,7 +170,7 @@ class ChangeProfileRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         headers = []
 
         if self.execmode:

@@ -147,7 +147,7 @@ class NetworkRule(BaseRule):
 
         return ('%s%snetwork%s%s,%s' % (space, self.modifiers_str(), domain, type_or_protocol, self.comment))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if not self._is_covered_plain(self.domain, self.all_domains, other_rule.domain, other_rule.all_domains, 'domain'):
@@ -159,7 +159,7 @@ class NetworkRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
         if type(rule_obj) is not type(self):
@@ -175,7 +175,7 @@ class NetworkRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         family    = logprof_value_or_all(self.domain,           self.all_domains)  # noqa: E221
         sock_type = logprof_value_or_all(self.type_or_protocol, self.all_type_or_protocols)
 

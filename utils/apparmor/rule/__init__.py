@@ -37,7 +37,7 @@ class BaseRule(metaclass=ABCMeta):
     #   is_covered(self, other_rule)
     #     - check if other_rule is covered by this rule (i.e. is a
     #       subset of this rule's permissions)
-    #   is_equal_localvars(self, other_rule)
+    #   _is_equal_localvars(self, other_rule)
     #     - equality check for the rule-specific fields
 
     # decides if the (G)lob and Glob w/ (E)xt options are displayed
@@ -152,10 +152,10 @@ class BaseRule(metaclass=ABCMeta):
             return False
 
         # still here? -> then the common part is covered, check rule-specific things now
-        return self.is_covered_localvars(other_rule)
+        return self._is_covered_localvars(other_rule)
 
     @abstractmethod
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if the rule-specific parts of other_rule is covered by this rule object"""
 
     def _is_covered_plain(self, self_value, self_all, other_value, other_all, cond_name):
@@ -205,7 +205,7 @@ class BaseRule(metaclass=ABCMeta):
 
     def is_equal(self, rule_obj, strict=False):
         """compare if rule_obj == self
-           Calls is_equal_localvars() to compare rule-specific variables"""
+           Calls _is_equal_localvars() to compare rule-specific variables"""
 
         if self.audit != rule_obj.audit or self.deny != rule_obj.deny:
             return False
@@ -217,7 +217,7 @@ class BaseRule(metaclass=ABCMeta):
         ):
             return False
 
-        return self.is_equal_localvars(rule_obj, strict)
+        return self._is_equal_localvars(rule_obj, strict)
 
     def _is_equal_aare(self, self_value, self_all, other_value, other_all, cond_name):
         """check if other_* is the same as self_* - for AARE"""
@@ -235,7 +235,7 @@ class BaseRule(metaclass=ABCMeta):
         return True
 
     @abstractmethod
-    def is_equal_localvars(self, other_rule, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
     def severity(self, sev_db):
@@ -264,12 +264,12 @@ class BaseRule(metaclass=ABCMeta):
         if qualifier:
             headers.extend((_('Qualifier'), ' '.join(qualifier)))
 
-        headers.extend(self.logprof_header_localvars())
+        headers.extend(self._logprof_header_localvars())
 
         return headers
 
     @abstractmethod
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         """return the headers (human-readable version of the rule) to display in aa-logprof for this rule object
            returns {'label1': 'value1', 'label2': 'value2'}"""
 

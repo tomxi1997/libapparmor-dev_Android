@@ -98,7 +98,7 @@ class UserNamespaceRule(BaseRule):
 
         return('%s%suserns%s,%s' % (space, self.modifiers_str(), access, self.comment))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         '''check if other_rule is covered by this rule object'''
 
         if not self._is_covered_list(self.access, self.all_access, other_rule.access, other_rule.all_access, 'access'):
@@ -107,7 +107,7 @@ class UserNamespaceRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         '''compare if rule-specific variables are equal'''
 
         if type(rule_obj) is not type(self):
@@ -119,7 +119,7 @@ class UserNamespaceRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         access = logprof_value_or_all(self.access, self.all_access)
 
         return (

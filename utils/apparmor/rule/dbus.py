@@ -234,7 +234,7 @@ class DbusRule(BaseRule):
         else:
             raise AppArmorBug('Empty %(prefix_name)s in %(rule_name)s rule' % {'prefix_name': prefix, 'rule_name': self.rule_name})
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if not self._is_covered_list(self.access,       self.all_access,        other_rule.access,      other_rule.all_access,      'access'):
@@ -264,7 +264,7 @@ class DbusRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
         if type(rule_obj) is not type(self):
@@ -297,7 +297,7 @@ class DbusRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         access      = logprof_value_or_all(self.access,     self.all_access)
         bus         = logprof_value_or_all(self.bus,        self.all_buses)
         path        = logprof_value_or_all(self.path,       self.all_paths)
