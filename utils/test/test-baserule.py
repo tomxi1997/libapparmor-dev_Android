@@ -22,18 +22,15 @@ class TestBaserule(AATest):
 
     class ValidSubclass(BaseRule):
         @classmethod
-        def _match(cls, raw_rule): pass
-
-        @classmethod
-        def _create_instance(cls, raw_rule): pass
+        def _create_instance(cls, raw_rule, matches): pass
 
         def get_clean(self, depth=0): pass
 
-        def is_covered_localvars(self, other_rule): pass
+        def _is_covered_localvars(self, other_rule): pass
 
-        def is_equal_localvars(self, other_rule, strict): pass
+        def _is_equal_localvars(self, other_rule, strict): pass
 
-        def logprof_header_localvars(self): pass
+        def _logprof_header_localvars(self): pass
 
     def test_implemented_abstract_methods(self):
         self.ValidSubclass()
@@ -50,19 +47,23 @@ class TestBaserule(AATest):
 
     def test_abstract__create_instance(self):
         with self.assertRaises(NotImplementedError):
-            BaseRule._create_instance('foo')
+            BaseRule._create_instance('foo', None)
 
     def test_abstract__create_instance_2(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AppArmorBug):
             BaseRule.create_instance('foo')
 
     def test_abstract__match(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AppArmorBug):
             BaseRule._match('foo')
 
     def test_abstract__match2(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(AppArmorBug):
             BaseRule.match('foo')
+
+    def test_abstract__match3(self):
+        with self.assertRaises(NotImplementedError):
+            self.ValidSubclass.match('foo')
 
     def test_parse_modifiers_invalid(self):
         regex = re.compile('^\s*(?P<audit>audit\s+)?(?P<allow>allow\s+|deny\s+|invalid\s+)?')

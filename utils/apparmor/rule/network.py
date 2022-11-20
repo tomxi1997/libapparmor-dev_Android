@@ -54,6 +54,7 @@ class NetworkRule(BaseRule):
     ALL = __NetworkAll
 
     rule_name = 'network'
+    _match_re = RE_PROFILE_NETWORK
 
     def __init__(self, domain, type_or_protocol, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -88,16 +89,8 @@ class NetworkRule(BaseRule):
             raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(type_or_protocol)))
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_NETWORK.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid network rule '%s'") % raw_rule)
 
         audit, deny, allow_keyword, comment = parse_modifiers(matches)
 
@@ -147,7 +140,7 @@ class NetworkRule(BaseRule):
 
         return ('%s%snetwork%s%s,%s' % (space, self.modifiers_str(), domain, type_or_protocol, self.comment))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if not self._is_covered_plain(self.domain, self.all_domains, other_rule.domain, other_rule.all_domains, 'domain'):
@@ -159,11 +152,8 @@ class NetworkRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-network rule: %s' % str(rule_obj))
 
         if (self.domain != rule_obj.domain
                 or self.all_domains != rule_obj.all_domains):
@@ -175,14 +165,14 @@ class NetworkRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         family    = logprof_value_or_all(self.domain,           self.all_domains)  # noqa: E221
         sock_type = logprof_value_or_all(self.type_or_protocol, self.all_type_or_protocols)
 
-        return [
+        return (
             _('Network Family'), family,
             _('Socket Type'), sock_type,
-        ]
+        )
 
 
 class NetworkRuleset(BaseRuleset):

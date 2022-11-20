@@ -41,6 +41,7 @@ class UserNamespaceRule(BaseRule):
     ALL = __UserNamespaceAll
 
     rule_name = 'userns'
+    _match_re = RE_PROFILE_USERNS
 
     def __init__(self, access, audit=False, deny=False,
                  allow_keyword=False, comment='', log_event=None):
@@ -55,16 +56,8 @@ class UserNamespaceRule(BaseRule):
             raise AppArmorException(_('Passed unknown access keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_USERNS.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         '''parse raw_rule and return instance of this class'''
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid userns rule '%s'") % raw_rule)
 
         audit, deny, allow_keyword, comment = parse_modifiers(matches)
 
@@ -98,7 +91,7 @@ class UserNamespaceRule(BaseRule):
 
         return('%s%suserns%s,%s' % (space, self.modifiers_str(), access, self.comment))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         '''check if other_rule is covered by this rule object'''
 
         if not self._is_covered_list(self.access, self.all_access, other_rule.access, other_rule.all_access, 'access'):
@@ -107,11 +100,8 @@ class UserNamespaceRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         '''compare if rule-specific variables are equal'''
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-userns rule: %s' % str(rule_obj))
 
         if (self.access != rule_obj.access or
                 self.all_access != rule_obj.all_access):
@@ -119,12 +109,10 @@ class UserNamespaceRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         access = logprof_value_or_all(self.access, self.all_access)
 
-        return (
-            _('Access mode'), access,
-        )
+        return _('Access mode'), access
 
 
 class UserNamespaceRuleset(BaseRuleset):

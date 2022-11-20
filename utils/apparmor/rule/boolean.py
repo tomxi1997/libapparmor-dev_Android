@@ -25,6 +25,7 @@ class BooleanRule(BaseRule):
     """Class to handle and store a single variable rule"""
 
     rule_name = 'boolean'
+    _match_re = RE_PROFILE_BOOLEAN
 
     def __init__(self, varname, value, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -56,16 +57,8 @@ class BooleanRule(BaseRule):
         self.value = value
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_BOOLEAN.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid boolean variable rule '%s'") % raw_rule)
 
         comment = parse_comment(matches)
 
@@ -82,7 +75,7 @@ class BooleanRule(BaseRule):
 
         return '%s%s = %s' % (space, self.varname, self.value)
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if self.varname != other_rule.varname:
@@ -94,11 +87,8 @@ class BooleanRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-boolean rule: %s' % str(rule_obj))
 
         if self.varname != rule_obj.varname:
             return False
@@ -108,12 +98,8 @@ class BooleanRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
-        headers = []
-
-        return headers + [
-            _('Boolean Variable'), self.get_clean(),
-        ]
+    def _logprof_header_localvars(self):
+        return _('Boolean Variable'), self.get_clean()
 
 
 class BooleanRuleset(BaseRuleset):

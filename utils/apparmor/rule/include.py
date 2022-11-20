@@ -13,7 +13,7 @@
 # ----------------------------------------------------------------------
 import os
 
-from apparmor.common import AppArmorBug, AppArmorException, is_skippable_file
+from apparmor.common import AppArmorBug, is_skippable_file
 from apparmor.regex import RE_INCLUDE, re_match_include_parse
 from apparmor.rule import BaseRule, BaseRuleset, parse_comment
 from apparmor.translations import init_translation
@@ -25,6 +25,7 @@ class IncludeRule(BaseRule):
     """Class to handle and store a single include rule"""
 
     rule_name = 'include'
+    _match_re = RE_INCLUDE
 
     def __init__(self, path, ifexists, ismagic, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -52,16 +53,8 @@ class IncludeRule(BaseRule):
         self.ismagic = ismagic
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_INCLUDE.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid %s rule '%s'") % (cls.rule_name, raw_rule))
 
         comment = parse_comment(matches)
 
@@ -85,7 +78,7 @@ class IncludeRule(BaseRule):
         else:
             return ('%s%s%s "%s"%s' % (space, self.rule_name, ifexists_txt, self.path, self.comment))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if (self.path != other_rule.path):
@@ -100,25 +93,22 @@ class IncludeRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-%s rule: %s' % (self.rule_name, str(rule_obj)))
-
-        if (self.path != rule_obj.path):
+        if self.path != rule_obj.path:
             return False
 
-        if (self.ifexists != rule_obj.ifexists):
+        if self.ifexists != rule_obj.ifexists:
             return False
 
-        if (self.ismagic != rule_obj.ismagic):
+        if self.ismagic != rule_obj.ismagic:
             return False
 
         return True
 
-    def logprof_header_localvars(self):
-        return [_('Include'), self.get_clean()]
+    def _logprof_header_localvars(self):
+        return _('Include'), self.get_clean()
 
     def get_full_paths(self, profile_dir):
         """get list of full paths of an include (can contain multiple paths if self.path is a directory)"""

@@ -27,6 +27,7 @@ class VariableRule(BaseRule):
     """Class to handle and store a single variable rule"""
 
     rule_name = 'variable'
+    _match_re = RE_PROFILE_VARIABLE
 
     def __init__(self, varname, mode, values, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -62,16 +63,8 @@ class VariableRule(BaseRule):
         self.values = values
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_VARIABLE.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid variable rule '%s'") % raw_rule)
 
         comment = parse_comment(matches)
 
@@ -95,7 +88,7 @@ class VariableRule(BaseRule):
 
         return '%s%s %s %s' % (space, self.varname, self.mode, ' '.join(data))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if self.varname != other_rule.varname:
@@ -110,11 +103,8 @@ class VariableRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-variable rule: %s' % str(rule_obj))
 
         if self.varname != rule_obj.varname:
             return False
@@ -127,12 +117,8 @@ class VariableRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
-        headers = []
-
-        return headers + [
-            _('Variable'), self.get_clean(),
-        ]
+    def _logprof_header_localvars(self):
+        return _('Variable'), self.get_clean()
 
 
 class VariableRuleset(BaseRuleset):

@@ -15,7 +15,7 @@
 
 import re
 
-from apparmor.common import AppArmorBug, AppArmorException
+from apparmor.common import AppArmorBug
 from apparmor.regex import RE_PROFILE_CAP
 from apparmor.rule import BaseRule, BaseRuleset, logprof_value_or_all, parse_modifiers
 from apparmor.translations import init_translation
@@ -34,6 +34,7 @@ class CapabilityRule(BaseRule):
     ALL = __CapabilityAll
 
     rule_name = 'capability'
+    _match_re = RE_PROFILE_CAP
 
     def __init__(self, cap_list, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -60,20 +61,10 @@ class CapabilityRule(BaseRule):
                     raise AppArmorBug('Passed empty capability to %s: %s' % (type(self).__name__, str(cap_list)))
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_CAP.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
 
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid capability rule '%s'") % raw_rule)
-
         audit, deny, allow_keyword, comment = parse_modifiers(matches)
-
-        capability = []
 
         if matches.group('capability'):
             capability = matches.group('capability').strip()
@@ -98,7 +89,7 @@ class CapabilityRule(BaseRule):
             else:
                 raise AppArmorBug("Empty capability rule")
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if not self._is_covered_list(self.capability, self.all_caps, other_rule.capability, other_rule.all_caps, 'capability'):
@@ -107,11 +98,8 @@ class CapabilityRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-capability rule: %s' % str(rule_obj))
 
         if (self.capability != rule_obj.capability
                 or self.all_caps != rule_obj.all_caps):
@@ -134,12 +122,10 @@ class CapabilityRule(BaseRule):
 
         return severity
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         cap_txt = logprof_value_or_all(self.capability, self.all_caps)
 
-        return [
-            _('Capability'), cap_txt,
-        ]
+        return _('Capability'), cap_txt
 
 
 class CapabilityRuleset(BaseRuleset):

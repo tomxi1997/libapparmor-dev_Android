@@ -24,6 +24,7 @@ class AliasRule(BaseRule):
     """Class to handle and store a single alias rule"""
 
     rule_name = 'alias'
+    _match_re = RE_PROFILE_ALIAS
 
     def __init__(self, orig_path, target, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -55,16 +56,8 @@ class AliasRule(BaseRule):
         self.target = target
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_ALIAS.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid alias rule '%s'") % raw_rule)
 
         comment = parse_comment(matches)
 
@@ -81,17 +74,14 @@ class AliasRule(BaseRule):
 
         return '%salias %s -> %s,' % (space, quote_if_needed(self.orig_path), quote_if_needed(self.target))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         # the only way aliases can be covered are exact duplicates
-        return self.is_equal_localvars(other_rule, False)
+        return self._is_equal_localvars(other_rule, False)
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific aliases are equal"""
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-alias rule: %s' % str(rule_obj))
 
         if self.orig_path != rule_obj.orig_path:
             return False
@@ -101,12 +91,8 @@ class AliasRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
-        headers = []
-
-        return headers + [
-            _('Alias'), '%s -> %s' % (self.orig_path, self.target),
-        ]
+    def _logprof_header_localvars(self):
+        return _('Alias'), '%s -> %s' % (self.orig_path, self.target)
 
 
 class AliasRuleset(BaseRuleset):

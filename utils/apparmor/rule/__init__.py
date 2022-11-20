@@ -16,7 +16,7 @@
 from abc import ABCMeta, abstractmethod
 
 from apparmor.aare import AARE
-from apparmor.common import AppArmorBug
+from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -24,21 +24,6 @@ _ = init_translation()
 
 class BaseRule(metaclass=ABCMeta):
     """Base class to handle and store a single rule"""
-
-    # type specific rules should inherit from this class.
-    # Methods that subclasses need to implement:
-    #   __init__
-    #   _match(cls, raw_rule) (as a class method)
-    #     - parses a raw rule and returns a regex match object
-    #   _create_instance(cls, raw_rule) (as a class method)
-    #     - parses a raw rule and returns an object of the Rule subclass
-    #   get_clean(depth)
-    #     - return rule in clean format
-    #   is_covered(self, other_rule)
-    #     - check if other_rule is covered by this rule (i.e. is a
-    #       subset of this rule's permissions)
-    #   is_equal_localvars(self, other_rule)
-    #     - equality check for the rule-specific fields
 
     # decides if the (G)lob and Glob w/ (E)xt options are displayed
     can_glob = False
@@ -49,6 +34,10 @@ class BaseRule(metaclass=ABCMeta):
 
     # defines if the '(O)wner permissions on/off' option is displayed
     can_owner = False
+
+    rule_name = 'base'
+
+    _match_re = None
 
     def __init__(self, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -96,28 +85,32 @@ class BaseRule(metaclass=ABCMeta):
         """return True if raw_rule matches the class (main) regex, False otherwise
            Note: This function just provides an answer to "is this your job?".
                  It does not guarantee that the rule is completely valid."""
-
-        if cls._match(raw_rule):
-            return True
-        else:
-            return False
+        return bool(cls._match(raw_rule))
 
     @classmethod
-    @abstractmethod
     def _match(cls, raw_rule):
         """parse raw_rule and return regex match object"""
-        raise NotImplementedError("'%s' needs to implement _match(), but didn't" % (str(cls)))
+        if cls._match_re is None:
+            if cls is BaseRule:
+                raise AppArmorBug("BaseRule class methods should not be called directly.")
+            else:
+                raise NotImplementedError("'%s' needs to implement _match(), but didn't" % (str(cls)))
+        return cls._match_re.search(raw_rule)
 
     @classmethod
     def create_instance(cls, raw_rule):
         """parse raw_rule and return instance of this class"""
-        rule = cls._create_instance(raw_rule)
+        matches = cls._match(raw_rule)
+        if not matches:
+            raise AppArmorException(_("Invalid %s rule '%s'") % (cls.rule_name, raw_rule))
+
+        rule = cls._create_instance(raw_rule, matches)
         rule.raw_rule = raw_rule.strip()
         return rule
 
     @classmethod
     @abstractmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """returns a Rule object created from parsing the raw rule.
            required to be implemented by subclasses; raise exception if not"""
         raise NotImplementedError("'%s' needs to implement _create_instance(), but didn't" % (str(cls)))
@@ -152,10 +145,10 @@ class BaseRule(metaclass=ABCMeta):
             return False
 
         # still here? -> then the common part is covered, check rule-specific things now
-        return self.is_covered_localvars(other_rule)
+        return self._is_covered_localvars(other_rule)
 
     @abstractmethod
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if the rule-specific parts of other_rule is covered by this rule object"""
 
     def _is_covered_plain(self, self_value, self_all, other_value, other_all, cond_name):
@@ -205,7 +198,7 @@ class BaseRule(metaclass=ABCMeta):
 
     def is_equal(self, rule_obj, strict=False):
         """compare if rule_obj == self
-           Calls is_equal_localvars() to compare rule-specific variables"""
+           Calls _is_equal_localvars() to compare rule-specific variables"""
 
         if self.audit != rule_obj.audit or self.deny != rule_obj.deny:
             return False
@@ -217,7 +210,10 @@ class BaseRule(metaclass=ABCMeta):
         ):
             return False
 
-        return self.is_equal_localvars(rule_obj, strict)
+        if type(rule_obj) is not type(self):
+            raise AppArmorBug('Passed non-{} rule: {}'.format(self.rule_name, rule_obj))
+
+        return self._is_equal_localvars(rule_obj, strict)
 
     def _is_equal_aare(self, self_value, self_all, other_value, other_all, cond_name):
         """check if other_* is the same as self_* - for AARE"""
@@ -235,7 +231,7 @@ class BaseRule(metaclass=ABCMeta):
         return True
 
     @abstractmethod
-    def is_equal_localvars(self, other_rule, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
     def severity(self, sev_db):
@@ -264,12 +260,12 @@ class BaseRule(metaclass=ABCMeta):
         if qualifier:
             headers.extend((_('Qualifier'), ' '.join(qualifier)))
 
-        headers.extend(self.logprof_header_localvars())
+        headers.extend(self._logprof_header_localvars())
 
         return headers
 
     @abstractmethod
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         """return the headers (human-readable version of the rule) to display in aa-logprof for this rule object
            returns {'label1': 'value1', 'label2': 'value2'}"""
 

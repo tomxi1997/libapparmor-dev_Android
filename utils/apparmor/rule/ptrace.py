@@ -50,6 +50,7 @@ class PtraceRule(BaseRule):
     ALL = __PtraceAll
 
     rule_name = 'ptrace'
+    _match_re = RE_PROFILE_PTRACE
 
     def __init__(self, access, peer, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -65,16 +66,8 @@ class PtraceRule(BaseRule):
         self.peer, self.all_peers = self._aare_or_all(peer, 'peer', is_path=False, log_event=log_event)
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_PTRACE.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid ptrace rule '%s'") % raw_rule)
 
         audit, deny, allow_keyword, comment = parse_modifiers(matches)
 
@@ -130,7 +123,7 @@ class PtraceRule(BaseRule):
 
         return ('%s%sptrace%s%s,%s' % (space, self.modifiers_str(), access, peer, self.comment))
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if not self._is_covered_list(self.access, self.all_access, other_rule.access, other_rule.all_access, 'access'):
@@ -142,11 +135,8 @@ class PtraceRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-ptrace rule: %s' % str(rule_obj))
 
         if (self.access != rule_obj.access
                 or self.all_access != rule_obj.all_access):
@@ -157,14 +147,14 @@ class PtraceRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         access = logprof_value_or_all(self.access, self.all_access)
         peer   = logprof_value_or_all(self.peer,   self.all_peers)  # noqa: E221
 
-        return [
+        return (
             _('Access mode'), access,
             _('Peer'), peer,
-        ]
+        )
 
 
 class PtraceRuleset(BaseRuleset):

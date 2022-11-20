@@ -46,6 +46,7 @@ class RlimitRule(BaseRule):
     ALL = __RlimitAll
 
     rule_name = 'rlimit'
+    _match_re = RE_PROFILE_RLIMIT
 
     def __init__(self, rlimit, value, audit=False, deny=False, allow_keyword=False,
                  comment='', log_event=None):
@@ -104,16 +105,8 @@ class RlimitRule(BaseRule):
             raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(value)))
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_RLIMIT.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid rlimit rule '%s'") % raw_rule)
 
         comment = parse_comment(matches)
 
@@ -196,7 +189,7 @@ class RlimitRule(BaseRule):
 
         return number
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if not self._is_covered_plain(self.rlimit, False, other_rule.rlimit, False, 'rlimit'):  # rlimit can't be ALL, therefore using False
@@ -214,13 +207,10 @@ class RlimitRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
 
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-rlimit rule: %s' % str(rule_obj))
-
-        if (self.rlimit != rule_obj.rlimit):
+        if self.rlimit != rule_obj.rlimit:
             return False
 
         if (self.value_as_int != rule_obj.value_as_int
@@ -229,18 +219,16 @@ class RlimitRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
-        rlimit_txt = self.rlimit
-
+    def _logprof_header_localvars(self):
         if self.all_values:
             values_txt = 'infinity'
         else:
             values_txt = self.value
 
-        return [
-            _('Rlimit'), rlimit_txt,
+        return (
+            _('Rlimit'), self.rlimit,
             _('Value'),  values_txt,
-        ]
+        )
 
 
 class RlimitRuleset(BaseRuleset):

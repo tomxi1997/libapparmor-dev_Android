@@ -43,6 +43,7 @@ class FileRule(BaseRule):
     ANY_EXEC = __FileAnyExec
 
     rule_name = 'file'
+    _match_re = RE_PROFILE_FILE_ENTRY
 
     def __init__(self, path, perms, exec_perms, target, owner, file_keyword=False, leading_perms=False,
                  audit=False, deny=False, allow_keyword=False, comment='', log_event=None):
@@ -133,16 +134,8 @@ class FileRule(BaseRule):
             raise AppArmorBug('exec perms or target specified for bare file rule')
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_FILE_ENTRY.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid file rule '%s'") % raw_rule)
 
         audit, deny, allow_keyword, comment = parse_modifiers(matches)
 
@@ -259,7 +252,7 @@ class FileRule(BaseRule):
 
         return perm_string
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if not self._is_covered_aare(self.path, self.all_paths, other_rule.path, other_rule.all_paths, 'path'):
@@ -310,11 +303,8 @@ class FileRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-file rule: %s' % str(rule_obj))
 
         if self.owner != rule_obj.owner:
             return False
@@ -358,7 +348,7 @@ class FileRule(BaseRule):
 
         return severity
 
-    def logprof_header_localvars(self):
+    def _logprof_header_localvars(self):
         headers = []
 
         path = logprof_value_or_all(self.path, self.all_paths)

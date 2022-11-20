@@ -77,6 +77,7 @@ class DbusRule(BaseRule):
     ALL = __DbusAll
 
     rule_name = 'dbus'
+    _match_re = RE_PROFILE_DBUS
 
     def __init__(self, access, bus, path, name, interface, member, peername, peerlabel,
                 audit=False, deny=False, allow_keyword=False, comment='', log_event=None):
@@ -108,16 +109,8 @@ class DbusRule(BaseRule):
                     raise AppArmorException(_('dbus %s rules must not contain a name conditional') % '/'.join(self.access))
 
     @classmethod
-    def _match(cls, raw_rule):
-        return RE_PROFILE_DBUS.search(raw_rule)
-
-    @classmethod
-    def _create_instance(cls, raw_rule):
+    def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
-
-        matches = cls._match(raw_rule)
-        if not matches:
-            raise AppArmorException(_("Invalid dbus rule '%s'") % raw_rule)
 
         audit, deny, allow_keyword, comment = parse_modifiers(matches)
 
@@ -234,7 +227,7 @@ class DbusRule(BaseRule):
         else:
             raise AppArmorBug('Empty %(prefix_name)s in %(rule_name)s rule' % {'prefix_name': prefix, 'rule_name': self.rule_name})
 
-    def is_covered_localvars(self, other_rule):
+    def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
 
         if not self._is_covered_list(self.access,       self.all_access,        other_rule.access,      other_rule.all_access,      'access'):
@@ -264,11 +257,8 @@ class DbusRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""
-
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-dbus rule: %s' % str(rule_obj))
 
         if (self.access != rule_obj.access
                 or self.all_access != rule_obj.all_access):
@@ -297,26 +287,26 @@ class DbusRule(BaseRule):
 
         return True
 
-    def logprof_header_localvars(self):
-        access      = logprof_value_or_all(self.access,     self.all_access)
-        bus         = logprof_value_or_all(self.bus,        self.all_buses)
-        path        = logprof_value_or_all(self.path,       self.all_paths)
-        name        = logprof_value_or_all(self.name,       self.all_names)
-        interface   = logprof_value_or_all(self.interface,  self.all_interfaces)
-        member      = logprof_value_or_all(self.member,     self.all_members)
-        peername    = logprof_value_or_all(self.peername,   self.all_peernames)
-        peerlabel   = logprof_value_or_all(self.peerlabel,  self.all_peerlabels)
+    def _logprof_header_localvars(self):
+        access    = logprof_value_or_all(self.access,    self.all_access)     # noqa: E221
+        bus       = logprof_value_or_all(self.bus,       self.all_buses)      # noqa: E221
+        path      = logprof_value_or_all(self.path,      self.all_paths)      # noqa: E221
+        name      = logprof_value_or_all(self.name,      self.all_names)      # noqa: E221
+        interface = logprof_value_or_all(self.interface, self.all_interfaces)
+        member    = logprof_value_or_all(self.member,    self.all_members)    # noqa: E221
+        peername  = logprof_value_or_all(self.peername,  self.all_peernames)  # noqa: E221
+        peerlabel = logprof_value_or_all(self.peerlabel, self.all_peerlabels)
 
-        return [
-            _('Access mode'),   access,
-            _('Bus'),           bus,
-            _('Path'),          path,
-            _('Name'),          name,
-            _('Interface'),     interface,
-            _('Member'),        member,
-            _('Peer name'),     peername,
-            _('Peer label'),    peerlabel,
-        ]
+        return (
+            _('Access mode'), access,
+            _('Bus'),         bus,
+            _('Path'),        path,
+            _('Name'),        name,
+            _('Interface'),   interface,
+            _('Member'),      member,
+            _('Peer name'),   peername,
+            _('Peer label'),  peerlabel,
+        )
 
 
 class DbusRuleset(BaseRuleset):
