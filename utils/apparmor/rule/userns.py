@@ -112,9 +112,7 @@ class UserNamespaceRule(BaseRule):
     def _logprof_header_localvars(self):
         access = logprof_value_or_all(self.access, self.all_access)
 
-        return (
-            _('Access mode'), access,
-        )
+        return _('Access mode'), access
 
 
 class UserNamespaceRuleset(BaseRuleset):

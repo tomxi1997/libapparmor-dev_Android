@@ -220,17 +220,15 @@ class RlimitRule(BaseRule):
         return True
 
     def _logprof_header_localvars(self):
-        rlimit_txt = self.rlimit
-
         if self.all_values:
             values_txt = 'infinity'
         else:
             values_txt = self.value
 
-        return [
-            _('Rlimit'), rlimit_txt,
+        return (
+            _('Rlimit'), self.rlimit,
             _('Value'),  values_txt,
-        ]
+        )
 
 
 class RlimitRuleset(BaseRuleset):

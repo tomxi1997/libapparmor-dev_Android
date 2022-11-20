@@ -118,11 +118,7 @@ class VariableRule(BaseRule):
         return True
 
     def _logprof_header_localvars(self):
-        headers = []
-
-        return headers + [
-            _('Variable'), self.get_clean(),
-        ]
+        return _('Variable'), self.get_clean()
 
 
 class VariableRuleset(BaseRuleset):

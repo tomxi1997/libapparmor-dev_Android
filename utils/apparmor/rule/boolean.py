@@ -99,11 +99,7 @@ class BooleanRule(BaseRule):
         return True
 
     def _logprof_header_localvars(self):
-        headers = []
-
-        return headers + [
-            _('Boolean Variable'), self.get_clean(),
-        ]
+        return _('Boolean Variable'), self.get_clean()
 
 
 class BooleanRuleset(BaseRuleset):

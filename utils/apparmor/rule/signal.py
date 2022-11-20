@@ -211,11 +211,11 @@ class SignalRule(BaseRule):
         signal = logprof_value_or_all(self.signal, self.all_signals)
         peer   = logprof_value_or_all(self.peer,   self.all_peers)  # noqa: E221
 
-        return [
+        return (
             _('Access mode'), access,
             _('Signal'), signal,
-            _('Peer'), peer
-        ]
+            _('Peer'), peer,
+        )
 
 
 class SignalRuleset(BaseRuleset):

@@ -92,11 +92,7 @@ class AliasRule(BaseRule):
         return True
 
     def _logprof_header_localvars(self):
-        headers = []
-
-        return headers + [
-            _('Alias'), '%s -> %s' % (self.orig_path, self.target),
-        ]
+        return _('Alias'), '%s -> %s' % (self.orig_path, self.target)
 
 
 class AliasRuleset(BaseRuleset):

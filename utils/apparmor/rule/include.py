@@ -108,7 +108,7 @@ class IncludeRule(BaseRule):
         return True
 
     def _logprof_header_localvars(self):
-        return [_('Include'), self.get_clean()]
+        return _('Include'), self.get_clean()
 
     def get_full_paths(self, profile_dir):
         """get list of full paths of an include (can contain multiple paths if self.path is a directory)"""

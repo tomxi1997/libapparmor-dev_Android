@@ -169,10 +169,10 @@ class NetworkRule(BaseRule):
         family    = logprof_value_or_all(self.domain,           self.all_domains)  # noqa: E221
         sock_type = logprof_value_or_all(self.type_or_protocol, self.all_type_or_protocols)
 
-        return [
+        return (
             _('Network Family'), family,
             _('Socket Type'), sock_type,
-        ]
+        )
 
 
 class NetworkRuleset(BaseRuleset):

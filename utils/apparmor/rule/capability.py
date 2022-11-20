@@ -125,9 +125,7 @@ class CapabilityRule(BaseRule):
     def _logprof_header_localvars(self):
         cap_txt = logprof_value_or_all(self.capability, self.all_caps)
 
-        return [
-            _('Capability'), cap_txt,
-        ]
+        return _('Capability'), cap_txt
 
 
 class CapabilityRuleset(BaseRuleset):

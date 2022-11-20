@@ -288,25 +288,25 @@ class DbusRule(BaseRule):
         return True
 
     def _logprof_header_localvars(self):
-        access      = logprof_value_or_all(self.access,     self.all_access)
-        bus         = logprof_value_or_all(self.bus,        self.all_buses)
-        path        = logprof_value_or_all(self.path,       self.all_paths)
-        name        = logprof_value_or_all(self.name,       self.all_names)
-        interface   = logprof_value_or_all(self.interface,  self.all_interfaces)
-        member      = logprof_value_or_all(self.member,     self.all_members)
-        peername    = logprof_value_or_all(self.peername,   self.all_peernames)
-        peerlabel   = logprof_value_or_all(self.peerlabel,  self.all_peerlabels)
+        access    = logprof_value_or_all(self.access,    self.all_access)     # noqa: E221
+        bus       = logprof_value_or_all(self.bus,       self.all_buses)      # noqa: E221
+        path      = logprof_value_or_all(self.path,      self.all_paths)      # noqa: E221
+        name      = logprof_value_or_all(self.name,      self.all_names)      # noqa: E221
+        interface = logprof_value_or_all(self.interface, self.all_interfaces)
+        member    = logprof_value_or_all(self.member,    self.all_members)    # noqa: E221
+        peername  = logprof_value_or_all(self.peername,  self.all_peernames)  # noqa: E221
+        peerlabel = logprof_value_or_all(self.peerlabel, self.all_peerlabels)
 
-        return [
-            _('Access mode'),   access,
-            _('Bus'),           bus,
-            _('Path'),          path,
-            _('Name'),          name,
-            _('Interface'),     interface,
-            _('Member'),        member,
-            _('Peer name'),     peername,
-            _('Peer label'),    peerlabel,
-        ]
+        return (
+            _('Access mode'), access,
+            _('Bus'),         bus,
+            _('Path'),        path,
+            _('Name'),        name,
+            _('Interface'),   interface,
+            _('Member'),      member,
+            _('Peer name'),   peername,
+            _('Peer label'),  peerlabel,
+        )
 
 
 class DbusRuleset(BaseRuleset):

@@ -151,10 +151,10 @@ class PtraceRule(BaseRule):
         access = logprof_value_or_all(self.access, self.all_access)
         peer   = logprof_value_or_all(self.peer,   self.all_peers)  # noqa: E221
 
-        return [
+        return (
             _('Access mode'), access,
             _('Peer'), peer,
-        ]
+        )
 
 
 class PtraceRuleset(BaseRuleset):
