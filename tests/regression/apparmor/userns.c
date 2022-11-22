@@ -21,16 +21,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int child(void *arg)
+static void usage(char *pname)
 {
-	printf("PASS\n");
-	return EXIT_SUCCESS;
+	fprintf(stderr, "Usage: %s [options]\n", pname);
+	fprintf(stderr, "Options can be:\n");
+	fprintf(stderr, "    -c   create user namespace using clone\n");
+	fprintf(stderr, "    -u   create user namespace using unshare\n");
+	exit(EXIT_FAILURE);
 }
 
 #define STACK_SIZE (1024 * 1024)
 static char child_stack[STACK_SIZE];
 
-int main(int argc, char *argv[])
+static int child(void *arg)
+{
+	return EXIT_SUCCESS;
+}
+
+int userns_unshare()
+{
+	if (unshare(CLONE_NEWUSER) == -1) {
+		perror("FAIL - unshare");
+		return EXIT_FAILURE;
+	}
+	return child(NULL);
+}
+
+int userns_clone()
 {
 	pid_t child_pid;
 	int child_exit;
@@ -54,6 +71,34 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	printf("PASS\n");
 	return EXIT_SUCCESS;
+}
+
+enum op {
+	CLONE,
+	UNSHARE,
+};
+
+int main(int argc, char *argv[])
+{
+	int opt, ret = 0, op;
+
+	while ((opt = getopt(argc, argv, "uc")) != -1) {
+		switch (opt) {
+		case 'c': op = CLONE;	break;
+		case 'u': op = UNSHARE;	break;
+		default:  usage(argv[0]);
+		}
+	}
+
+	if (op == CLONE)
+		ret = userns_clone();
+	else if (op == UNSHARE)
+		ret = userns_unshare();
+	else
+		fprintf(stderr, "FAIL - user namespace method not defined\n");
+
+	if (ret == EXIT_SUCCESS)
+		printf("PASS\n");
+	return ret;
 }

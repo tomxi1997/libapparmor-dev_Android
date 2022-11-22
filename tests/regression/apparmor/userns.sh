@@ -49,11 +49,13 @@ do_test()
 
 	settest userns
 	$generate_profile # settest removes the profile, so load it here
-	runchecktest "$desc - root" $expect_root
+	runchecktest "$desc clone - root" $expect_root -c # clone
+	runchecktest "$desc unshare - root" $expect_root -u # unshare
 
 	settest -u "foo" userns # run tests as user foo
 	$generate_profile # settest removes the profile, so load it here
-	runchecktest "$desc - user" $expect_user
+	runchecktest "$desc clone - user" $expect_user -c # clone
+	runchecktest "$desc unshare - user" $expect_user -u # unshare
 }
 
 if [ $unprivileged_userns_clone -eq 0 ]; then
