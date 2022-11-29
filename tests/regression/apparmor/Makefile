@@ -143,6 +143,7 @@ SRC=access.c \
     unix_socket_client.c \
     unlink.c \
     userns.c \
+    userns_setns.c \
     xattrs.c \
     xattrs_profile.c
 
@@ -330,6 +331,12 @@ unix_fd_client: unix_fd_client.c unix_fd_common.o
 	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LDLIBS}
 
 attach_disconnected: attach_disconnected.c unix_fd_common.o
+	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LDLIBS}
+
+userns: userns.c userns.h
+	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LDLIBS}
+
+userns_setns: userns_setns.c userns.h
 	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LDLIBS}
 
 build-dep:

@@ -296,6 +296,7 @@ tests/regression/apparmor/unix_socket
 tests/regression/apparmor/unix_socket_client
 tests/regression/apparmor/unlink
 tests/regression/apparmor/userns
+tests/regression/apparmor/userns_setns
 tests/regression/apparmor/uservars.inc
 tests/regression/apparmor/xattrs
 tests/regression/apparmor/xattrs_profile
