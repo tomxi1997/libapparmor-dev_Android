@@ -563,10 +563,10 @@ def perms_with_a(perms):
     """if perms includes 'w', add 'a' perms
        - perms: the original permissions
     """
-    perms_with_a = set()
-    if perms:
-        perms_with_a = set(perms)
-        if 'w' in perms_with_a:
-            perms_with_a.add('a')
+    if not perms or 'w' not in perms:
+         return perms  # no need to change anything
+
+    perms_with_a = set(perms)
+    perms_with_a.add('a')
 
     return perms_with_a
