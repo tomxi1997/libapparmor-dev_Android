@@ -944,6 +944,12 @@ void set_supported_features()
 	features_supports_userns = features_intersect(kernel_features,
 						      policy_features,
 						      "namespaces/mask/userns_create");
+	features_supports_posix_mqueue = features_intersect(kernel_features,
+						      policy_features,
+						      "ipc/posix_mqueue");
+	features_supports_sysv_mqueue = features_intersect(kernel_features,
+						      policy_features,
+						      "ipc/sysv_mqueue");
 }
 
 static bool do_print_cache_dir(aa_features *features, int dirfd, const char *path)

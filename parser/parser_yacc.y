@@ -143,6 +143,8 @@ void add_local_entry(Profile *prof);
 %token TOK_READBY
 %token TOK_ABI
 %token TOK_USERNS
+%token TOK_MQUEUE
+%token TOK_DELETE
 
  /* rlimits */
 %token TOK_RLIMIT
@@ -179,6 +181,7 @@ void add_local_entry(Profile *prof);
 	#include "ptrace.h"
 	#include "af_unix.h"
 	#include "userns.h"
+	#include "mqueue.h"
 }
 
 %union {
@@ -196,6 +199,7 @@ void add_local_entry(Profile *prof);
 	ptrace_rule *ptrace_entry;
 	unix_rule *unix_entry;
 	userns_rule *userns_entry;
+	mqueue_rule *mqueue_entry;
 
 	flagvals flags;
 	int fmode;
@@ -279,6 +283,10 @@ void add_local_entry(Profile *prof);
 %type <fmode>  	userns_perms
 %type <fmode>	opt_userns_perm
 %type <userns_entry>	userns_rule
+%type <fmode>  	mqueue_perm
+%type <fmode>  	mqueue_perms
+%type <fmode>	opt_mqueue_perm
+%type <mqueue_entry>	mqueue_rule
 %%
 
 
@@ -413,7 +421,7 @@ profile:  opt_profile_flag profile_base
 			yyerror(_("Profile names must begin with a '/', namespace or keyword 'profile' or 'hat'."));
 
 		if ($1 == 2)
-			prof->flags.hat = 1;
+			prof->flags.flags |= FLAG_HAT;
 		$$ = prof;
 	};
 
@@ -440,7 +448,7 @@ hat: hat_start profile_base
 		if ($2->xattrs.list)
 			yyerror("hat profiles can't use xattrs matches");
 
-		prof->flags.hat = 1;
+		prof->flags.flags |= FLAG_HAT;
 		$$ = prof;
 	};
 
@@ -917,6 +925,22 @@ rules:  rules opt_prefix capability
 				$1->caps.audit |= $3;
 		}
 
+		$$ = $1;
+	};
+
+rules:  rules opt_prefix mqueue_rule
+	{
+		if ($2.owner)
+			yyerror(_("owner prefix not allowed on mqueue rules")); //is this true?
+		if ($2.deny && $2.audit) {
+			$3->deny = 1;
+		} else if ($2.deny) {
+			$3->deny = 1;
+			$3->audit = $3->mode;
+		} else if ($2.audit) {
+			$3->audit = $3->mode;
+		}
+		$1->rule_ents.push_back($3);
 		$$ = $1;
 	};
 
@@ -1588,6 +1612,62 @@ opt_userns_perm: { /* nothing */ $$ = 0; }
 userns_rule: TOK_USERNS opt_userns_perm opt_conds TOK_END_OF_RULE
 	{
 		userns_rule *ent = new userns_rule($2, $3);
+		$$ = ent;
+	}
+
+mqueue_perm: TOK_VALUE
+	{
+		if (strcmp($1, "create") == 0)
+			$$ = AA_MQUEUE_CREATE;
+		else if (strcmp($1, "open") == 0)
+			$$ = AA_MQUEUE_OPEN;
+		else if (strcmp($1, "delete") == 0)
+			$$ = AA_MQUEUE_DELETE;
+		else if (strcmp($1, "getattr") == 0)
+			$$ = AA_MQUEUE_GETATTR;
+		else if (strcmp($1, "setattr") == 0)
+			$$ = AA_MQUEUE_SETATTR;
+		else if (strcmp($1, "write") == 0)
+			$$ = AA_MQUEUE_WRITE;
+		else if (strcmp($1, "read") == 0)
+			$$ = AA_MQUEUE_READ;
+		else if ($1) {
+			parse_mqueue_mode($1, &$$, 1);
+		} else
+			$$ = 0;
+
+		if ($1)
+			free($1);
+	}
+	| TOK_CREATE { $$ = AA_MQUEUE_CREATE; }
+	| TOK_OPEN { $$ = AA_MQUEUE_OPEN; }
+	| TOK_DELETE { $$ = AA_MQUEUE_DELETE; }
+	| TOK_GETATTR { $$ = AA_MQUEUE_GETATTR; }
+	| TOK_SETATTR { $$ = AA_MQUEUE_SETATTR; }
+	| TOK_WRITE { $$ = AA_MQUEUE_WRITE; }
+	| TOK_READ { $$ = AA_MQUEUE_READ; }
+	| TOK_MODE
+	{
+		parse_mqueue_mode($1, &$$, 1);
+		free($1);
+	}
+
+mqueue_perms: { /* nothing */ $$ = 0; }
+	| mqueue_perms mqueue_perm { $$ = $1 | $2; }
+	| mqueue_perms TOK_COMMA mqueue_perm { $$ = $1 | $3; }
+
+opt_mqueue_perm: { /* nothing */ $$ = 0; }
+	| mqueue_perm { $$ = $1; }
+	| TOK_OPENPAREN mqueue_perms TOK_CLOSEPAREN { $$ = $2; }
+
+mqueue_rule: TOK_MQUEUE opt_mqueue_perm opt_conds TOK_END_OF_RULE
+	{
+		mqueue_rule *ent = new mqueue_rule($2, $3);
+		$$ = ent;
+	}
+	| TOK_MQUEUE opt_mqueue_perm opt_conds TOK_ID TOK_END_OF_RULE
+	{
+		mqueue_rule *ent = new mqueue_rule($2, $3, $4);
 		$$ = ent;
 	}
 

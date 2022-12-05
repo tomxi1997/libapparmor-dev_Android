@@ -243,7 +243,7 @@ void post_process_rule_entries(Profile *prof)
 static int profile_add_hat_rules(Profile *prof)
 {
 	/* don't add hat rules if not hat or profile doesn't have hats */
-	if (!prof->flags.hat && prof->hat_table.empty())
+	if (!(prof->flags.flags & FLAG_HAT) && prof->hat_table.empty())
 		return 0;
 
 	if (!add_proc_access(prof, CHANGEHAT_PATH))

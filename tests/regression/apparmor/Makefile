@@ -115,6 +115,8 @@ SRC=access.c \
     openat.c \
     pipe.c \
     pivot_root.c \
+    posix_mq_rcv.c \
+    posix_mq_snd.c \
     ptrace.c \
     ptrace_helper.c \
     pwrite.c \
@@ -135,6 +137,8 @@ SRC=access.c \
     syscall_setdomainname.c \
     syscall_setscheduler.c \
     sysctl_proc.c \
+    sysv_mq_rcv.c \
+    sysv_mq_snd.c \
     tcp.c \
     transition.c \
     unix_fd_client.c \
@@ -237,6 +241,7 @@ TESTS=aa_exec \
       openat \
       pipe \
       pivot_root \
+      posix_ipc \
       ptrace \
       pwrite \
       query_label \
@@ -250,6 +255,7 @@ TESTS=aa_exec \
       setattr \
       symlink \
       syscall \
+      sysv_ipc \
       tcp \
       unix_fd_server \
       unix_socket_pathname \
@@ -311,6 +317,12 @@ dbus_service: dbus_message dbus_service.c dbus_common.o
 
 dbus_unrequested_reply: dbus_service dbus_unrequested_reply.c dbus_common.o
 	${CC} ${CFLAGS} ${LDFLAGS} $(filter-out dbus_service, $^) -o $@ ${LDLIBS} $(shell pkg-config --cflags --libs dbus-1)
+
+posix_mq_rcv: posix_mq_rcv.c
+	${CC} ${CFLAGS} ${LDFLAGS} $< -o $@ ${LDLIBS} -lrt
+
+posix_mq_snd: posix_mq_snd.c
+	${CC} ${CFLAGS} ${LDFLAGS} $< -o $@ ${LDLIBS} -lrt
 
 transition: transition.c
 	${CC} ${CFLAGS} ${TRANSITION_CFLAGS} ${LDFLAGS} $< -o $@ ${LDLIBS}

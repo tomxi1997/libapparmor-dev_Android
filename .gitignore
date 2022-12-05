@@ -39,6 +39,7 @@ parser/libapparmor_re/hfa.o
 parser/libapparmor_re/libapparmor_re.a
 parser/libapparmor_re/parse.o
 parser/mount.o
+parser/mqueue.o
 parser/network.o
 parser/parser_alias.o
 parser/parser_common.o
@@ -265,6 +266,8 @@ tests/regression/apparmor/open
 tests/regression/apparmor/openat
 tests/regression/apparmor/pipe
 tests/regression/apparmor/pivot_root
+tests/regression/apparmor/posix_mq_rcv
+tests/regression/apparmor/posix_mq_snd
 tests/regression/apparmor/ptrace
 tests/regression/apparmor/ptrace_helper
 tests/regression/apparmor/pwrite
@@ -288,6 +291,8 @@ tests/regression/apparmor/syscall_setpriority
 tests/regression/apparmor/syscall_setscheduler
 tests/regression/apparmor/syscall_sysctl
 tests/regression/apparmor/sysctl_proc
+tests/regression/apparmor/sysv_mq_rcv
+tests/regression/apparmor/sysv_mq_snd
 tests/regression/apparmor/tcp
 tests/regression/apparmor/transition
 tests/regression/apparmor/unix_fd_client

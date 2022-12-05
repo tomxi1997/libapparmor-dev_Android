@@ -34,6 +34,8 @@
 #define AA_CLASS_SIGNAL		10
 #define AA_CLASS_NETV8		14
 #define AA_CLASS_LABEL		16
+#define AA_CLASS_POSIX_MQUEUE	17
+#define AA_CLASS_SYSV_MQUEUE	18
 #define AA_CLASS_NS		21
 
 /* defined in libapparmor's apparmor.h #define AA_CLASS_DBUS 32 */

@@ -123,7 +123,7 @@ B<RULES> = [ ( I<LINE RULES> | I<COMMA RULES> ',' | I<BLOCK RULES> )
 
 B<LINE RULES> = ( I<COMMENT> | I<INCLUDE> ) [ '\r' ] '\n'
 
-B<COMMA RULES> = ( I<CAPABILITY RULE> | I<NETWORK RULE> | I<MOUNT RULE> | I<PIVOT ROOT RULE> | I<UNIX RULE> | I<FILE RULE> | I<LINK RULE> | I<CHANGE_PROFILE RULE> | I<RLIMIT RULE> | I<DBUS RULE> )
+B<COMMA RULES> = ( I<CAPABILITY RULE> | I<NETWORK RULE> | I<MOUNT RULE> | I<PIVOT ROOT RULE> | I<UNIX RULE> | I<FILE RULE> | I<LINK RULE> | I<CHANGE_PROFILE RULE> | I<RLIMIT RULE> | I<DBUS RULE> | I<MQUEUE RULE> )
 
 B<BLOCK RULES> = ( I<SUBPROFILE> | I<HAT> | I<QUALIFIER BLOCK> )
 
@@ -175,6 +175,20 @@ B<MOUNT FLAGS LIST> = Comma separated list of I<MOUNT FLAGS>.
 B<MOUNT FLAGS> = ( 'ro' | 'rw' | 'nosuid' | 'suid' | 'nodev' | 'dev' | 'noexec' | 'exec' | 'sync' | 'async' | 'remount' | 'mand' | 'nomand' | 'dirsync' | 'noatime' | 'atime' | 'nodiratime' | 'diratime' | 'bind' | 'rbind' | 'move' | 'verbose' | 'silent' | 'loud' | 'acl' | 'noacl' | 'unbindable' | 'runbindable' | 'private' | 'rprivate' | 'slave' | 'rslave' | 'shared' | 'rshared' | 'relatime' | 'norelatime' | 'iversion' | 'noiversion' | 'strictatime' | 'nouser' | 'user' )
 
 B<MOUNT EXPRESSION> = ( I<ALPHANUMERIC> | I<AARE> ) ...
+
+B<MQUEUE_RULE> = [ I<QUALIFIERS> ] 'mqueue' [ I<MQUEUE ACCESS PERMISSIONS> ] [ I<MQUEUE TYPE> ] [ I<MQUEUE LABEL> ] [ I<MQUEUE NAME> ]
+
+B<MQUEUE ACCESS PERMISSIONS> = I<MQUEUE ACCESS> | I<MQUEUE ACCESS LIST>
+
+B<MQUEUE ACCESS LIST> = '(' Comma or space separated list of I<MQUEUE ACCESS> ')'
+
+B<MQUEUE ACCESS> = ( 'r' | 'w' | 'rw' | 'read' | 'write' | 'create' | 'open' | 'delete' | 'getattr' | 'setattr' )
+
+B<MQUEUE TYPE> = 'type' '=' ( 'posix' | 'sysv' )
+
+B<MQUEUE LABEL> = 'label' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
+
+B<MQUEUE NAME> = I<AARE>
 
 B<PIVOT ROOT RULE> = [ I<QUALIFIERS> ] pivot_root [ oldroot=I<OLD PUT FILEGLOB> ] [ I<NEW ROOT FILEGLOB> ] [ '-E<gt>' I<PROFILE NAME> ]
 
@@ -1056,6 +1070,51 @@ Matches only:
     $ mount -o nodev,user /dev/foo /mnt
 
 =back
+
+=head2 Message Queue rules
+
+AppArmor supports mediation of POSIX and SYSV message queues.
+
+AppArmor Message Queue permissions are implied when a rule does not explicitly
+state an access list. By default, all Message Queue permissions are implied.
+
+AppArmor Message Queue permissions become more restricted as further information
+is specified. Policy can be specified by determining its access mode, type,
+label, and message queue name.
+
+Regarding access modes, 'r' and 'read' are used to read messages from the queue.
+'w' and 'write' are used to write to the message queue. 'create' is used to create
+the message queue, and 'open' is used to get the message queue identifier when the
+queue is already created. 'delete' is used to remove the message queue. The access
+modes to get and set attributes of the message queue are 'setattr' and 'getattr'.
+
+The type of the policy can be either 'posix' or 'sysv'. This information is
+relevant when the message queue name is not specified, and when specified can be
+inferred by the queue name, since message queues' name for posix must start with '/',
+and message queues' key for SYSV must be a positive integer.
+
+The policy label is the label assigned to the message queue when it is created.
+
+The message queue name can be either a string starting with '/' if the type
+is POSIX, or a positive integer if the type is SYSV. If the type is not
+specified, then it will be inferred by the queue name.
+
+Example AppArmor Message Queue rules:
+
+    # Allow all Message Queue access
+    mqueue,
+
+    # Explicitly allow all Message Queue access,
+    mqueue (create, open, delete, read, write, getattr, setattr),
+
+    # Explicitly deny use of Message Queue
+    deny mqueue,
+
+    # Allow all access for POSIX queue of name /bar
+    mqueue type=posix /bar,
+
+    # Allow create permission for a SYSV queue of label foo
+    mqueue create label=foo 123,
 
 =head2 Pivot Root Rules
 

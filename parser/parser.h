@@ -345,6 +345,8 @@ extern int features_supports_unix;
 extern int features_supports_stacking;
 extern int features_supports_domain_xattr;
 extern int features_supports_userns;
+extern int features_supports_posix_mqueue;
+extern int features_supports_sysv_mqueue;
 extern int kernel_supports_oob;
 extern int conf_verbose;
 extern int conf_quiet;

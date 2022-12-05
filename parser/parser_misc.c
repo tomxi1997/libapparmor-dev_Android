@@ -121,6 +121,9 @@ static struct keyword_table keyword_table[] = {
 	{"readby",		TOK_READBY},
 	{"abi",			TOK_ABI},
 	{"userns",		TOK_USERNS},
+	{"mqueue",		TOK_MQUEUE},
+	{"delete",		TOK_DELETE},
+	{"open",		TOK_OPEN},
 
 	/* terminate */
 	{NULL, 0}

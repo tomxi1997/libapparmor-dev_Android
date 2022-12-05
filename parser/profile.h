@@ -110,9 +110,13 @@ static inline enum profile_mode str_to_mode(const char *str)
 	return MODE_UNSPECIFIED;
 };
 
+#define FLAG_HAT 1
+#define FLAG_DEBUG1 2
+#define FLAG_DEBUG2 4
+
 class flagvals {
 public:
-	int hat;
+	int flags;
 	enum profile_mode mode;
 	int audit;
 	int path;
@@ -124,7 +128,7 @@ public:
 		if (audit)
 			os << ", Audit";
 
-		if (hat)
+		if (flags & FLAG_HAT)
 			os << ", Hat";
 
 		os << "\n";

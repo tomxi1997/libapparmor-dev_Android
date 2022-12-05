@@ -51,6 +51,7 @@ from apparmor.rule.network import NetworkRule
 from apparmor.rule.ptrace import PtraceRule
 from apparmor.rule.signal import SignalRule
 from apparmor.rule.userns import UserNamespaceRule
+from apparmor.rule.mqueue import MessageQueueRule
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -1728,6 +1729,14 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                 if not hat_exists or not is_known_rule(aa[profile][hat], 'userns', userns_event):
                     log_dict[aamode][full_profile]['userns'].add(userns_event)
 
+            mqueue = hashlog[aamode][full_profile]['mqueue']
+            for access in mqueue.keys():
+                for mqueue_type in mqueue[access]:
+                    for mqueue_name in mqueue[access][mqueue_type]:
+                        mqueue_event = MessageQueueRule(access, mqueue_type, MessageQueueRule.ALL, mqueue_name, log_event=True)
+                        if not hat_exists or not is_known_rule(aa[profile][hat], 'mqueue', mqueue_event):
+                            log_dict[aamode][full_profile]['mqueue'].add(mqueue_event)
+
     return log_dict
 
 
@@ -2104,6 +2113,7 @@ def match_line_against_rule_classes(line, profile, file, lineno, in_preamble):
             'rlimit',
             'signal',
             'userns',
+            'mqueue',
     ):
 
         if rule_name in ruletypes:

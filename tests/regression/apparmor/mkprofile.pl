@@ -423,6 +423,26 @@ sub gen_path($) {
   }
 }
 
+sub gen_mqueue($) {
+  my $rule = shift;
+  my @rules = split (/:/, $rule);
+  if (@rules == 2) {
+      if ($rules[1] =~ /^ALL$/) {
+	  push (@{$output_rules{$hat}}, "  mqueue,\n");
+      } else {
+	  push (@{$output_rules{$hat}}, "  mqueue $rules[1],\n");
+      }
+  } elsif (@rules == 3) {
+      push (@{$output_rules{$hat}}, "  mqueue $rules[1] $rules[2],\n");
+  } elsif (@rules == 4) {
+      push (@{$output_rules{$hat}}, "  mqueue $rules[1] $rules[2] $rules[3],\n");
+  } elsif (@rules == 5) {
+      push (@{$output_rules{$hat}}, "  mqueue $rules[1] $rules[2] $rules[3] $rules[4],\n");
+  } else {
+      (!$nowarn) && print STDERR "Warning: invalid mqueue description '$rule', ignored\n";
+  }
+}
+
 sub emit_flags($) {
   my $hat = shift;
 
@@ -492,6 +512,8 @@ sub gen_from_args() {
       gen_xattr($rule);
     } elsif ($rule =~ /^path:/) {
       gen_path($rule);
+    } elsif ($rule =~ /^mqueue:/) {
+      gen_mqueue($rule);
     } else {
       gen_file($rule, $qualifier);
     }
