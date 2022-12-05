@@ -204,7 +204,6 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 		//	return RULE_NOT_SUPPORTED;
 	}
 
-	prof.flags.flags |= FLAG_DEBUG1;
 	/* always generate a label and mqueue entry */
 
 	//buffer << "(" << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_LABEL << "|)"; //is this required?
