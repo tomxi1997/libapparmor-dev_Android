@@ -197,7 +197,7 @@ void receive(enum notify_options notify, mqd_t mqd)
 
 int main(int argc, char *argv[])
 {
-	char opt = 0;
+	int opt = 0;
 	enum notify_options notify = DO_NOT_NOTIFY;
 	mqd_t mqd;
 	char *client = NULL;
