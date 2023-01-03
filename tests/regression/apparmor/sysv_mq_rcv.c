@@ -71,7 +71,7 @@ static void usage(char *prog_name, char *msg)
 
 int main(int argc, char *argv[])
 {
-	char opt = 0;
+	int opt = 0;
 	char *client = NULL;
 	int uid;
 	int qid;
