@@ -86,11 +86,11 @@ for username in "root" "$userid" ; do
     do_tests "unconfined $username" pass pass pass pass $usercmd
 
     # No mqueue perms
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "$sender:px" -- image=$sender
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "$sender:px" -- image=$sender
     do_tests "confined $username - no perms" fail fail fail fail $usercmd
 
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "deny:mqueue" "$sender:px" -- image=$sender "deny mqueue"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "deny:mqueue" "$sender:px" -- image=$sender "deny mqueue"
     do_tests "confined $username - deny perms" fail fail fail fail $usercmd
 
 
@@ -102,46 +102,46 @@ for username in "root" "$userid" ; do
     #   apparmor when doing "root" username tests
     # * if doing the $userid set of tests and you see
     #   Permission denied in the test output
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue" "$sender:px" -- image=$sender "mqueue"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue" "$sender:px" -- image=$sender "mqueue"
     do_tests "confined $username - mqueue" pass pass pass pass $usercmd
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:type=posix" "$sender:px" -- image=$sender "mqueue:type=posix"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:type=posix" "$sender:px" -- image=$sender "mqueue:type=posix"
     do_tests "confined $username - mqueue type=posix" pass pass pass pass $usercmd
 
     # queue name
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:$queuename" "$sender:px" -- image=$sender "mqueue:$queuename"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:$queuename" "$sender:px" -- image=$sender "mqueue:$queuename"
     do_tests "confined $username - mqueue /name 1" pass pass pass pass $usercmd
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue" "$sender:px" -- image=$sender "mqueue:$queuename"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue" "$sender:px" -- image=$sender "mqueue:$queuename"
     do_tests "confined $username - mqueue /name 2" pass pass pass pass $usercmd
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:$queuename" "$sender:px" -- image=$sender "mqueue"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:$queuename" "$sender:px" -- image=$sender "mqueue"
     do_tests "confined $username - mqueue /name 3" pass pass pass pass $usercmd
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:$queuename" "$sender:px" -- image=$sender "mqueue:$queuename2"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:$queuename" "$sender:px" -- image=$sender "mqueue:$queuename2"
     do_tests "confined $username - mqueue /name 4" fail fail fail fail $usercmd -t 1
 
 
     # specific permissions
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:write"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:write"
     do_tests "confined $username - specific 1" pass pass pass pass $usercmd
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(read,delete,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:write"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(read,delete,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:write"
     do_tests "confined $username - specific 2" fail fail fail fail $usercmd -t 1
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,delete,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:write"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,delete,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:write"
     do_tests "confined $username - specific 3" fail fail fail fail $usercmd -t 1
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:write"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:write"
     do_tests "confined $username - specific 4" fail fail fail fail $usercmd -t 1
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete,setattr)" "$sender:px" -- image=$sender "mqueue:write"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete,setattr)" "$sender:px" -- image=$sender "mqueue:write"
     do_tests "confined $username - specific 5" pass pass pass pass $usercmd
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete,getattr)" "$sender:px" -- image=$sender "mqueue:write"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete,getattr)" "$sender:px" -- image=$sender "mqueue:write"
     do_tests "confined $username - specific 6" pass pass pass pass $usercmd
 
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:read"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete,getattr,setattr)" "$sender:px" -- image=$sender "mqueue:read"
     do_tests "confined $username - specific 7" fail fail fail fail $usercmd -t 1
 
     # unconfined receiver
@@ -150,17 +150,17 @@ for username in "root" "$userid" ; do
 
 
     # unconfined sender
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink"  "mqueue" "$sender:ux"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink"  "mqueue" "$sender:ux"
     do_tests "confined receiver $username - unconfined sender" pass pass pass pass $usercmd
 
 
     # queue label
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:label=$receiver" "$sender:px" -- image=$sender "mqueue:label=$receiver"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:label=$receiver" "$sender:px" -- image=$sender "mqueue:label=$receiver"
     do_tests "confined $username - mqueue label 1" xpass xpass xpass xpass $usercmd
 
 
     # queue name and label
-    genprofile "cap:sys_resource:deny" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete):type=posix:label=$receiver:$queuename" "$sender:px" -- image=$sender "mqueue:(open,write):type=posix:label=$receiver:$queuename"
+    genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete):type=posix:label=$receiver:$queuename" "$sender:px" -- image=$sender "mqueue:(open,write):type=posix:label=$receiver:$queuename"
     do_tests "confined $username - mqueue label 2" xpass xpass xpass xpass $usercmd
 
     # ensure we are cleaned up for next pass
