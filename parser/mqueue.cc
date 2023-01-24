@@ -244,13 +244,19 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 	if (qtype != mqueue_posix) {
 		std::ostringstream buffer;
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_SYSV_MQUEUE;
-		buf.assign(buffer.str());
+
 		if (qname) {
-			if (!convert_entry(buf, qname))
-				goto fail;
+			int key;
+			sscanf(qname, "%d", &key);
+			u32 tmp = htobe32((u32) key);
+			u8 *byte = (u8 *) &tmp;
+			for (int i = 0; i < 4; i++){
+				buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(byte[i]);
+			}
 		} else {
-			buf += default_match_pattern;
+			buffer << "....";
 		}
+		buf.assign(buffer.str());
 		vec[0] = buf.c_str();
 
 		if (label) {
