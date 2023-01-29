@@ -105,16 +105,14 @@ def UI_Important(text):
 
 
 def get_translated_hotkey(translated, cmsg=''):
-    msg = 'PromptUser: ' + _('Invalid hotkey for')
-
     # Originally (\S) was used but with translations it would not work :(
-    if re.search(r'\((\S+)\)', translated):
-        return re.search(r'\((\S+)\)', translated).groups()[0]
-    else:
-        if cmsg:
-            raise AppArmorException(cmsg)
-        else:
-            raise AppArmorException('%s %s' % (msg, translated))
+    match = re.search(r'\((\S+)\)', translated)
+    if match:
+        return match.groups()[0].lower()
+
+    if not cmsg:
+        cmsg = 'PromptUser: %s %s' % (_('Invalid hotkey for'), translated)
+    raise AppArmorException(cmsg)
 
 
 def UI_YesNo(text, default):
@@ -122,8 +120,8 @@ def UI_YesNo(text, default):
     default = default.lower()
     yes = CMDS['CMD_YES']
     no = CMDS['CMD_NO']
-    yeskey = get_translated_hotkey(yes).lower()
-    nokey = get_translated_hotkey(no).lower()
+    yeskey = get_translated_hotkey(yes)
+    nokey = get_translated_hotkey(no)
     ans = 'XXXINVALIDXXX'
     while ans not in ('y', 'n'):
         if UI_mode == 'json':
@@ -164,9 +162,9 @@ def UI_YesNoCancel(text, default):
     no = CMDS['CMD_NO']
     cancel = CMDS['CMD_CANCEL']
 
-    yeskey = get_translated_hotkey(yes).lower()
-    nokey = get_translated_hotkey(no).lower()
-    cancelkey = get_translated_hotkey(cancel).lower()
+    yeskey = get_translated_hotkey(yes)
+    nokey = get_translated_hotkey(no)
+    cancelkey = get_translated_hotkey(cancel)
 
     ans = 'XXXINVALIDXXX'
     while ans not in ('c', 'n', 'y'):
@@ -401,7 +399,7 @@ class PromptQuestion:
 
             menutext = CMDS[cmd]
 
-            key = get_translated_hotkey(menutext).lower()
+            key = get_translated_hotkey(menutext)
             # Duplicate hotkey
             if keys.get(key, False):
                 raise AppArmorException(
@@ -420,7 +418,7 @@ class PromptQuestion:
             defaulttext = CMDS[default]
             defmsg = _('PromptUser: Invalid hotkey in default item')
 
-            default_key = get_translated_hotkey(defaulttext, defmsg).lower()
+            default_key = get_translated_hotkey(defaulttext, defmsg)
 
             if not keys.get(default_key, False):
                 raise AppArmorException(_('PromptUser: Invalid default %s') % default)

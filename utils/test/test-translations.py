@@ -42,31 +42,39 @@ class TestHotkeyConflicts(AATest):
     def _run_test(self, params, expected):
         self.createTmpdir()
 
-        subprocess.call("make -C ../po >/dev/null", shell=True)
-        subprocess.call("DESTDIR=%s NAME=apparmor-utils make -C ../po install >/dev/null" % self.tmpdir, shell=True)
+        subprocess.run("make -C ../po >/dev/null", shell=True, check=True)
+        subprocess.run(
+            "DESTDIR={} NAME=apparmor-utils make -C ../po install >/dev/null".format(self.tmpdir),
+            shell=True, check=True,
+        )
 
-        self.localedir = '%s/usr/share/locale' % self.tmpdir
+        self.localedir = '{}/usr/share/locale'.format(self.tmpdir)
 
         self.languages = os.listdir(self.localedir)
 
         # make sure we found all translations
         if len(self.languages) < 15:
-            raise Exception('None or not all languages found, only %s' % self.languages)
+            raise Exception('None or not all languages found, only {}'.format(self.languages))
 
-        self.languages.append('C')  # we also want to detect hotkey conflicts in the untranslated english strings
+        # we also want to detect hotkey conflicts in the untranslated english strings
+        self.languages.append('C')
 
         for language in self.languages:
-            t = gettext.translation('apparmor-utils', fallback=True, localedir=self.localedir, languages=[language])
+            with self.subTest(language=language):
+                t = gettext.translation(
+                    'apparmor-utils', fallback=True,
+                    localedir=self.localedir, languages=(language,),
+                )
 
-            keys = dict()
-            for key in params:
-                text = t.gettext(CMDS[key])
-                hotkey = get_translated_hotkey(text).lower()
+                keys = {}
+                for key in params:
+                    text = t.gettext(CMDS[key])
+                    hotkey = get_translated_hotkey(text)
 
-                if keys.get(hotkey):
-                    raise Exception("Hotkey conflict: '%s' and '%s' in language %s" % (keys[hotkey], text, language))
-                else:
-                    keys[hotkey] = text
+                    if keys.get(hotkey):
+                        raise Exception("Hotkey conflict: '{}' and '{}'".format(keys[hotkey], text))
+                    else:
+                        keys[hotkey] = text
 
 
 setup_all_loops(__name__)
