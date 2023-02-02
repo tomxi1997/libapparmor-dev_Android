@@ -8,19 +8,19 @@ msgstr ""
 "Project-Id-Version: apparmor\n"
 "Report-Msgid-Bugs-To: AppArmor list <apparmor@lists.ubuntu.com>\n"
 "POT-Creation-Date: 2014-09-14 19:29+0530\n"
-"PO-Revision-Date: 2016-03-03 11:01+0000\n"
-"Last-Translator: Ivo Xavier <ivofernandes12@gmail.com>\n"
+"PO-Revision-Date: 2022-11-23 23:42+0000\n"
+"Last-Translator: Carlos Martins <Unknown>\n"
 "Language-Team: Portuguese <pt@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2019-04-18 05:33+0000\n"
-"X-Generator: Launchpad (build 18928)\n"
+"X-Launchpad-Export-Date: 2022-11-24 06:37+0000\n"
+"X-Generator: Launchpad (build 58312c50d0ade23d24f71d3daeac191f58b3ed83)\n"
 "Language: po\n"
 
 #: ../aa-genprof:56
 msgid "Generate profile for the given program"
-msgstr ""
+msgstr "Gerar perfil para o programa em questão"
 
 #: ../aa-genprof:57 ../aa-logprof:25 ../aa-cleanprof:24 ../aa-mergeprof:34
 #: ../aa-autodep:25 ../aa-audit:25 ../aa-complain:24 ../aa-enforce:24
@@ -30,21 +30,23 @@ msgstr "caminho para perfis"
 
 #: ../aa-genprof:58 ../aa-logprof:26
 msgid "path to logfile"
-msgstr ""
+msgstr "caminho para o ficheiro de registo"
 
 #: ../aa-genprof:59
 msgid "name of program to profile"
-msgstr ""
+msgstr "nome do programa a ser perfilado"
 
 #: ../aa-genprof:69 ../aa-logprof:37
 #, python-format
 msgid "The logfile %s does not exist. Please check the path"
-msgstr ""
+msgstr "O ficheiro de registo %s não existe. Por favor, verifique o caminho"
 
 #: ../aa-genprof:75 ../aa-logprof:43 ../aa-unconfined:36
 msgid ""
 "It seems AppArmor was not started. Please enable AppArmor and try again."
 msgstr ""
+"Parece que a AppArmor não foi iniciada. Por favor, ativar a AppArmor e "
+"tentar novamente."
 
 #: ../aa-genprof:80 ../aa-mergeprof:47
 #, python-format
@@ -60,11 +62,18 @@ msgid ""
 "environment set up in order to find the fully-qualified path and\n"
 "use the full path as parameter."
 msgstr ""
+"Não se encontram %(profiling)s na lista de caminhos do sistema. Se o nome da "
+"aplicação\n"
+"estiver correto, por favor executar 'which %(profiling)s' como um usuário "
+"com a variável\n"
+"de ambiente PATH configurada corretamente para encontrar o caminho "
+"qualificado\n"
+"totalmente e utilizá-lo como parâmetro."
 
 #: ../aa-genprof:96
 #, python-format
 msgid "%s does not exists, please double-check the path."
-msgstr ""
+msgstr "%s não existe, por favor verifique mais uma vez o caminho."
 
 #: ../aa-genprof:124
 msgid ""
@@ -74,6 +83,11 @@ msgid ""
 "wish to confine. See the following wiki page for\n"
 "more information:"
 msgstr ""
+"\n"
+"Antes de começar, você pode querer verificar se\n"
+"já existe um perfil para a aplicação que você\n"
+"deseja confinar. Consulte a página wiki seguinte\n"
+"para mais informações:"
 
 #: ../aa-genprof:126
 msgid ""
@@ -90,7 +104,7 @@ msgstr ""
 
 #: ../aa-genprof:147
 msgid "Profiling"
-msgstr ""
+msgstr "Traçar perfil"
 
 #: ../aa-genprof:165
 msgid ""
@@ -104,6 +118,9 @@ msgid ""
 "Please consider contributing your new profile!\n"
 "See the following wiki page for more information:"
 msgstr ""
+"\n"
+"Considere contribuir com o seu novo perfil!\n"
+"Consulte a seguinte página wiki para mais informações:"
 
 #: ../aa-genprof:167
 #, python-format
@@ -125,7 +142,7 @@ msgstr ""
 #: ../aa-cleanprof:25 ../aa-autodep:26 ../aa-audit:27 ../aa-complain:25
 #: ../aa-enforce:25 ../aa-disable:25
 msgid "name of program"
-msgstr ""
+msgstr "nome do programa"
 
 #: ../aa-cleanprof:26
 msgid "Silently overwrite with a clean profile"
@@ -137,15 +154,15 @@ msgstr ""
 
 #: ../aa-mergeprof:31
 msgid "your profile"
-msgstr ""
+msgstr "o seu perfil"
 
 #: ../aa-mergeprof:32
 msgid "base profile"
-msgstr ""
+msgstr "perfil base"
 
 #: ../aa-mergeprof:33
 msgid "other profile"
-msgstr ""
+msgstr "outro perfil"
 
 #: ../aa-mergeprof:67 ../apparmor/aa.py:2345
 msgid ""
@@ -166,7 +183,7 @@ msgstr ""
 
 #: ../aa-mergeprof:183 ../aa-mergeprof:209
 msgid "File includes"
-msgstr ""
+msgstr "Ficheiro inclui"
 
 #: ../aa-mergeprof:183 ../aa-mergeprof:209
 msgid "Select the ones you wish to add"
@@ -175,7 +192,7 @@ msgstr ""
 #: ../aa-mergeprof:195 ../aa-mergeprof:222
 #, python-format
 msgid "Adding %s to the file."
-msgstr ""
+msgstr "Adicionando %s ao ficheiro."
 
 #: ../aa-mergeprof:199 ../apparmor/aa.py:2258
 msgid "unknown"
@@ -208,7 +225,7 @@ msgstr ""
 #: ../apparmor/aa.py:1857
 #, python-format
 msgid "Adding %s to profile."
-msgstr ""
+msgstr "Adicionando %s ao perfil."
 
 #: ../aa-mergeprof:282 ../apparmor/aa.py:1627
 #, python-format
@@ -271,7 +288,7 @@ msgstr ""
 #: ../aa-mergeprof:673 ../apparmor/aa.py:2010
 #, python-format
 msgid "Adding %s to profile"
-msgstr ""
+msgstr "Adicionando %s ao perfil"
 
 #: ../aa-mergeprof:683 ../apparmor/aa.py:2020
 #, python-format

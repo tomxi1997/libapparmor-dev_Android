@@ -7,14 +7,14 @@ msgstr ""
 "Project-Id-Version: apparmor-utils\n"
 "Report-Msgid-Bugs-To: <apparmor@lists.ubuntu.com>\n"
 "POT-Creation-Date: 2014-09-14 19:29+0530\n"
-"PO-Revision-Date: 2020-02-21 16:45+0000\n"
-"Last-Translator: Stephan Woidowski <swoidowski@t-online.de>\n"
+"PO-Revision-Date: 2023-01-30 09:55+0000\n"
+"Last-Translator: Christian Boltz <Unknown>\n"
 "Language-Team: German <de@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2020-02-22 05:41+0000\n"
-"X-Generator: Launchpad (build 19413b719a8df7423ab1390528edadce9e0e4aca)\n"
+"X-Launchpad-Export-Date: 2023-01-31 06:21+0000\n"
+"X-Generator: Launchpad (build 37f563e5839786fe8704ac9cf25657dfd53c73fd)\n"
 "Language: de\n"
 
 #: ../aa-genprof:56
@@ -868,6 +868,8 @@ msgstr ""
 msgid ""
 "Values added to a non-existing variable %(variable)s: %(value)s in %(file)s"
 msgstr ""
+"Werte zur nicht existierenden Variablen %(variable)s hinzugefügt: %(value)s "
+"in %(file)s"
 
 #: ../apparmor/aa.py:3284
 #, python-format
@@ -931,6 +933,11 @@ msgid ""
 "environment set up in order to find the fully-qualified path and\n"
 "use the full path as parameter."
 msgstr ""
+"Kann %(program)s in der Systempfadliste nicht finden. Wenn der Name der "
+"Anwendung\n"
+"korrekt ist, definieren Sie bitte ' %(program)s' des Benutzers mit korrekter "
+"Pfad-\n"
+"Umgebung, um den vollständigen Pfad als Parameter verwenden."
 
 #: ../apparmor/tools.py:86 ../apparmor/tools.py:102 ../apparmor/tools.py:128
 #, python-format
@@ -972,6 +979,8 @@ msgid ""
 "Please pass an application to generate a profile for, not a profile itself - "
 "skipping %s."
 msgstr ""
+"Bitte geben Sie eine Anwendung zur Erstellung eines Profils an, nicht ein "
+"Profil selbst - %s überspringen."
 
 #: ../apparmor/tools.py:220
 #, python-format
@@ -1067,7 +1076,7 @@ msgstr "(P)rofil"
 
 #: ../apparmor/ui.py:236
 msgid "(P)rofile Clean Exec"
-msgstr ""
+msgstr "(P)rofil sauber ausführen"
 
 #: ../apparmor/ui.py:237
 msgid "(C)hild"
@@ -1075,7 +1084,7 @@ msgstr "(K)ind"
 
 #: ../apparmor/ui.py:238
 msgid "(C)hild Clean Exec"
-msgstr "(C)hild sauber ausführen"
+msgstr "(K)ind sauber ausführen"
 
 #: ../apparmor/ui.py:239
 msgid "(N)amed"
@@ -1107,7 +1116,7 @@ msgstr "(K)ind erben"
 
 #: ../apparmor/ui.py:246
 msgid "(C)hild Inherit Clean Exec"
-msgstr "(C)hild vererbt saubere Ausführung"
+msgstr "(K)ind erben saubere Ausführung"
 
 #: ../apparmor/ui.py:247
 msgid "(N)amed Inherit"
@@ -1115,7 +1124,7 @@ msgstr "Be(n)annte Vererbung"
 
 #: ../apparmor/ui.py:248
 msgid "(N)amed Inherit Clean Exec"
-msgstr "Be(n)annte Vererbung sauber ausführen"
+msgstr "Be(n)nannte Vererbung sauber ausführen"
 
 #: ../apparmor/ui.py:249
 msgid "(X) ix On"
@@ -1139,11 +1148,11 @@ msgstr "(N)eu"
 
 #: ../apparmor/ui.py:254
 msgid "(G)lob"
-msgstr ""
+msgstr "(G)lob"
 
 #: ../apparmor/ui.py:255
 msgid "Glob with (E)xtension"
-msgstr ""
+msgstr "Glob mit (E)rweiterung"
 
 #: ../apparmor/ui.py:256
 msgid "(A)dd Requested Hat"
@@ -1250,6 +1259,7 @@ msgstr "PromptUser: Unbekannter Befehl %s"
 #, python-format
 msgid "PromptUser: Duplicate hotkey for %(command)s: %(menutext)s "
 msgstr ""
+"Eingabeaufforderung: Doppelt belegter Hotkey für %(command)s: %(menutext)s "
 
 #: ../apparmor/ui.py:363
 msgid "PromptUser: Invalid hotkey in default item"
