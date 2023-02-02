@@ -4,7 +4,7 @@ abi <abi/3.0>,
 
 include <tunables/global>
 
-/usr/lib/firefox/firefox.sh {
+profile firefox.sh /usr/lib/firefox/firefox.sh {
   include <abstractions/base>
   include <abstractions/bash>
   include <abstractions/consoles>
@@ -20,5 +20,5 @@ include <tunables/global>
   /usr/share/misc/magic.mgc r,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.firefox.firefox.sh>
+  include if exists <local/firefox.sh>
 }
