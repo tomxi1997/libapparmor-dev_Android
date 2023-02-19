@@ -227,6 +227,7 @@ void add_local_entry(Profile *prof);
 %type <prof>	profile_base
 %type <prof> 	profile
 %type <prof>	rules
+%type <prof>	block
 %type <prof>	hat
 %type <prof>	local_profile
 %type <prof>	cond_rule
@@ -708,8 +709,12 @@ rules:  rules opt_prefix rule
 		$$ = $1;
 	};
 
+block: TOK_OPEN rules TOK_CLOSE
+	{
+		$$ = $2;
+	};
 
-rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
+rules: rules opt_prefix block
 	{
 		struct cod_entry *entry, *tmp;
 		if ($2.rule_mode == RULE_DENY)
@@ -717,7 +722,7 @@ rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
 
 		PDEBUG("matched: %s%s%sblock\n", $2.audit == AUDIT_FORCE ? "audit " : "",
 		       $2.rule_mode == RULE_DENY ? "deny " : "", $2.owner ? "owner " : "");
-		list_for_each_safe($4->entries, entry, tmp) {
+		list_for_each_safe($3->entries, entry, tmp) {
 			entry->next = NULL;
 			if (entry->perms & AA_EXEC_BITS) {
 				if ((entry->rule_mode == RULE_DENY) &&
@@ -738,9 +743,9 @@ rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
 				entry->audit = AUDIT_FORCE;
 			add_entry_to_policy($1, entry);
 		}
-		$4->entries = NULL;
+		$3->entries = NULL;
 		// fix me transfer rules and free sub profile
-		delete $4;
+		delete $3;
 		$$ = $1;
 	};
 
@@ -974,42 +979,42 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 	};
 
 
-cond_rule: TOK_IF expr TOK_OPEN rules TOK_CLOSE
+cond_rule: TOK_IF expr block
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional rules\n");
 		if ($2) {
-			ret = $4;
+			ret = $3;
 		} else {
-			delete $4;
+			delete $3;
 		}
 		$$ = ret;
 	}
 
-cond_rule: TOK_IF expr TOK_OPEN rules TOK_CLOSE TOK_ELSE TOK_OPEN rules TOK_CLOSE
+cond_rule: TOK_IF expr block TOK_ELSE block
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else rules\n");
 		if ($2) {
-			ret = $4;
-			delete $8;
+			ret = $3;
+			delete $5;
 		} else {
-			ret = $8;
-			delete $4;
+			ret = $5;
+			delete $3;
 		}
 		$$ = ret;
 	}
 
-cond_rule: TOK_IF expr TOK_OPEN rules TOK_CLOSE TOK_ELSE cond_rule
+cond_rule: TOK_IF expr block TOK_ELSE cond_rule
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else-if rules\n");
 		if ($2) {
-			ret = $4;
-			delete $7;
+			ret = $3;
+			delete $5;
 		} else {
-			ret = $7;
-			delete $4;
+			ret = $5;
+			delete $3;
 		}
 		$$ = ret;
 	}
