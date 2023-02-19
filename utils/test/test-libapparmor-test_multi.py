@@ -33,12 +33,12 @@ class TestLibapparmorTestMulti(AATest):
         expected = self._parse_libapparmor_test_multi(params)
 
         loglines = []
-        with open_file_read('%s.in' % params) as f_in:
+        with open_file_read(params + '.in') as f_in:
             for line in f_in:
                 if line.strip():
                     loglines.append(line)
 
-        self.assertEqual(len(loglines), 1, '%s.in should only contain one line!' % params)
+        self.assertEqual(len(loglines), 1, params + '.in should only contain one line!')
 
         parser = ReadLog('', '', '')
         parsed_event = parser.parse_event(loglines[0])
@@ -72,11 +72,11 @@ class TestLibapparmorTestMulti(AATest):
                 elif parsed_items['operation'] == 'ptrace' and label == 'name2' and params.endswith('/ptrace_garbage_lp1689667_1'):
                     pass  # libapparmor would better qualify this case as invalid event
                 elif not parsed_items.get(label, None):
-                    raise Exception('parsed_items[%s] not set' % label)
+                    raise Exception('parsed_items[{}] not set'.format(label))
                 elif not expected.get(label, None):
-                    raise Exception('expected[%s] not set' % label)
+                    raise Exception('expected[{}] not set'.format(label))
                 else:
-                    self.assertEqual(str(parsed_items[label]), expected[label], '%s differs' % label)
+                    self.assertEqual(str(parsed_items[label]), expected[label], label + ' differs')
         elif expected:
             self.assertIsNone(parsed_event)  # that's why we end up here
             self.assertEqual(dict(), expected, 'parsed_event is none')  # effectively print the content of expected
@@ -109,12 +109,12 @@ class TestLibapparmorTestMulti(AATest):
     def _parse_libapparmor_test_multi(self, file_with_path):
         """parse the libapparmor test_multi *.in tests and their expected result in *.out"""
 
-        with open_file_read('%s.out' % file_with_path) as f_in:
+        with open_file_read(file_with_path + '.out') as f_in:
             expected = f_in.readlines()
 
         if expected[0].rstrip('\n') != 'START':
-            raise Exception("%s.out doesn't have 'START' in its first line! (%s)"
-                            % (file_with_path, expected[0]))
+            raise Exception("{}.out doesn't have 'START' in its first line! ({})".format(
+                file_with_path, expected[0]))
 
         expected.pop(0)
 
@@ -129,8 +129,8 @@ class TestLibapparmorTestMulti(AATest):
             exresult[label] = value.strip()
 
         if not exresult['event_type'].startswith('AA_RECORD_'):
-            raise Exception("event_type doesn't start with AA_RECORD_: %s in file %s"
-                            % (exresult['event_type'], file_with_path))
+            raise Exception("event_type doesn't start with AA_RECORD_: {} in file {}".format(
+                exresult['event_type'], file_with_path))
 
         exresult['aamode'] = exresult['event_type'].replace('AA_RECORD_', '')
         if exresult['aamode'] == 'ALLOWED':
@@ -189,7 +189,7 @@ class TestLogToProfile(AATest):
     tests = 'invalid'  # filled by parse_test_profiles()
 
     def _run_test(self, params, expected):
-        logfile = '%s.in' % params
+        logfile = params + '.in'
 
         if params.split('/')[-1] in log_to_profile_skip:
             return
@@ -198,7 +198,7 @@ class TestLogToProfile(AATest):
         if profile is None:
             return
 
-        expected_profile = read_file('%s.profile' % params)
+        expected_profile = read_file(params + '.profile')
 
         if params.split('/')[-1] in log_to_profile_known_failures:
             self.assertNotEqual(new_profile, expected_profile)  # known failure
@@ -222,7 +222,7 @@ def logfile_to_profile(logfile):
         return None, aamode
 
     if aamode not in ('PERMITTING', 'REJECTING'):
-        raise Exception('Unexpected aamode %s' % parsed_event['aamode'])
+        raise Exception('Unexpected aamode {}'.format(parsed_event['aamode']))
 
     # cleanup apparmor.aa storage
     apparmor.aa.log = dict()
@@ -249,7 +249,7 @@ def logfile_to_profile(logfile):
     log_dict = apparmor.aa.collapse_log(hashlog, ignore_null_profiles=False)
 
     if list(log_dict[aamode].keys()) != [parsed_event['profile']]:
-        raise Exception('log_dict[%s] contains unexpected keys. Logfile: %s, keys %s' % (aamode, logfile, log_dict.keys()))
+        raise Exception('log_dict[{}] contains unexpected keys. Logfile: {}, keys {}'.format(aamode, logfile, log_dict.keys()))
 
     if '//' in parsed_event['profile']:
         # log event for a child profile means log_dict only contains the child profile
@@ -272,10 +272,10 @@ def logfile_to_profile(logfile):
     if logfile.split('/')[-1][:-3] in log_to_profile_known_empty_log:
         # unfortunately this function might be called outside Unittest.TestCase, therefore we can't use assertEqual / assertNotEqual
         if not log_is_empty:
-            raise Exception('got non-empty log for logfile in log_to_profile_known_empty_log: %s %s' % (logfile, hashlog))
+            raise Exception('got non-empty log for logfile in log_to_profile_known_empty_log: {} {}'.format(logfile, hashlog))
     else:
         if log_is_empty:
-            raise Exception('got empty log for logfile not in log_to_profile_known_empty_log: %s %s' % (logfile, hashlog))
+            raise Exception('got empty log for logfile not in log_to_profile_known_empty_log: {} {}'.format(logfile, hashlog))
 
     new_profile = apparmor.aa.serialize_profile(log_dict[aamode], profile, {})
 
@@ -297,7 +297,7 @@ def find_test_multi(log_dir):
             elif file.endswith('.out') or file.endswith('.err') or file.endswith('.profile'):
                 pass
             else:
-                raise Exception('Found unknown file %s in libapparmor test_multi' % file)
+                raise Exception('Found unknown file {} in libapparmor test_multi'.format(file))
 
     return tests
 

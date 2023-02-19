@@ -29,7 +29,7 @@ class MinitoolsTest(AATest):
 
         # copy the local profiles to the test directory
         # Should be the set of cleanprofile
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 
         apparmor.profile_dir = self.profile_dir
@@ -37,143 +37,152 @@ class MinitoolsTest(AATest):
         # Path for the program
         self.test_path = '/usr/sbin/winbindd'
         # Path for the target file containing profile
-        self.local_profilename = '%s/usr.sbin.winbindd' % self.profile_dir
+        self.local_profilename = self.profile_dir + '/usr.sbin.winbindd'
 
     def test_audit(self):
         # Set test profile to audit mode and check if it was correctly set
-        str(subprocess.check_output(
-            '%s ./../aa-audit --no-reload -d %s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True))
+        subprocess.check_output(
+            '{} ./../aa-audit --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
 
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
             'audit',
-            'Audit flag could not be set in profile %s' % self.local_profilename)
+            'Audit flag could not be set in profile ' + self.local_profilename)
 
         # Remove audit mode from test profile and check if it was correctly removed
         subprocess.check_output(
-            '%s ./../aa-audit --no-reload -d %s -r %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-audit --no-reload -d {} -r {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path), shell=True)
 
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
             None,
-            'Audit flag could not be removed in profile %s' % self.local_profilename)
+            'Audit flag could not be removed in profile ' + self.local_profilename)
 
     def test_complain(self):
         # Set test profile to complain mode and check if it was correctly set
         subprocess.check_output(
-            '%s ./../aa-complain --no-reload -d %s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-complain --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
 
         # "manually" create a force-complain symlink (will be deleted by aa-enforce later)
-        force_complain_dir = '%s/force-complain' % self.profile_dir
+        force_complain_dir = self.profile_dir + '/force-complain'
         if not os.path.isdir(force_complain_dir):
             os.mkdir(force_complain_dir)
         os.symlink(
             self.local_profilename,
-            '%s/%s' % (force_complain_dir, os.path.basename(self.local_profilename)))
+            '{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename)))
 
         self.assertEqual(
-            os.path.islink('%s/%s' % (force_complain_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
             True,
-            'Failed to create a symlink for %s in force-complain' % self.local_profilename)
+            'Failed to create a symlink for {} in force-complain'.format(self.local_profilename))
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
             'complain',
-            'Complain flag could not be set in profile %s' % self.local_profilename)
+            'Complain flag could not be set in profile ' + self.local_profilename)
 
         # Set test profile to enforce mode and check if it was correctly set
         subprocess.check_output(
-            '%s ./../aa-enforce --no-reload -d %s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-enforce --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
 
         self.assertEqual(
-            os.path.islink('%s/%s' % (force_complain_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
             False,
-            'Failed to remove symlink for %s from force-complain' % self.local_profilename)
+            'Failed to remove symlink for {} from force-complain'.format(self.local_profilename))
         self.assertEqual(
-            os.path.islink('%s/disable/%s' % (self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
             False,
-            'Failed to remove symlink for %s from disable' % self.local_profilename)
+            'Failed to remove symlink for {} from disable'.format(self.local_profilename))
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
             None,
-            'Complain flag could not be removed in profile %s' % self.local_profilename)
+            'Complain flag could not be removed in profile ' + self.local_profilename)
 
         # Set audit flag and then complain flag in a profile
         subprocess.check_output(
-            '%s ./../aa-audit --no-reload -d %s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-audit --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
         subprocess.check_output(
-            '%s ./../aa-complain --no-reload -d %s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-complain --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
         # "manually" create a force-complain symlink (will be deleted by aa-enforce later)
         os.symlink(
             self.local_profilename,
-            '%s/%s' % (force_complain_dir, os.path.basename(self.local_profilename)))
+            '{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename)))
 
         self.assertEqual(
-            os.path.islink('%s/%s' % (force_complain_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
             True,
-            'Failed to create a symlink for %s in force-complain' % self.local_profilename)
+            'Failed to create a symlink for {} in force-complain'.format(self.local_profilename))
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
             'audit, complain',
-            'Complain flag could not be set in profile %s' % self.local_profilename)
+            'Complain flag could not be set in profile ' + self.local_profilename)
 
         # Remove complain flag first i.e. set to enforce mode
         subprocess.check_output(
-            '%s ./../aa-enforce --no-reload -d %s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-enforce --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
 
         self.assertEqual(
-            os.path.islink('%s/%s' % (force_complain_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
             False,
-            'Failed to remove symlink for %s from force-complain' % self.local_profilename)
+            'Failed to remove symlink for {} from force-complain'.format(self.local_profilename))
         self.assertEqual(
-            os.path.islink('%s/disable/%s' % (self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
             False,
-            'Failed to remove symlink for %s from disable' % self.local_profilename)
+            'Failed to remove symlink for {} from disable'.format(self.local_profilename))
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
             'audit',
-            'Complain flag could not be removed in profile %s' % self.local_profilename)
+            'Complain flag could not be removed in profile ' + self.local_profilename)
 
         # Remove audit flag
         subprocess.check_output(
-            '%s ./../aa-audit --no-reload -d %s -r %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-audit --no-reload -d {} -r {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
 
     def test_enforce(self):
         # Set test profile to enforce mode and check if it was correctly set
         subprocess.check_output(
-            '%s ./../aa-enforce --no-reload -d %s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-enforce --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
 
         self.assertEqual(
-            os.path.islink('%s/force-complain/%s' % (self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/force-complain/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
             False,
-            'Failed to remove symlink for %s from force-complain' % self.local_profilename)
+            'Failed to remove symlink for {} from force-complain'.format(self.local_profilename))
         self.assertEqual(
-            os.path.islink('%s/disable/%s' % (self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
             False,
-            'Failed to remove symlink for %s from disable' % self.local_profilename)
+            'Failed to remove symlink for {} from disable'.format(self.local_profilename))
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
             None,
-            'Complain flag could not be removed in profile %s' % self.local_profilename)
+            'Complain flag could not be removed in profile {}'.format(self.local_profilename))
 
     def test_disable(self):
         # Disable the test profile and check if it was correctly disabled
         subprocess.check_output(
-            '%s ./../aa-disable --no-reload -d %s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, self.test_path), shell=True)
+            '{} ./../aa-disable --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, self.test_path),
+            shell=True)
 
         self.assertEqual(
-            os.path.islink('%s/disable/%s' % (self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
             True,
-            'Failed to create a symlink for %s in disable' % self.local_profilename)
+            'Failed to create a symlink for {} in disable'.format(self.local_profilename))
 
     def test_autodep(self):
         pass
@@ -181,10 +190,10 @@ class MinitoolsTest(AATest):
     @unittest.skipIf(apparmor.check_for_apparmor() is None, "Securityfs not mounted or doesn't have the apparmor directory.")
     def test_unconfined(self):
         output = subprocess.check_output(
-            '%s ./../aa-unconfined --configdir ./' % python_interpreter, shell=True)
+            python_interpreter + ' ./../aa-unconfined --configdir ./', shell=True)
 
         output_force = subprocess.check_output(
-            '%s ./../aa-unconfined --paranoid --configdir ./' % python_interpreter, shell=True)
+            python_interpreter + ' ./../aa-unconfined --paranoid --configdir ./', shell=True)
 
         self.assertIsNot(output, '', 'Failed to run aa-unconfined')
 
@@ -194,19 +203,20 @@ class MinitoolsTest(AATest):
         input_file = 'cleanprof_test.in'
         output_file = 'cleanprof_test.out'
         # We position the local testfile
-        shutil.copy('./%s' % input_file, self.profile_dir)
+        shutil.copy('./' + input_file, self.profile_dir)
         # Our silly test program whose profile we wish to clean
         cleanprof_test = '/usr/bin/a/simple/cleanprof/test/profile'
 
         subprocess.check_output(
-            '%s ./../aa-cleanprof  --no-reload -d %s -s %s --configdir ./'
-            % (python_interpreter, self.profile_dir, cleanprof_test), shell=True)
+            '{} ./../aa-cleanprof  --no-reload -d {} -s {} --configdir ./'.format(
+                python_interpreter, self.profile_dir, cleanprof_test),
+            shell=True)
 
         # Strip off the first line (#modified line)
-        subprocess.check_output('sed -i 1d %s/%s' % (self.profile_dir, input_file), shell=True)
+        subprocess.check_output('sed -i 1d {}/{}'.format(self.profile_dir, input_file), shell=True)
 
-        exp_content = read_file('./%s' % output_file)
-        real_content = read_file('%s/%s' % (self.profile_dir, input_file))
+        exp_content = read_file('./' + output_file)
+        real_content = read_file('{}/{}'.format(self.profile_dir, input_file))
         self.maxDiff = None
         self.assertEqual(exp_content, real_content, 'Failed to cleanup profile properly')
 

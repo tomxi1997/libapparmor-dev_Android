@@ -138,12 +138,12 @@ class TestConvert_regexpAndAAREMatch(AATest):
     def _run_test(self, params, expected):
         regex, path = params
         parsed_regex = re.compile(convert_regexp(regex))
-        self.assertEqual(bool(parsed_regex.search(path)), expected, 'Incorrectly Parsed regex: %s' % regex)
+        self.assertEqual(bool(parsed_regex.search(path)), expected, 'Incorrectly Parsed regex: ' + regex)
 
         aare_obj = AARE(regex, True)
-        self.assertEqual(aare_obj.match(path), expected, 'Incorrectly parsed AARE object: %s' % regex)
+        self.assertEqual(aare_obj.match(path), expected, 'Incorrectly parsed AARE object: ' + regex)
         if not ('*' in path or '{' in path or '}' in path or '?' in path):
-            self.assertEqual(aare_obj.match(AARE(path, False)), expected, 'Incorrectly parsed AARE object: AARE(%s)' % regex)
+            self.assertEqual(aare_obj.match(AARE(path, False)), expected, 'Incorrectly parsed AARE object: AARE({})'.format(regex))
 
     def test_multi_usage(self):
         aare_obj = AARE('/foo/*', True)

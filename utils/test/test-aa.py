@@ -59,7 +59,7 @@ class AaTest_check_for_apparmor(AaTestWithTempdir):
 
     def test_check_for_apparmor_securityfs_invalid_filesystems(self):
         filesystems = ''
-        mounts = write_file(self.tmpdir, 'mounts', self.MOUNTS_WITH_SECURITYFS % self.tmpdir)
+        mounts = write_file(self.tmpdir, 'mounts', self.MOUNTS_WITH_SECURITYFS % (self.tmpdir,))
         self.assertEqual(None, check_for_apparmor(filesystems, mounts))
 
     def test_check_for_apparmor_securityfs_invalid_mounts(self):
@@ -69,13 +69,13 @@ class AaTest_check_for_apparmor(AaTestWithTempdir):
 
     def test_check_for_apparmor_invalid_securityfs_path(self):
         filesystems = write_file(self.tmpdir, 'filesystems', self.FILESYSTEMS_WITH_SECURITYFS)
-        mounts = write_file(self.tmpdir, 'mounts', self.MOUNTS_WITH_SECURITYFS % 'xxx')
+        mounts = write_file(self.tmpdir, 'mounts', self.MOUNTS_WITH_SECURITYFS % ('xxx',))
         self.assertEqual(None, check_for_apparmor(filesystems, mounts))
 
     def test_check_for_apparmor_securityfs_mounted(self):
         filesystems = write_file(self.tmpdir, 'filesystems', self.FILESYSTEMS_WITH_SECURITYFS)
-        mounts = write_file(self.tmpdir, 'mounts', self.MOUNTS_WITH_SECURITYFS % self.tmpdir)
-        self.assertEqual('%s/security/apparmor' % self.tmpdir, check_for_apparmor(filesystems, mounts))
+        mounts = write_file(self.tmpdir, 'mounts', self.MOUNTS_WITH_SECURITYFS % (self.tmpdir,))
+        self.assertEqual(self.tmpdir + '/security/apparmor', check_for_apparmor(filesystems, mounts))
 
 
 class AATest_get_output(AATest):
@@ -119,7 +119,7 @@ class AaTest_create_new_profile(AATest):
         self.createTmpdir()
 
         # copy the local profiles to the test directory
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 
         # load the abstractions we need in the test
@@ -139,22 +139,22 @@ class AaTest_create_new_profile(AATest):
 
         expected_profiles = []
         for prof in exp_profiles:
-            expected_profiles.append('%s/%s' % (self.tmpdir, prof))  # actual profile names start with tmpdir, prepend it to the expected profile names
+            expected_profiles.append('{}/{}'.format(self.tmpdir, prof))  # actual profile names start with tmpdir, prepend it to the expected profile names
 
         self.assertEqual(list(profile.keys()), expected_profiles)
 
         if exp_interpreter_path:
             self.assertEqual(
                 set(profile[program]['file'].get_clean()),
-                {'%s ix,' % exp_interpreter_path, '%s r,' % program, '',
+                {'{} ix,'.format(exp_interpreter_path), '{} r,'.format(program), '',
                  '/AATest/lib64/libtinfo.so.* mr,', '/AATest/lib64/libc.so.* mr,',
                  '/AATest/lib64/libdl.so.* mr,', '/AATest/lib64/libreadline.so.* mr,',
                  '/AATest/lib64/ld-linux-x86-64.so.* mr,'})
         else:
-            self.assertEqual(set(profile[program]['file'].get_clean()), {'%s mr,' % program, ''})
+            self.assertEqual(set(profile[program]['file'].get_clean()), {'{} mr,'.format(program), ''})
 
         if exp_abstraction:
-            self.assertEqual(profile[program]['inc_ie'].get_clean(), ['include <abstractions/base>', 'include <%s>' % exp_abstraction, ''])
+            self.assertEqual(profile[program]['inc_ie'].get_clean(), ['include <abstractions/base>', 'include <{}>'.format(exp_abstraction), ''])
         else:
             self.assertEqual(profile[program]['inc_ie'].get_clean(), ['include <abstractions/base>', ''])
 
@@ -183,7 +183,7 @@ class AaTest_get_interpreter_and_abstraction(AATest):
     def _run_test(self, params, expected):
         exp_interpreter_path, exp_abstraction = expected
 
-        program = self.writeTmpfile('program', "%s\nfoo\nbar" % params)
+        program = self.writeTmpfile('program', params + "\nfoo\nbar")
         interpreter_path, abstraction = get_interpreter_and_abstraction(program)
 
         # damn symlinks!
@@ -198,12 +198,12 @@ class AaTest_get_interpreter_and_abstraction(AATest):
 
     def test_file_not_found(self):
         self.createTmpdir()
-        self.assertEqual((None, None), get_interpreter_and_abstraction('%s/file-not-found' % self.tmpdir))
+        self.assertEqual((None, None), get_interpreter_and_abstraction(self.tmpdir + '/file-not-found'))
 
 
 class AaTest_get_profile_flags(AaTestWithTempdir):
     def _test_get_flags(self, profile_header, expected_flags):
-        file = write_file(self.tmpdir, 'profile', '%s {\n}\n' % profile_header)
+        file = write_file(self.tmpdir, 'profile', profile_header + ' {\n}\n')
         flags = get_profile_flags(file, '/foo')
         self.assertEqual(flags, expected_flags)
 
@@ -238,10 +238,10 @@ class AaTest_change_profile_flags(AaTestWithTempdir):
             self, profile, old_flags, flags_to_change, set_flag, expected_flags, whitespace='',
             comment='', more_rules='', expected_more_rules='@-@-@', check_new_flags=True, profile_name='/foo'):
         if old_flags:
-            old_flags = ' %s' % old_flags
+            old_flags = ' ' + old_flags
 
         if expected_flags:
-            expected_flags = ' flags=(%s)' % (expected_flags)
+            expected_flags = ' flags=({})'.format(expected_flags)
         else:
             expected_flags = ''
 
@@ -249,7 +249,7 @@ class AaTest_change_profile_flags(AaTestWithTempdir):
             expected_more_rules = more_rules
 
         if comment:
-            comment = ' %s' % comment
+            comment = ' ' + comment
 
         dummy_profile_content = '  #include <abstractions/base>\n  capability chown,\n  /bar r,'
         prof_template = '%s%s%s {%s\n%s\n%s\n}\n'
@@ -406,7 +406,7 @@ class AaTest_change_profile_flags(AaTestWithTempdir):
 
     def test_change_profile_flags_file_not_found(self):
         with self.assertRaises(IOError):
-            change_profile_flags('%s/file-not-found' % self.tmpdir, '/foo', 'audit', True)
+            change_profile_flags(self.tmpdir + '/file-not-found', '/foo', 'audit', True)
 
 
 class AaTest_set_options_audit_mode(AATest):
@@ -561,7 +561,7 @@ class AaTest_get_file_perms_1(AATest):
         self.createTmpdir()
 
         # copy the local profiles to the test directory
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 
         profile = apparmor.aa.ProfileStorage('/test', '/test', 'test-aa.py')
@@ -590,7 +590,7 @@ class AaTest_get_file_perms_2(AATest):
         self.createTmpdir()
 
         # copy the local profiles to the test directory
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 
         # load the abstractions we need in the test
@@ -629,7 +629,7 @@ class AaTest_propose_file_rules(AATest):
         self.createTmpdir()
 
         # copy the local profiles to the test directory
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 
         # load the abstractions we need in the test
@@ -671,7 +671,7 @@ class AaTest_propose_file_rules_with_absolute_includes(AATest):
         self.createTmpdir()
 
         # copy the local profiles to the test directory
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 
         # load the abstractions we need in the test
@@ -689,9 +689,9 @@ class AaTest_propose_file_rules_with_absolute_includes(AATest):
 
         profile = apparmor.aa.ProfileStorage('/test', '/test', 'test-aa.py')
         profile['inc_ie'].add(IncludeRule.create_instance('include <abstractions/base>'))
-        profile['inc_ie'].add(IncludeRule.create_instance('include "%s"' % abs_include1))
-        profile['inc_ie'].add(IncludeRule.create_instance('include "%s"' % abs_include2))
-        profile['inc_ie'].add(IncludeRule.create_instance('include "%s"' % abs_include3))
+        profile['inc_ie'].add(IncludeRule.create_instance('include "{}"'.format(abs_include1)))
+        profile['inc_ie'].add(IncludeRule.create_instance('include "{}"'.format(abs_include2)))
+        profile['inc_ie'].add(IncludeRule.create_instance('include "{}"'.format(abs_include3)))
 
         rule_obj = FileRule(params[0], params[1], None, FileRule.ALL, owner=False, log_event=True)
         proposals = propose_file_rules(profile, rule_obj)

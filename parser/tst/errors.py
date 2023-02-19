@@ -32,7 +32,7 @@ class AAErrorTests(testlib.AATestTemplate):
         cmd = self.cmd_prefix + [profile]
 
         (rc, out, outerr) = self._run_cmd(cmd, stdout=subprocess.DEVNULL)
-        report = "\nCommand: %s\nExit value:%s\nSTDERR\n%s" % (" ".join(cmd), rc, outerr)
+        report = "\nCommand: {}\nExit value:{}\nSTDERR\n{}".format(" ".join(cmd), rc, outerr)
         if is_error:
             self.assertNotEqual(rc, 0, report)
         else:

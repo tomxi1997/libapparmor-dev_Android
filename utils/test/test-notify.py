@@ -42,7 +42,7 @@ class TestGet_last_login_timestamp(AATest):
 
     def _run_test(self, params, expected):
         filename, user = params
-        filename = 'wtmp-examples/%s' % filename
+        filename = 'wtmp-examples/' + filename
         self.assertEqual(get_last_login_timestamp(user, filename), expected)
 
     def test_date_1999(self):

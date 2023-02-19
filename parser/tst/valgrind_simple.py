@@ -23,7 +23,9 @@ import testlib
 
 DEFAULT_TESTDIR = "./simple_tests/vars"
 VALGRIND_ERROR_CODE = 151
-VALGRIND_ARGS = ['--leak-check=full', '--error-exitcode=%d' % (VALGRIND_ERROR_CODE)]
+VALGRIND_ARGS = [
+    '--leak-check=full', '--error-exitcode={}'.format(VALGRIND_ERROR_CODE)
+]
 
 VALGRIND_SUPPRESSIONS = '''
 {
@@ -53,8 +55,8 @@ class AAParserValgrindTests(testlib.AATestTemplate):
         rc, output = self.run_cmd(command, timeout=120)
         self.assertNotIn(
             rc, failure_rc,
-            "valgrind returned error code %d, gave the following output\n%s\ncommand run: %s"
-            % (rc, output, " ".join(command)))
+            "valgrind returned error code {}, gave the following output\n{}\ncommand run: {}".format(
+                rc, output, " ".join(command)))
 
 
 def find_testcases(testdir):
@@ -94,8 +96,10 @@ def main():
         return rc
 
     if not os.path.exists(config.valgrind):
-        print("Unable to find valgrind at '%s', ensure that it is installed" % (config.valgrind),
-              file=sys.stderr)
+        print(
+            "Unable to find valgrind at '{}', ensure that it is installed".format(config.valgrind),
+            file=sys.stderr
+        )
         sys.exit(1)
 
     verbosity = 1
@@ -106,13 +110,13 @@ def main():
         suppression_file = None
     else:
         suppression_file = create_suppressions()
-        VALGRIND_ARGS.append('--suppressions=%s' % (suppression_file))
+        VALGRIND_ARGS.append('--suppressions=' + suppression_file)
 
     for f in find_testcases(config.testdir):
         def stub_test(self, testname=f):
             self._runtest(testname, config)
-        stub_test.__doc__ = "test %s" % (f)
-        setattr(AAParserValgrindTests, 'test_%s' % (f), stub_test)
+        stub_test.__doc__ = "test " + f
+        setattr(AAParserValgrindTests, 'test_' + f, stub_test)
     test_suite = unittest.TestSuite()
     test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(AAParserValgrindTests))
 

@@ -57,4 +57,4 @@ elif sys.argv[1] == 'TEMPLATE':
     print('')
 
 else:
-    raise Exception('unknown parameter in fake_ldd: %s' % sys.argv[1])
+    raise Exception('unknown parameter in fake_ldd: ' + sys.argv[1])

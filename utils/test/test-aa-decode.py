@@ -66,7 +66,7 @@ class AADecodeTest(unittest.TestCase):
 
         expected = 0
         rc, report = cmd((aadecode_bin, "--help"))
-        result = 'Got exit code %d, expected %d\n' % (rc, expected)
+        result = 'Got exit code {}, expected {}\n'.format(rc, expected)
         self.assertEqual(expected, rc, result + report)
 
     def _run_file_test(self, content, expected):
@@ -82,10 +82,10 @@ class AADecodeTest(unittest.TestCase):
             temp_file.seek(0)
             rc, report = cmd((aadecode_bin,), stdin=temp_file)
 
-        result = 'Got exit code %d, expected %d\n' % (rc, expected_return_code)
+        result = 'Got exit code {}, expected {}\n'.format(rc, expected_return_code)
         self.assertEqual(expected_return_code, rc, result + report)
         for expected_string in expected:
-            result = 'could not find expected %s in output:\n' % (expected_string)
+            result = 'could not find expected {} in output:\n'.format(expected_string)
             self.assertIn(expected_string, report, result + report)
 
     def test_simple_decode(self):
@@ -96,9 +96,9 @@ class AADecodeTest(unittest.TestCase):
         test_code = '2F746D702F666F6F20626172'
 
         rc, report = cmd((aadecode_bin, test_code))
-        result = 'Got exit code %d, expected %d\n' % (rc, expected)
+        result = 'Got exit code {}, expected {}\n'.format(rc, expected)
         self.assertEqual(expected, rc, result + report)
-        result = 'Got output "%s", expected "%s"\n' % (report, expected_output)
+        result = 'Got output "{}", expected "{}"\n'.format(report, expected_output)
         self.assertIn(expected_output, report, result + report)
 
     def test_simple_filter(self):

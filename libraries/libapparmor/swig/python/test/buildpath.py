@@ -11,4 +11,4 @@ if tuple(map(int, setuptools.__version__.split("."))) >= (62, 1):
     identifier = sys.implementation.cache_tag
 else:
     identifier = "%d.%d" % sys.version_info[:2]
-print("lib.%s-%s" % (sysconfig.get_platform(), identifier))
+print("lib.{}-{}".format(sysconfig.get_platform(), identifier))

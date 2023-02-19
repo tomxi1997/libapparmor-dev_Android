@@ -459,7 +459,7 @@ def parse_test_profiles(file_with_path):
                 exresult = False
                 exresult_found = True
             else:
-                raise Exception('%s contains unknown EXRESULT %s' % (file_with_path, exresult))
+                raise Exception('{} contains unknown EXRESULT {}'.format(file_with_path, exresult))
 
         elif line.upper().startswith('#=DESCRIPTION '):
             description = line.split()[1]
@@ -471,25 +471,25 @@ def parse_test_profiles(file_with_path):
             disabled = True
 
     if not exresult_found:
-        raise Exception('%s does not contain EXRESULT' % file_with_path)
+        raise Exception(file_with_path + ' does not contain EXRESULT')
 
     if not description:
-        raise Exception('%s does not contain description' % file_with_path)
+        raise Exception(file_with_path + ' does not contain description')
 
     tools_wrong = False
     if relfile in exception_not_raised:
         if exresult:
-            raise Exception("%s listed in exception_not_raised, but has EXRESULT PASS" % file_with_path)
+            raise Exception(file_with_path + " listed in exception_not_raised, but has EXRESULT PASS")
         tools_wrong = 'EXCEPTION_NOT_RAISED'
     elif relfile.startswith(skip_startswith):
         return 1  # XXX *** SKIP *** those tests
     elif relfile in unknown_line:
         if not exresult:
-            raise Exception("%s listed in unknown_line, but has EXRESULT FAIL" % file_with_path)
+            raise Exception(file_with_path + " listed in unknown_line, but has EXRESULT FAIL")
         tools_wrong = 'UNKNOWN_LINE'
     elif relfile in syntax_failure:
         if not exresult:
-            raise Exception("%s listed in syntax_failure, but has EXRESULT FAIL" % file_with_path)
+            raise Exception(file_with_path + " listed in syntax_failure, but has EXRESULT FAIL")
         tools_wrong = 'SYNTAX_FAILURE'
 
     params = {
@@ -534,9 +534,9 @@ def find_and_setup_test_profiles(profile_dir):
                 skipped += parse_test_profiles(file_with_path)
 
     if skipped:
-        print('Skipping %s test profiles listed in skip_startswith.' % skipped)
+        print('Skipping {} test profiles listed in skip_startswith.'.format(skipped))
 
-    print('Running %s parser simple_tests...' % len(TestParseParserTests.tests))
+    print('Running {} parser simple_tests...'.format(len(TestParseParserTests.tests)))
 
 
 setup_aa(apparmor)

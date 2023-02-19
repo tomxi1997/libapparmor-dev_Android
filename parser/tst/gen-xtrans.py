@@ -66,9 +66,9 @@ def gen_list():
     for trans in trans_types:
         if trans in trans_modifiers:
             for mod in trans_modifiers[trans]:
-                output.append("%s%sx" % (trans, mod))
+                output.append("{}{}x".format(trans, mod))
 
-        output.append("%sx" % trans)
+        output.append("{}x".format(trans))
 
     return output
 
@@ -80,19 +80,19 @@ def test_gen_list():
     actual = gen_list()
 
     if actual != expected:
-        raise Exception("gen_list produced unexpected result, expected %s, got %s" % (expected, actual))
+        raise Exception("gen_list produced unexpected result, expected {}, got {}".format(expected, actual))
 
 
 def build_rule(leading, qual, name, perm, target):
     rule = ''
 
     if leading:
-        rule += "\t%s %s %s" % (qual, perm, name)
+        rule += "\t{} {} {}".format(qual, perm, name)
     else:
-        rule += "\t%s %s %s" % (qual, name, perm)
+        rule += "\t{} {} {}".format(qual, name, perm)
 
     if target:
-        rule += " -> %s" % target
+        rule += " -> {}".format(target)
 
     rule += ",\n"
 
@@ -105,8 +105,8 @@ def gen_file(name, xres, leading1, qual1, rule1, perm1, target1, leading2, qual2
 
     content = ''
     content += "#\n"
-    content += "#=DESCRIPTION %s\n" % name
-    content += "#=EXRESULT %s\n" % xres
+    content += "#=DESCRIPTION {}\n".format(name)
+    content += "#=EXRESULT {}\n".format(xres)
     content += "#\n"
     content += "/usr/bin/foo {\n"
     content += build_rule(leading1, qual1, rule1, perm1, target1)
@@ -197,10 +197,10 @@ def gen_safe_perms(name, xres, invert, rule1, rule2):
 
                 if (not invert or qual):
                     file = prefix_safe + '/' + name + '-' + invert + '-' + q + qual + '-' + 'rule-' + i + t + '.sd'
-                    gen_file(file, xres, 0, '%s %s' % (q, qual), rule1, i, t, 1, q, rule2, i, t)
+                    gen_file(file, xres, 0, '{} {}'.format(q, qual), rule1, i, t, 1, q, rule2, i, t)
 
                     file = prefix_safe + '/' + name + '-' + invert + '-' + q + qual + i + '-' + 'rule-' + t + '.sd'
-                    gen_file(file, xres, 0, q, rule1, i, t, 1, '%s %s' % (q, qual), rule2, i, t)
+                    gen_file(file, xres, 0, q, rule1, i, t, 1, '{} {}'.format(q, qual), rule2, i, t)
 
 
 test_gen_list()
@@ -225,4 +225,4 @@ gen_safe_perms("overlap", "PASS", "inv", "/*", "/bin/cat")
 gen_safe_perms("dominate", "FAIL", "inv", "/**", "/*")
 gen_safe_perms("ambiguous", "FAIL", "inv", "/a*", "/*b")
 
-print("Generated %s xtransition interaction tests" % count)
+print("Generated {} xtransition interaction tests".format(count))
