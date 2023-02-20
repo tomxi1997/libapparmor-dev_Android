@@ -140,12 +140,36 @@ public:
 	virtual bool add_prefix(const prefixes &p, const char *&error) {
 		if (!valid_prefix(p, error))
 			return false;
-		if (p.audit != AUDIT_UNSPECIFIED && audit != p.audit) {
-			if (audit != AUDIT_UNSPECIFIED) {
+		/* audit conflicts */
+		if (p.audit != AUDIT_UNSPECIFIED) {
+			if (audit != AUDIT_UNSPECIFIED &&
+			    audit != p.audit) {
 				error = "conflicting audit prefix";
 				return false;
 			}
+//			audit = p.audit;
 		}
+
+		/* allow deny conflicts */
+		if (p.rule_mode != RULE_UNSPECIFIED) {
+			if (rule_mode != RULE_UNSPECIFIED &&
+			    rule_mode != p.rule_mode) {
+				error = "conflicting mode prefix";
+				return false;
+			}
+			rule_mode = p.rule_mode;
+		}
+
+		/* owner !owner conflicts */
+		if (p.owner) {
+			if (owner && owner != p.owner) {
+				error = "conflicting owner prefix";
+				return false;
+			}
+			owner = p.owner;
+		}
+
+		/* does the prefix imply a modifier */
 		if (p.rule_mode == RULE_DENY && p.audit == AUDIT_FORCE) {
 			rule_mode = RULE_DENY;
 		} else if (p.rule_mode == RULE_DENY) {
@@ -154,7 +178,7 @@ public:
 		} else if (p.audit != AUDIT_UNSPECIFIED) {
 			audit = p.audit;
 		}
-		owner = p.owner;
+
 		return true;
 	}
 
