@@ -71,6 +71,8 @@ mnt_rule *do_pivot_rule(struct cond_entry *old, char *root,
 			char *transition);
 static void abi_features(char *filename, bool search);
 void add_local_entry(Profile *prof);
+bool add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
+bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 
 %}
 
@@ -685,26 +687,14 @@ rules: rules abi_rule { /* nothing */ }
 
 rules:  rules opt_prefix rule
 	{
+		const char *error;
 		PDEBUG("matched: rules rule\n");
 		PDEBUG("rules rule: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `rule' returned NULL."));
-		$3->rule_mode = $2.rule_mode;
-		if ((($2.rule_mode == RULE_DENY) && ($3->perms & AA_EXEC_BITS) &&
-		     ($3->perms & ALL_AA_EXEC_TYPE)))
-			yyerror(_("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
-		else if (($2.rule_mode != RULE_DENY) && ($3->perms & AA_EXEC_BITS) &&
-			 !($3->perms & ALL_AA_EXEC_TYPE) &&
-			 !($3->nt_name))
-			yyerror(_("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', 'c', or 'u'"));
-
-		if ($2.owner == 1)
-			$3->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
-		else if ($2.owner == 2)
-			$3->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
-		/* only set audit ctl quieting if the rule is not audited */
-		if ((($2.rule_mode == RULE_DENY) && $2.audit != AUDIT_FORCE) || (($2.rule_mode != RULE_DENY) && $2.audit == AUDIT_FORCE))
-			$3->audit = AUDIT_FORCE;
+		if (!add_prefix($3, $2, error)) {
+			yyerror(_("%s"), error);
+		}
 		add_entry_to_policy($1, $3);
 		$$ = $1;
 	};
@@ -717,30 +707,19 @@ block: TOK_OPEN rules TOK_CLOSE
 rules: rules opt_prefix block
 	{
 		struct cod_entry *entry, *tmp;
-		if ($2.rule_mode == RULE_DENY)
-			yyerror(_("deny prefix not allowed"));
 
 		PDEBUG("matched: %s%s%sblock\n", $2.audit == AUDIT_FORCE ? "audit " : "",
 		       $2.rule_mode == RULE_DENY ? "deny " : "", $2.owner ? "owner " : "");
 		list_for_each_safe($3->entries, entry, tmp) {
+			const char *error;
 			entry->next = NULL;
-			if (entry->perms & AA_EXEC_BITS) {
-				if ((entry->rule_mode == RULE_DENY) &&
-				    (entry->perms & ALL_AA_EXEC_TYPE))
-					yyerror(_("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
-				else if ((entry->rule_mode != RULE_DENY) &&
-					 !(entry->perms & ALL_AA_EXEC_TYPE))
-					yyerror(_("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'"));
+			if (!add_prefix(entry, $2, error)) {
+				yyerror(_("%s"), error);
 			}
-			if ($2.owner == 1)
-				entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
-			else if ($2.owner == 2)
-				entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
-
-			if ($2.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
-				entry->audit = AUDIT_FORCE;
-			else if ($2.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
-				entry->audit = AUDIT_FORCE;
+			/* transfer rule for now, TODO keep block and just
+			 * apply add_prefix to block rule and have it do
+			 * the work
+			 */
 			add_entry_to_policy($1, entry);
 		}
 		$3->entries = NULL;
@@ -1868,3 +1847,44 @@ static void abi_features(char *filename, bool search)
 	}
 
 };
+
+bool check_x_qualifier(struct cod_entry *entry, const char *&error)
+{
+	if (entry->perms & AA_EXEC_BITS) {
+		if ((entry->rule_mode == RULE_DENY) &&
+		    (entry->perms & ALL_AA_EXEC_TYPE)) {
+			error = _("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'");
+			return false;
+		} else if ((entry->rule_mode != RULE_DENY) &&
+			   !(entry->perms & ALL_AA_EXEC_TYPE)) {
+			error = _("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'");
+			return false;
+		}
+	}
+	return true;
+}
+
+// cod_entry version of ->add_prefix here just as file rules aren't converted yet
+bool add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
+{
+	/* modifiers aren't correctly stored for cod_entries yet so
+	 * we can't conflict on them easily. Leave that until conversion
+	 * to rule_t
+	 */
+	/* apply rule mode */
+	entry->rule_mode = p.rule_mode;
+
+	/* apply owner/other */
+	if (p.owner == 1)
+		entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
+	else if (p.owner == 2)
+		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
+
+	/* implied audit modifier */
+	if (p.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
+		entry->audit = AUDIT_FORCE;
+	else if (p.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
+		entry->audit = AUDIT_FORCE;
+
+	return check_x_qualifier(entry, error);
+}
