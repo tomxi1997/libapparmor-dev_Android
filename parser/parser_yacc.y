@@ -70,7 +70,6 @@ mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 mnt_rule *do_pivot_rule(struct cond_entry *old, char *root,
 			char *transition);
 static void abi_features(char *filename, bool search);
-void add_local_entry(Profile *prof);
 bool add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
 bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 
@@ -438,7 +437,6 @@ local_profile:   TOK_PROFILE profile_base
 
 		if ($2)
 			PDEBUG("Matched: local profile %s { ... }\n", prof->name);
-		prof->local = 1;
 		$$ = prof;
 	};
 
@@ -849,7 +847,6 @@ rules:	rules local_profile
 		if (!$2)
 			yyerror(_("Assert: 'local_profile rule' returned NULL."));
 		add_hat_to_policy($1, $2);
-		add_local_entry($2);
 		$$ = $1;
 	};
 
@@ -1693,31 +1690,6 @@ struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt)
 		entry->nt_name = nt;
 		PDEBUG("rule.entry: (%s)\n", entry->name);
 		return entry;
-}
-
-/* Note: NOT currently in use, used for 
- * /foo x -> { /bah, }   style transitions
- */
-void add_local_entry(Profile *prof)
-{
-	/* ugh this has to be called after the hat is attached to its parent */
-	if (prof->local_perms) {
-		struct cod_entry *entry;
-		char *trans = (char *) malloc(strlen(prof->parent->name) +
-				    strlen(prof->name) + 3);
-		char *name = strdup(prof->name);
-		if (!trans)
-			yyerror(_("Memory allocation error."));
-		sprintf(name, "%s//%s", prof->parent->name, prof->name);
-
-		entry = new_entry(name, prof->local_perms, NULL);
-		entry->audit = prof->local_audit;
-		entry->nt_name = trans;
-		if (!entry)
-			yyerror(_("Memory allocation error."));
-
-		add_entry_to_policy(prof, entry);
-	}
 }
 
 static const char *mnt_cond_msg[] = {"",

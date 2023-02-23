@@ -189,9 +189,7 @@ public:
 
 	/* char *sub_name; */			/* subdomain name or NULL */
 	/* int default_deny; */			/* TRUE or FALSE */
-	int local;
-	perms_t local_perms;
-	audit_t local_audit;
+	bool local;
 
 	Profile *parent;
 
@@ -220,10 +218,6 @@ public:
 
 		xattrs.list = NULL;
 		xattrs.name = NULL;
-
-		local_perms = 0;
-		local = 0;
-		local_audit = AUDIT_UNSPECIFIED;
 
 		parent = NULL;
 
@@ -267,12 +261,10 @@ public:
 		else
 			printf("Name:\t\t<NULL>\n");
 
-		if (local) {
-			if (parent)
-				printf("Local To:\t%s\n", parent->name);
-			else
-				printf("Local To:\t<NULL>\n");
-		}
+		if (parent)
+			printf("Local To:\t%s\n", parent->name);
+		else
+			printf("Local To:\t<NULL>\n");
 
 		flags.dump(cerr);
 		caps.dump();
