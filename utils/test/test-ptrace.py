@@ -261,11 +261,11 @@ class PtraceCoveredTest(AATest):
 
         self.assertTrue(PtraceRule.match(param))
 
-        self.assertEqual(obj.is_equal(check_obj), expected[0], 'Mismatch in is_equal, expected %s' % expected[0])
-        self.assertEqual(obj.is_equal(check_obj, True), expected[1], 'Mismatch in is_equal/strict, expected %s' % expected[1])
+        self.assertEqual(obj.is_equal(check_obj), expected[0], 'Mismatch in is_equal, expected {}'.format(expected[0]))
+        self.assertEqual(obj.is_equal(check_obj, True), expected[1], 'Mismatch in is_equal/strict, expected {}'.format(expected[1]))
 
-        self.assertEqual(obj.is_covered(check_obj), expected[2], 'Mismatch in is_covered, expected %s' % expected[2])
-        self.assertEqual(obj.is_covered(check_obj, True, True), expected[3], 'Mismatch in is_covered/exact, expected %s' % expected[3])
+        self.assertEqual(obj.is_covered(check_obj), expected[2], 'Mismatch in is_covered, expected {}'.format(expected[2]))
+        self.assertEqual(obj.is_covered(check_obj, True, True), expected[3], 'Mismatch in is_covered/exact, expected {}'.format(expected[3]))
 
 
 class PtraceCoveredTest_01(PtraceCoveredTest):
@@ -511,8 +511,7 @@ class PtraceRulesTest(AATest):
         self.assertEqual([], ruleset_2.get_clean(2))
 
         # test __repr__() for empty ruleset
-        as_string = '%s' % ruleset
-        self.assertEqual(as_string, '<PtraceRuleset (empty) />')
+        self.assertEqual(str(ruleset), '<PtraceRuleset (empty) />')
 
     def test_ruleset_1(self):
         ruleset = PtraceRuleset()
@@ -540,9 +539,8 @@ class PtraceRulesTest(AATest):
         self.assertEqual(expected_clean, ruleset.get_clean())
 
         # test __repr__() for non-empty ruleset
-        as_string = '%s' % ruleset
         self.assertEqual(
-            as_string, '<PtraceRuleset>\n  ptrace peer=/foo,\n  ptrace read,\n</PtraceRuleset>')
+            str(ruleset), '<PtraceRuleset>\n  ptrace peer=/foo,\n  ptrace read,\n</PtraceRuleset>')
 
     def test_ruleset_2(self):
         ruleset = PtraceRuleset()

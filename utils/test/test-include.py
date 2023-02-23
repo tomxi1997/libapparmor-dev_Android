@@ -249,11 +249,11 @@ class IncludeCoveredTest(AATest):
 
         self.assertTrue(IncludeRule.match(param))
 
-        self.assertEqual(obj.is_equal(check_obj), expected[0], 'Mismatch in is_equal, expected %s' % expected[0])
-        self.assertEqual(obj.is_equal(check_obj, True), expected[1], 'Mismatch in is_equal/strict, expected %s' % expected[1])
+        self.assertEqual(obj.is_equal(check_obj), expected[0], 'Mismatch in is_equal, expected {}'.format(expected[0]))
+        self.assertEqual(obj.is_equal(check_obj, True), expected[1], 'Mismatch in is_equal/strict, expected {}'.format(expected[1]))
 
-        self.assertEqual(obj.is_covered(check_obj), expected[2], 'Mismatch in is_covered, expected %s' % expected[2])
-        self.assertEqual(obj.is_covered(check_obj, True, True), expected[3], 'Mismatch in is_covered/exact, expected %s' % expected[3])
+        self.assertEqual(obj.is_covered(check_obj), expected[2], 'Mismatch in is_covered, expected {}'.format(expected[2]))
+        self.assertEqual(obj.is_covered(check_obj, True, True), expected[3], 'Mismatch in is_covered/exact, expected {}'.format(expected[3]))
 
 
 class IncludeCoveredTest_01(IncludeCoveredTest):
@@ -332,7 +332,7 @@ class IncludeFullPathsTest(AATest):
         self.createTmpdir()
 
         # copy the local profiles to the test directory
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 
         inc_dir = os.path.join(self.profile_dir, 'abstractions/inc.d')
@@ -374,7 +374,7 @@ class IncludeRulesTest(AATest):
         self.createTmpdir()
 
         # copy the local profiles to the test directory
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 
         write_file(self.profile_dir, 'baz', '/baz r,')

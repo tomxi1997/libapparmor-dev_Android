@@ -29,12 +29,12 @@ class SeverityBaseTest(AATest):
     def _capability_severity_test(self, cap, expected_rank):
         rank = self.sev_db.rank_capability(cap)
         self.assertEqual(rank, expected_rank,
-                         'expected rank %s, got %s' % (expected_rank, rank))
+                         'expected rank {}, got {}'.format(expected_rank, rank))
 
     def _simple_severity_w_perm(self, path, perm, expected_rank):
         rank = self.sev_db.rank_path(path, perm)
         self.assertEqual(rank, expected_rank,
-                         'expected rank %s, got %s' % (expected_rank, rank))
+                         'expected rank {}, got {}'.format(expected_rank, rank))
 
 
 class SeverityTest(SeverityBaseTest):
@@ -77,7 +77,7 @@ class SeverityTestCap(SeverityBaseTest):
         self._capability_severity_test(params, expected)
 
         rank = self.sev_db.rank_capability(params)
-        self.assertEqual(rank, expected, 'expected rank %s, got %s' % (expected, rank))
+        self.assertEqual(rank, expected, 'expected rank {}, got {}'.format(expected, rank))
 
 
 class SeverityVarsTest(SeverityBaseTest):

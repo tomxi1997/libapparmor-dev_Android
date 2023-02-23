@@ -27,7 +27,7 @@ def main():
     config = p.parse_args()
 
     if not os.path.exists(config.fdir):
-        print('Unable to find apparmor features directory "%s"' % config.fdir, file=sys.stderr)
+        print('Unable to find apparmor features directory "{}"'.format(config.fdir), file=sys.stderr)
         return 1
 
     features = read_features_dir(config.fdir)

@@ -25,7 +25,7 @@ def get_rule(quantifier, perms, session, name, path, interface, member, peer):
 
     for part in (quantifier, 'dbus', perms, session, name, path, interface, member, peer):
         if part:
-            result += ' %s' % part
+            result += ' ' + part
 
     result += ',\n'
 
@@ -37,14 +37,14 @@ def gen_file(test, xres, quantifier, perms, session, name, path, interface, memb
 
     content = ''
     content += '#\n'
-    content += '#=DESCRIPTION %s\n' % test
-    content += '#=EXRESULT %s\n' % xres
+    content += '#=DESCRIPTION {}\n'.format(test)
+    content += '#=EXRESULT {}\n'.format(xres)
     content += '#\n'
     content += '/usr/bin/foo {\n'
     content += get_rule(quantifier, perms, session, name, path, interface, member, peer)
     content += '}\n'
 
-    write_file('simple_tests/generated_dbus', '%s-%s.sd' % (test, count), content)
+    write_file('simple_tests/generated_dbus', '{}-{}.sd'.format(test, count), content)
 
     count += 1
 
@@ -158,4 +158,4 @@ gen_file('duplicated-conditionals', 'FAIL', '', 'peer=(name=1) peer=(name=2)', '
 gen_file('duplicated-conditionals', 'FAIL', '', 'peer=(label=1) peer=(label=2)', '', '', '', '', '', '')
 gen_file('duplicated-conditionals', 'FAIL', '', 'peer=(name=1) peer=(label=2)', '', '', '', '', '', '')
 
-print('Generated %s dbus tests' % count)
+print('Generated {} dbus tests'.format(count))

@@ -70,9 +70,9 @@ class AATestTemplate(unittest.TestCase, metaclass=AANoCleanupMetaClass):
            rc is as long as it's not a specific set of return codes,
            so can't push the check directly into run_cmd()."""
         rc, report = self.run_cmd(command, input, stderr, stdout, stdin, timeout)
-        self.assertEqual(rc, expected_rc, "Got return code %d, expected %d\nCommand run: %s\nOutput: %s" % (rc, expected_rc, (' '.join(command)), report))
+        self.assertEqual(rc, expected_rc, "Got return code {}, expected {}\nCommand run: {}\nOutput: {}".format(rc, expected_rc, ' '.join(command), report))
         if expected_string:
-            self.assertIn(expected_string, report, 'Expected message "%s", got: \n%s' % (expected_string, report))
+            self.assertIn(expected_string, report, 'Expected message "{}", got: \n{}'.format(expected_string, report))
         return report
 
     def run_cmd(self, command, input=None, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -81,7 +81,7 @@ class AATestTemplate(unittest.TestCase, metaclass=AANoCleanupMetaClass):
            return a textual error if it failed."""
 
         if self.debug:
-            print("\n===> Running command: '%s'" % (' '.join(command)))
+            print("\n===> Running command: '{}'".format(' '.join(command)))
 
         (rc, out, outerr) = self._run_cmd(command, input, stderr, stdout, stdin, timeout)
         report = out + outerr
@@ -154,7 +154,7 @@ def filesystem_time_resolution():
         for i in range(10):
             s = None
 
-            with open(os.path.join(tmp_dir, 'test.%d' % i), 'w+') as f:
+            with open(os.path.join(tmp_dir, 'test.{}'.format(i)), 'w+') as f:
                 s = os.fstat(f.fileno())
 
             if (s.st_mtime == last_stamp):
@@ -181,13 +181,13 @@ def read_features_dir(path):
 
     for name in sorted(os.listdir(path)):
         entry = os.path.join(path, name)
-        result += '%s {' % name
+        result += name + ' {'
         if os.path.isfile(entry):
             with open(entry, 'r') as f:
                 # don't need extra '\n' here as features file contains it
-                result += '%s' % (f.read())
+                result += f.read()
         elif os.path.isdir(entry):
-            result += '%s' % (read_features_dir(entry))
+            result += read_features_dir(entry)
         result += '}\n'
 
     return result

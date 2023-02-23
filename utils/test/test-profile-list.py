@@ -33,28 +33,28 @@ class TestAdd_profile(AATest):
     def testEmpty(self):
         self.assertEqual(self.pl.profile_names, {})
         self.assertEqual(self.pl.attachments, {})
-        self.assertEqual('%s' % self.pl, "\n".join(['', '<ProfileList>', '', '</ProfileList>', '']))
+        self.assertEqual(str(self.pl), "\n".join(['', '<ProfileList>', '', '</ProfileList>', '']))
 
     def testAdd_profile_1(self):
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
         self.assertEqual(self.pl.profile_names, {'foo': '/etc/apparmor.d/bin.foo'})
         self.assertEqual(self.pl.attachments, {'/bin/foo': '/etc/apparmor.d/bin.foo'})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['foo'])
-        self.assertEqual('%s' % self.pl, '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
+        self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profile_2(self):
         self.pl.add_profile('/etc/apparmor.d/bin.foo', None, '/bin/foo', self.dummy_profile)
         self.assertEqual(self.pl.profile_names, {})
         self.assertEqual(self.pl.attachments, {'/bin/foo': '/etc/apparmor.d/bin.foo'})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['/bin/foo'])
-        self.assertEqual('%s' % self.pl, '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
+        self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profile_3(self):
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', None, self.dummy_profile)
         self.assertEqual(self.pl.profile_names, {'foo': '/etc/apparmor.d/bin.foo'})
         self.assertEqual(self.pl.attachments, {})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['foo'])
-        self.assertEqual('%s' % self.pl, '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
+        self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profileError_1(self):
         with self.assertRaises(AppArmorBug):
@@ -354,7 +354,7 @@ class AaTest_get_all_merged_variables(AATest):
         self.createTmpdir()
 
         # copy the local profiles to the test directory
-        self.profile_dir = '%s/profiles' % self.tmpdir
+        self.profile_dir = self.tmpdir + '/profiles'
         apparmor.aa.profile_dir = self.profile_dir
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir, symlinks=True)
 

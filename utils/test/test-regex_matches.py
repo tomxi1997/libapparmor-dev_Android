@@ -45,7 +45,7 @@ class AANamedRegexTest(AATest):
             match = matches.group(exp)
             if match:
                 match = match
-            self.assertEqual(match, expected[exp], 'Group %s mismatch in rule %s' % (exp, line))
+            self.assertEqual(match, expected[exp], 'Group {} mismatch in rule {}'.format(exp, line))
 
 
 class AARegexHasComma(AATest):
@@ -54,9 +54,9 @@ class AARegexHasComma(AATest):
     def _check(self, line, expected=True):
         result = aa.RE_RULE_HAS_COMMA.search(line)
         if expected:
-            self.assertTrue(result, 'Couldn\'t find a comma in "%s"' % line)
+            self.assertTrue(result, 'Couldn\'t find a comma in "{}"'.format(line))
         else:
-            self.assertEqual(None, result, 'Found an unexpected comma in "%s"' % line)
+            self.assertEqual(None, result, 'Found an unexpected comma in "{}"'.format(line))
 
 
 regex_has_comma_testcases = (
@@ -128,10 +128,10 @@ def setup_has_comma_testcases():
         def stub_test_no_comma(self, test_string=test_string):
             self._check(test_string % ' ', False)
 
-        stub_test_comma.__doc__ = "test %s (w/comma)" % (description)
-        stub_test_no_comma.__doc__ = "test %s (no comma)" % (description)
-        setattr(AARegexHasComma, 'test_comma_%d' % (i), stub_test_comma)
-        setattr(AARegexHasComma, 'test_no_comma_%d' % (i), stub_test_no_comma)
+        stub_test_comma.__doc__ = "test {} (w/comma)".format(description)
+        stub_test_no_comma.__doc__ = "test {} (no comma)".format(description)
+        setattr(AARegexHasComma, 'test_comma_{}'.format(i), stub_test_comma)
+        setattr(AARegexHasComma, 'test_no_comma_{}'.format(i), stub_test_no_comma)
 
 
 class AARegexSplitComment(AATest):
@@ -140,16 +140,16 @@ class AARegexSplitComment(AATest):
     def _check(self, line, expected, comment=None, not_comment=None):
         result = aa.RE_HAS_COMMENT_SPLIT.search(line)
         if expected:
-            self.assertTrue(result, 'Couldn\'t find a comment in "%s"' % line)
+            self.assertTrue(result, 'Couldn\'t find a comment in "{}"'.format(line))
             self.assertEqual(
                 result.group('comment'), comment,
-                'Expected comment "%s", got "%s"' % (comment, result.group('comment')))
+                'Expected comment "{}", got "{}"'.format(comment, result.group('comment')))
             self.assertEqual(
                 result.group('not_comment'), not_comment,
-                'Expected not comment "%s", got "%s"' % (not_comment, result.group('not_comment')))
+                'Expected not comment "{}", got "{}"'.format(not_comment, result.group('not_comment')))
         else:
-            self.assertEqual(None, result, 'Found an unexpected comment "%s" in "%s"'
-                             % ("" if result is None else result.group('comment'), line))
+            self.assertEqual(None, result, 'Found an unexpected comment "{}" in "{}"'.format(
+                "" if result is None else result.group('comment'), line))
 
 
 # Tuples of (string, expected result), where expected result is False if
@@ -184,8 +184,8 @@ def setup_split_comment_testcases():
             else:
                 self._check(test_string, True, not_comment=result[0], comment=result[1])
 
-        stub_test.__doc__ = "test '%s'" % (test_string)
-        setattr(AARegexSplitComment, 'test_split_comment_%d' % (i), stub_test)
+        stub_test.__doc__ = "test '{}'".format(test_string)
+        setattr(AARegexSplitComment, 'test_split_comment_{}'.format(i), stub_test)
 
 
 def _regex_test(self, line, expected):
@@ -209,7 +209,7 @@ def _regex_test(self, line, expected):
     for (i, group) in enumerate(groups):
         if group:
             group = group.strip()
-        self.assertEqual(group, expected[i], 'Group %d mismatch in rule %s' % (i, line))
+        self.assertEqual(group, expected[i], 'Group {} mismatch in rule {}'.format(i, line))
 
 
 class AARegexCapability(AARegexTest):
@@ -428,7 +428,7 @@ class Test_parse_profile_start_line(AATest):
         for exp in expected:
             self.assertEqual(
                 matches[exp], expected[exp],
-                'Group %s mismatch in rule %s' % (exp, line))
+                'Group {} mismatch in rule {}'.format(exp, line))
 
 
 class TestInvalid_parse_profile_start_line(AATest):

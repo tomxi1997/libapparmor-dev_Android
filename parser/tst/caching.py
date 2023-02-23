@@ -41,7 +41,7 @@ PROFILE_CONTENTS = '''
   /bin/ping mixr,
   /etc/modules.conf r,
 }
-''' % (ABSTRACTION)
+''' % (ABSTRACTION,)
 PROFILE = 'sbin.pingy'
 config = None
 
@@ -91,7 +91,7 @@ class AAParserCachingCommon(testlib.AATestTemplate):
         """teardown for each test"""
 
         if not self.do_cleanup:
-            print("\n===> Skipping cleanup, leaving testfiles behind in '%s'" % (self.tmp_dir))
+            print("\n===> Skipping cleanup, leaving testfiles behind in '{}'".format(self.tmp_dir))
         else:
             if os.path.exists(self.tmp_dir):
                 shutil.rmtree(self.tmp_dir)
@@ -102,7 +102,7 @@ class AAParserCachingCommon(testlib.AATestTemplate):
         rc, report = self.run_cmd(cmd)
         if rc != 0:
             if "unrecognized option '--print-cache-dir'" not in report:
-                self.fail('Unknown apparmor_parser error:\n%s' % report)
+                self.fail('Unknown apparmor_parser error:\n' + report)
 
             cache_dir = os.path.join(self.tmp_dir, 'cache')
         else:
@@ -116,10 +116,10 @@ class AAParserCachingCommon(testlib.AATestTemplate):
     def assert_path_exists(self, path, expected=True):
         if expected:
             self.assertTrue(os.path.exists(path),
-                            'test did not create file %s, when it was expected to do so' % path)
+                            'test did not create file {}, when it was expected to do so'.format(path))
         else:
             self.assertFalse(os.path.exists(path),
-                             'test created file %s, when it was not expected to do so' % path)
+                             'test created file {}, when it was not expected to do so'.format(path))
 
     def is_apparmorfs_mounted(self):
         return os.path.exists("/sys/kernel/security/apparmor")
@@ -139,11 +139,11 @@ class AAParserCachingCommon(testlib.AATestTemplate):
         if expected:
             self.assertEqual(
                 expected_output, features,
-                "features contents differ, expected:\n%s\nresult:\n%s" % (expected_output, features))
+                "features contents differ, expected:\n{}\nresult:\n{}".format(expected_output, features))
         else:
             self.assertNotEqual(
                 expected_output, features,
-                "features contents equal, expected:\n%s\nresult:\n%s" % (expected_output, features))
+                "features contents equal, expected:\n{}\nresult:\n{}".format(expected_output, features))
 
 
 class AAParserBasicCachingTests(AAParserCachingCommon):
@@ -210,7 +210,7 @@ class AAParserAltCacheBasicTests(AAParserBasicCachingTests):
 
     def tearDown(self):
         if os.listdir(self.unused_cache_loc):
-            self.fail("original cache dir '%s' not empty" % self.unused_cache_loc)
+            self.fail("original cache dir '{}' not empty".format(self.unused_cache_loc))
         super().tearDown()
 
 
@@ -517,7 +517,7 @@ class AAParserAltCacheTests(AAParserCachingTests):
 
     def tearDown(self):
         if self.check_orig_cache and os.listdir(self.orig_cache_dir):
-            self.fail("original cache dir '%s' not empty" % self.orig_cache_dir)
+            self.fail("original cache dir '{}' not empty".format(self.orig_cache_dir))
         super().tearDown()
 
     def test_cache_purge_leaves_original_cache_alone(self):
@@ -534,7 +534,7 @@ class AAParserAltCacheTests(AAParserCachingTests):
 
         for f in filelist:
             if not os.path.exists(os.path.join(self.orig_cache_dir, f)):
-                self.fail('cache purge removed %s, was not supposed to' % (os.path.join(self.orig_cache_dir, f)))
+                self.fail('cache purge removed {}, was not supposed to'.format(os.path.join(self.orig_cache_dir, f)))
 
 
 def main():

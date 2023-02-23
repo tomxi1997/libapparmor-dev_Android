@@ -62,8 +62,8 @@ class AAParseTest(unittest.TestCase):
         parsed = self.parse_function(rule)
         self.assertEqual(
             rule, parsed.serialize(),
-            'parse object %s returned "%s", expected "%s"'
-            % (self.parse_function.__doc__, parsed.serialize(), rule))
+            'parse object {} returned "{}", expected "{}"'.format(
+                self.parse_function.__doc__, parsed.serialize(), rule))
 
 
 def setup_all_loops(module_name):
@@ -89,8 +89,8 @@ def setup_tests_loop(test_class):
         def stub_test(self, test_data=test_data, expected=expected):
             self._run_test(test_data, expected)
 
-        stub_test.__doc__ = "test '%s'" % str(test_data)
-        setattr(test_class, 'test_%d' % (i), stub_test)
+        stub_test.__doc__ = "test '{}'".format(test_data)
+        setattr(test_class, 'test_{}'.format(i), stub_test)
 
 
 def setup_regex_tests(test_class):
@@ -102,8 +102,8 @@ def setup_regex_tests(test_class):
         def stub_test(self, line=line):
             self._test_parse_rule(line)
 
-        stub_test.__doc__ = "test '%s': %s" % (line, desc)
-        setattr(test_class, 'test_%d' % (i), stub_test)
+        stub_test.__doc__ = "test '{}': {}".format(line, desc)
+        setattr(test_class, 'test_{}'.format(i), stub_test)
 
 
 def setup_aa(aa):

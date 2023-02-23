@@ -138,9 +138,9 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoc
         expected_output_has = 'usage: aa-notify'
 
         return_code, output = cmd(aanotify_bin)
-        result = 'Got return code %d, expected %d\n' % (return_code, expected_return_code)
+        result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
         self.assertEqual(expected_return_code, return_code, result + output)
-        result = 'Got output "%s", expected "%s"\n' % (output, expected_output_has)
+        result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
         self.assertIn(expected_output_has, output, result + output)
 
     def test_help_contents(self):
@@ -173,7 +173,7 @@ Display AppArmor notifications or messages for DENIED entries.
 '''
 
         return_code, output = cmd(aanotify_bin + ['--help'])
-        result = 'Got return code %d, expected %d\n' % (return_code, expected_return_code)
+        result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
         self.assertEqual(expected_return_code, return_code, result + output)
 
         self.assertIn(expected_output_1, output)
@@ -186,9 +186,9 @@ Display AppArmor notifications or messages for DENIED entries.
         expected_output_has = 'AppArmor denials: 20 (since'
 
         return_code, output = cmd(aanotify_bin + ['-f', self.test_logfile, '-s', '100'])
-        result = 'Got return code %d, expected %d\n' % (return_code, expected_return_code)
+        result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
         self.assertEqual(expected_return_code, return_code, result + output)
-        result = 'Got output "%s", expected "%s"\n' % (output, expected_output_has)
+        result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
         self.assertIn(expected_output_has, output, result + output)
 
     @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
@@ -201,9 +201,9 @@ Display AppArmor notifications or messages for DENIED entries.
         return_code, output = cmd(aanotify_bin + ['-f', self.test_logfile, '-l'])
         if "ERROR: Could not find last login" in output:
             self.skipTest('Could not find last login')
-        result = 'Got return code %d, expected %d\n' % (return_code, expected_return_code)
+        result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
         self.assertEqual(expected_return_code, return_code, result + output)
-        result = 'Got output "%s", expected "%s"\n' % (output, expected_output_has)
+        result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
         self.assertIn(expected_output_has, output, result + output)
 
     @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
@@ -277,9 +277,9 @@ AppArmor denials: 10 (since'''.format(logfile=self.test_logfile)
         return_code, output = cmd(aanotify_bin + ['-f', self.test_logfile, '-l', '-v'])
         if "ERROR: Could not find last login" in output:
             self.skipTest('Could not find last login')
-        result = 'Got return code %d, expected %d\n' % (return_code, expected_return_code)
+        result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
         self.assertEqual(expected_return_code, return_code, result + output)
-        result = 'Got output "%s", expected "%s"\n' % (output, expected_output_has)
+        result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
         self.assertIn(expected_output_has, output, result + output)
 
 
