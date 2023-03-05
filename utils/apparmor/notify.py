@@ -37,12 +37,12 @@ def get_last_login_timestamp(username, filename='/var/log/wtmp'):
     timestamp = 0
     last_login = 0
 
-    debug_logger.debug('Username: {}'.format(username))
+    debug_logger.debug('Username: %s', username)
 
     with open(filename, "rb") as wtmp_file:
         offset = 0
         wtmp_filesize = os.path.getsize(filename)
-        debug_logger.debug('WTMP filesize: {}'.format(wtmp_filesize))
+        debug_logger.debug('WTMP filesize: %s', wtmp_filesize)
 
         if wtmp_filesize < 356:
             return 0  # (nearly) empty wtmp file, no entries
@@ -52,8 +52,8 @@ def get_last_login_timestamp(username, filename='/var/log/wtmp'):
         timestamp_x86_64  = struct.unpack("<L", wtmp_file.read(4))[0]  # noqa: E221
         timestamp_aarch64 = struct.unpack("<L", wtmp_file.read(4))[0]
         timestamp_s390x   = struct.unpack(">L", wtmp_file.read(4))[0]  # noqa: E221
-        debug_logger.debug('WTMP timestamps: x86_64 %s, aarch64 %s, s390x %s'
-                           % (timestamp_x86_64, timestamp_aarch64, timestamp_s390x))
+        debug_logger.debug('WTMP timestamps: x86_64 %s, aarch64 %s, s390x %s',
+                           timestamp_x86_64, timestamp_aarch64, timestamp_s390x)
 
         if sane_timestamp(timestamp_x86_64):
             endianness = '<'  # little endian
@@ -77,7 +77,7 @@ def get_last_login_timestamp(username, filename='/var/log/wtmp'):
             offset += 384 + extra_offset_before + extra_offset_after  # Increment for next entry
 
             type = struct.unpack('%sH' % endianness, wtmp_file.read(2))[0]
-            debug_logger.debug('WTMP entry type: {}'.format(type))
+            debug_logger.debug('WTMP entry type: %s', type)
             wtmp_file.read(2)  # skip padding
 
             # Only parse USER lines
@@ -98,7 +98,7 @@ def get_last_login_timestamp(username, filename='/var/log/wtmp'):
                     wtmp_file.read(extra_offset_after)
                 usec = struct.unpack("<L", wtmp_file.read(4))[0]
                 entry = (pid, line, id, user, host, term, exit, session, timestamp, usec)
-                debug_logger.debug('WTMP entry: {}'.format(entry))
+                debug_logger.debug('WTMP entry: %s', entry)
 
                 # Store login timestamp for requested user
                 if user == username:

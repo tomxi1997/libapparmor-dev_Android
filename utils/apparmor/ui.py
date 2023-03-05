@@ -116,7 +116,7 @@ def get_translated_hotkey(translated, cmsg=''):
 
 
 def UI_YesNo(text, default):
-    debug_logger.debug('UI_YesNo: %s: %s %s' % (UI_mode, text, default))
+    debug_logger.debug('UI_YesNo: %s: %s %s', UI_mode, text, default)
     default = default.lower()
     yes = CMDS['CMD_YES']
     no = CMDS['CMD_NO']
@@ -156,7 +156,7 @@ def UI_YesNo(text, default):
 
 
 def UI_YesNoCancel(text, default):
-    debug_logger.debug('UI_YesNoCancel: %s: %s %s' % (UI_mode, text, default))
+    debug_logger.debug('UI_YesNoCancel: %s: %s %s', UI_mode, text, default)
     default = default.lower()
     yes = CMDS['CMD_YES']
     no = CMDS['CMD_NO']
@@ -207,7 +207,7 @@ def UI_YesNoCancel(text, default):
 
 
 def UI_GetString(text, default):
-    debug_logger.debug('UI_GetString: %s: %s %s' % (UI_mode, text, default))
+    debug_logger.debug('UI_GetString: %s: %s %s', UI_mode, text, default)
     string = default
     if UI_mode == 'json':
         jsonout = {'dialog': 'getstring', 'text': text, 'default': default}
@@ -225,7 +225,7 @@ def UI_GetString(text, default):
 
 
 def UI_GetFile(file):
-    debug_logger.debug('UI_GetFile: %s' % UI_mode)
+    debug_logger.debug('UI_GetFile: %s', UI_mode)
     filename = None
     if UI_mode == 'json':
         jsonout = {'dialog': 'getfile', 'text': file['description']}
@@ -238,12 +238,12 @@ def UI_GetFile(file):
 
 
 def UI_BusyStart(message):
-    debug_logger.debug('UI_BusyStart: %s' % UI_mode)
+    debug_logger.debug('UI_BusyStart: %s', UI_mode)
     UI_Info(message)
 
 
 def UI_BusyStop():
-    debug_logger.debug('UI_BusyStop: %s' % UI_mode)
+    debug_logger.debug('UI_BusyStop: %s', UI_mode)
 
 
 def diff(oldprofile, newprofile):
