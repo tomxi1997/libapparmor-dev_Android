@@ -81,7 +81,7 @@ class ReadLog:
     def parse_event(self, msg):
         """Parse the event from log into key value pairs"""
         msg = msg.strip()
-        self.debug_logger.info('parse_event: %s' % msg)
+        self.debug_logger.info('parse_event: %s', msg)
         event = LibAppArmor.parse_record(msg)
         ev = dict()
         ev['resource'] = event.info
@@ -266,7 +266,7 @@ class ReadLog:
             return
 
         else:
-            self.debug_logger.debug('UNHANDLED: %s' % e)
+            self.debug_logger.debug('UNHANDLED: %s', e)
 
     def read_log(self, logmark):
         self.logmark = logmark
@@ -284,11 +284,11 @@ class ReadLog:
                 if not line:
                     break
                 line = line.strip()
-                self.debug_logger.debug('read_log: %s' % line)
+                self.debug_logger.debug('read_log: %s', line)
                 if self.logmark in line:
                     seenmark = True
 
-                self.debug_logger.debug('read_log: seenmark = %s' % seenmark)
+                self.debug_logger.debug('read_log: seenmark = %s', seenmark)
                 if not seenmark:
                     continue
 

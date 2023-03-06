@@ -492,7 +492,7 @@ def create_new_profile(localfile, is_stub=False):
         created.append(localfile)
         changed[localfile] = True
 
-    debug_logger.debug("Profile for %s:\n\t%s" % (localfile, local_profile.__str__()))
+    debug_logger.debug("Profile for %s:\n\t%s", localfile, local_profile)
     return local_profile
 
 
@@ -1125,7 +1125,7 @@ def ask_the_questions(log_dict):
                         # Ignore log events for a non-existing profile or child profile. Such events can occur
                         # after deleting a profile or hat manually, or when processing a foreign log.
                         # (Checking for 'file' is a simplified way to check if it's a ProfileStorage.)
-                        debug_logger.debug("Ignoring events for non-existing profile %s" % full_profile)
+                        debug_logger.debug("Ignoring events for non-existing profile %s", full_profile)
                         continue
 
                     ans = ''
@@ -1806,7 +1806,7 @@ def read_profile(file, active_profile):
             data = f_in.readlines()
     except IOError as e:
         aaui.UI_Important('WARNING: Error reading file %s, skipping.\n    %s' % (file, e))
-        debug_logger.debug("read_profile: can't read %s - skipping" % file)
+        debug_logger.debug("read_profile: can't read %s - skipping", file)
         return
 
     profile_data = parse_profile_data(data, file, 0, True)
@@ -2304,7 +2304,7 @@ def write_profile(profile, is_attachment=False):
     if profile in changed:
         changed.pop(profile)
     else:
-        debug_logger.info("Unchanged profile written: %s (not listed in 'changed' list)" % profile)
+        debug_logger.info("Unchanged profile written: %s (not listed in 'changed' list)", profile)
 
     original_aa[profile] = deepcopy(aa[profile])
 

@@ -340,17 +340,17 @@ class DebugLogger:
         )
         self.logger = logging.getLogger(__name__)
 
-    def error(self, message):
+    def error(self, message, *args):
         if self.debugging:
-            self.logger.error(message)
+            self.logger.error(message, *args)
 
-    def info(self, message):
+    def info(self, message, *args):
         if self.debugging:
-            self.logger.info(message)
+            self.logger.info(message, *args)
 
-    def debug(self, message):
+    def debug(self, message, *args):
         if self.debugging:
-            self.logger.debug(message)
+            self.logger.debug(message, *args)
 
     def shutdown(self):
         logging.shutdown()
