@@ -1155,7 +1155,7 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 			retval = process_binary(option, kernel_interface,
 						cachename);
 			if (!retval || skip_bad_cache_rebuild)
-				return retval;
+				goto out;
 		}
 	}
 
@@ -1218,7 +1218,8 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 		}
 	}
 out:
-
+	/* cleanup */
+	reset_parser(profilename);
 	return retval;
 }
 
@@ -1705,6 +1706,7 @@ int main(int argc, char *argv[])
 	if (ofile)
 		fclose(ofile);
 	aa_policy_cache_unref(policy_cache);
+	aa_kernel_interface_unref(kernel_interface);
 
 	return last_error;
 }
