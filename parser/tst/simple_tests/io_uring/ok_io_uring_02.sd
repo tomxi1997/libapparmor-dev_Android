@@ -1,0 +1,8 @@
+#
+#=Description basic deny io_uring all rule
+#=EXRESULT PASS
+#
+/usr/bin/io_uring-rule {
+  deny io_uring,
+
+}

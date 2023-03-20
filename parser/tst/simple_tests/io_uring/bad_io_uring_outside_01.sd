@@ -1,0 +1,6 @@
+#
+#=Description io_uring rule outside of a profile
+#=EXRESULT FAIL
+#
+
+  io_uring,

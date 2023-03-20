@@ -1,0 +1,10 @@
+#
+#=Description io_uring override_creds rule with label
+#=EXRESULT PASS
+#
+/usr/bin/io_uring-test {
+  io_uring override_creds label=foo,
+  io_uring override_creds label=/path/to/foo,
+  io_uring label=/bar,
+
+}

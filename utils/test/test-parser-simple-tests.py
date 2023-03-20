@@ -305,6 +305,17 @@ unknown_line = (
     'bare_include_tests/ok_84.sd',
     'bare_include_tests/ok_85.sd',
     'bare_include_tests/ok_86.sd',
+
+    'io_uring/ok_io_uring_01.sd',
+    'io_uring/ok_io_uring_02.sd',
+    'io_uring/ok_io_uring_03.sd',
+    'io_uring/ok_io_uring_04.sd',
+    'io_uring/ok_io_uring_05.sd',
+    'io_uring/ok_io_uring_06.sd',
+    'io_uring/ok_io_uring_07.sd',
+    'io_uring/ok_io_uring_08.sd',
+    'io_uring/ok_io_uring_09.sd',
+    'io_uring/ok_io_uring_10.sd',
 )
 
 # testcases with various unexpected failures

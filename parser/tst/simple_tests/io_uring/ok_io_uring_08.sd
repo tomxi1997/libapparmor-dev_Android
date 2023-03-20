@@ -1,0 +1,18 @@
+#
+#=Description basic io_uring mixed rules
+#=EXRESULT PASS
+#
+/usr/bin/io_uring-test {
+  io_uring,
+  io_uring sqpoll,
+  io_uring override_creds,
+  io_uring override_creds label=/bar,
+}
+
+/usr/bin/io_uring-test2 {
+  io_uring override_creds label=/bar,
+  io_uring override_creds,
+  io_uring sqpoll,
+  io_uring,
+
+}

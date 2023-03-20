@@ -1,0 +1,8 @@
+#
+#=Description basic audit io_uring all rule
+#=EXRESULT PASS
+#
+/usr/bin/io_uring-test {
+  audit io_uring,
+
+}

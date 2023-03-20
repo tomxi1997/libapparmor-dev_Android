@@ -1,0 +1,26 @@
+#
+#=Description basic io_uring mixed access w/modifiers rules
+#=EXRESULT PASS
+#
+/usr/bin/io_uring-test {
+  deny io_uring,
+  audit io_uring sqpoll,
+
+}
+
+/usr/bin/io_uring-test2 {
+  allow io_uring override_creds,
+  audit io_uring,
+
+}
+
+/usr/bin/io_uring-test3 {
+  audit deny io_uring override_creds,
+
+}
+
+/usr/bin/io_uring-test4 {
+  audit allow io_uring sqpoll,
+  deny io_uring sqpoll,
+
+}

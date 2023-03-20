@@ -1,0 +1,8 @@
+#
+#=Description basic io_uring bad conditionals
+#=EXRESULT FAIL
+#
+/usr/bin/io_uring-test {
+  io_uring peer=foo,
+
+}

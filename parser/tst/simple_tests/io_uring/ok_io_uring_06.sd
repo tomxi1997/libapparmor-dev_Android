@@ -1,0 +1,8 @@
+#
+#=Description basic io_uring override_creds rule
+#=EXRESULT PASS
+#
+/usr/bin/io_uring-test {
+  io_uring override_creds,
+
+}
