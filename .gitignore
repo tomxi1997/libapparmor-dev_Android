@@ -60,6 +60,7 @@ parser/ptrace.o
 parser/rule.o
 parser/signal.o
 parser/userns.o
+parser/io_uring.o
 parser/*.7
 parser/*.5
 parser/*.8

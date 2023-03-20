@@ -942,6 +942,7 @@ static const char *mediates_net_unix = CLASS_SUB_STR(AA_CLASS_NET, AF_UNIX);
 static const char *mediates_ns = CLASS_STR(AA_CLASS_NS);
 static const char *mediates_posix_mqueue = CLASS_STR(AA_CLASS_POSIX_MQUEUE);
 static const char *mediates_sysv_mqueue = CLASS_STR(AA_CLASS_SYSV_MQUEUE);
+static const char *mediates_io_uring = CLASS_STR(AA_CLASS_IO_URING);
 
 int process_profile_policydb(Profile *prof)
 {
@@ -992,6 +993,9 @@ int process_profile_policydb(Profile *prof)
 		goto out;
 	if (features_supports_sysv_mqueue &&
 	    !prof->policy.rules->add_rule(mediates_sysv_mqueue, 0, AA_MAY_READ, 0, dfaflags))
+		goto out;
+	if (features_supports_io_uring &&
+	    !prof->policy.rules->add_rule(mediates_io_uring, 0, AA_MAY_READ, 0, dfaflags))
 		goto out;
 
 	if (prof->policy.rules->rule_count > 0) {
