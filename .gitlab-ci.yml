@@ -136,3 +136,30 @@ include:
 variables:
   SAST_EXCLUDED_ANALYZERS: "eslint,flawfinder,semgrep,spotbugs"
   SAST_BANDIT_EXCLUDED_PATHS: "*/tst/*, */test/*"
+
+.send-to-coverity: &send-to-coverity
+  - curl https://scan.coverity.com/builds?project=$COVERITY_SCAN_PROJECT_NAME
+    --form token=$COVERITY_SCAN_TOKEN --form email=$GITLAB_USER_EMAIL
+    --form file=@$(ls apparmor-*-cov-int.tar.gz) --form version="$(git describe --tags)"
+    --form description="$(git describe --tags) / $CI_COMMIT_TITLE / $CI_COMMIT_REF_NAME:$CI_PIPELINE_ID"
+
+coverity:
+  stage: .post
+  extends:
+    - .ubuntu-before_script
+  only:
+    refs:
+      - coverity
+  script:
+      - apt-get install --no-install-recommends -y curl git texlive-latex-recommended
+      - *install-c-build-deps
+      - curl -o /tmp/cov-analysis-linux64.tgz https://scan.coverity.com/download/linux64
+        --form project=$COVERITY_SCAN_PROJECT_NAME --form token=$COVERITY_SCAN_TOKEN
+      - tar xfz /tmp/cov-analysis-linux64.tgz
+      - COV_VERSION=$(ls -dt cov-analysis-linux64-* | head -1)
+      - PATH=$PATH:$(pwd)/$COV_VERSION/bin
+      - make coverity
+      - *send-to-coverity
+  artifacts:
+    paths:
+      - "apparmor-*.tar.gz"
