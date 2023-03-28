@@ -5,7 +5,6 @@
 
   # System files
   /dev/dri/ r, # libvulkan_radeon.so, libvulkan_intel.so (Mesa)
-  /etc/glvnd/egl_vendor.d/ r,
   /etc/glvnd/egl_vendor.d/{,*.json} r,
   /etc/vulkan/icd.d/{,*.json} r,
   /etc/vulkan/{explicit,implicit}_layer.d/{,*.json} r,
