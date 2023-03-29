@@ -104,6 +104,7 @@ SRC=access.c \
     fd_inheritance.c \
     fd_inheritor.c \
     fork.c \
+    io_uring.c \
     link.c \
     link_subset.c \
     mmap.c \
@@ -353,6 +354,9 @@ userns_setns: userns_setns.c userns.h
 
 mount: mount.c
 	${CC} ${CFLAGS} -std=gnu99 ${LDFLAGS} $^ -o $@ ${LDLIBS}
+
+io_uring: io_uring.c
+	${CC} ${CFLAGS} ${LDFLAGS} $< -o $@ ${LDLIBS} -luring
 
 build-dep:
 	@if [ `whoami` = "root" ] ;\
