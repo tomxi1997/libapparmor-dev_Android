@@ -59,6 +59,7 @@ class ReadLog:
             'signal':       hasher(),
             'userns':       hasher(),
             'mqueue':       hasher(),
+            'io_uring':     hasher(),
         }
 
     def prefetch_next_log_entry(self):
@@ -121,6 +122,9 @@ class ReadLog:
             ev['path'] = event.dbus_path
             ev['interface'] = event.dbus_interface
             ev['member'] = event.dbus_member
+
+        elif ev['operation'] and ev['operation'].startswith('uring_'):
+            ev['peer_profile'] = event.peer_profile
 
         LibAppArmor.free_record(event)
 
@@ -194,6 +198,10 @@ class ReadLog:
         elif e['class'] and e['class'].endswith('mqueue'):
             mqueue_type = e['class'].partition('_')[0]
             self.hashlog[aamode][full_profile]['mqueue'][e['denied_mask']][mqueue_type][e['name']] = True
+            return
+
+        elif e['class'] and e['class'] == 'io_uring':
+            self.hashlog[aamode][full_profile]['io_uring'][e['denied_mask']][e['peer_profile']] = True
             return
 
         elif self.op_type(e) == 'file':

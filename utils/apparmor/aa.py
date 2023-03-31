@@ -52,6 +52,7 @@ from apparmor.rule.ptrace import PtraceRule
 from apparmor.rule.signal import SignalRule
 from apparmor.rule.userns import UserNamespaceRule
 from apparmor.rule.mqueue import MessageQueueRule
+from apparmor.rule.io_uring import IOUringRule
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -1742,6 +1743,15 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                         if not hat_exists or not is_known_rule(aa[profile][hat], 'mqueue', mqueue_event):
                             log_dict[aamode][full_profile]['mqueue'].add(mqueue_event)
 
+            io_uring = hashlog[aamode][full_profile]['io_uring']
+            for access in io_uring.keys():
+                for label in io_uring[access]:
+                    if not label:
+                        label = IOUringRule.ALL
+                    io_uring_event = IOUringRule(access, label, log_event=True)
+                    if not hat_exists or not is_known_rule(aa[profile][hat], 'io_uring', io_uring_event):
+                        log_dict[aamode][full_profile]['io_uring'].add(io_uring_event)
+
     return log_dict
 
 
@@ -2119,6 +2129,7 @@ def match_line_against_rule_classes(line, profile, file, lineno, in_preamble):
             'signal',
             'userns',
             'mqueue',
+            'io_uring',
     ):
 
         if rule_name in ruletypes:
