@@ -1,0 +1,14 @@
+START
+File: testcase_io_uring_02.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1680266735.147:63
+Operation: uring_override
+Mask: override_creds
+Denied Mask: override_creds
+Profile: /root/apparmor/tests/regression/apparmor/io_uring
+Peer profile: /root/apparmor/tests/regression/apparmor/io_uring
+Command: io_uring
+PID: 1193
+Class: io_uring
+Epoch: 1680266735
+Audit subid: 63

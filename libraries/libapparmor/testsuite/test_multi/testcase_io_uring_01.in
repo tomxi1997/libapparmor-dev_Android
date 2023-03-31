@@ -1,0 +1,1 @@
+[ 4584.703379] audit: type=1400 audit(1680266735.359:69): apparmor="DENIED" operation="uring_sqpoll" class="io_uring" profile="/root/apparmor/tests/regression/apparmor/io_uring" pid=1320 comm="io_uring" requested="sqpoll" denied="sqpoll"
