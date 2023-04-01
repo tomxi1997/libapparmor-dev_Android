@@ -41,7 +41,7 @@ load_and_verify() {
     local matching=0
     for binary_policy in /sys/kernel/security/apparmor/policy/profiles/$prof*/raw_data; do
         kernel_md5=$(cat $binary_policy | md5sum | awk '{ print $1 }')
-        if [ $kernel_md5 == $cache_md5 ]; then
+        if [ $kernel_md5 = $cache_md5 ]; then
             matching=1
             break
         fi

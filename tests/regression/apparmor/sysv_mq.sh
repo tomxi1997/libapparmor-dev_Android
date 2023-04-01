@@ -66,7 +66,7 @@ do_tests()
 }
 
 for username in "root" "$userid" ; do
-    if [ $username == "root" ] ; then
+    if [ $username = "root" ] ; then
 	usercmd=""
     else
 	usercmd="-u $userid"
