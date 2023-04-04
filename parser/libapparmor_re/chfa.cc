@@ -46,11 +46,15 @@ void CHFA::init_free_list(vector<pair<size_t, size_t> > &free_list,
 	free_list[free_list.size() - 1].second = 0;
 }
 
+
 /**
  * new Construct the transition table.
+ *
+ * TODO: split dfaflags into separate control and dump so we can fold in
+ *       permtable index flag
  */
-CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
-	eq(eq)
+CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
+	   bool permindex): eq(eq)
 {
 	if (opts.dump & DUMP_DFA_TRANS_PROGRESS)
 		fprintf(stderr, "Compressing HFA:\r");
@@ -101,18 +105,20 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
 	num.insert(make_pair(dfa.nonmatching, num.size()));
 
 	accept.resize(max(dfa.states.size(), (size_t) 2));
-	accept2.resize(max(dfa.states.size(), (size_t) 2));
+	if (!permindex) {
+		accept2.resize(max(dfa.states.size(), (size_t) 2));
+		accept2[0] = 0;
+		accept2[1] = 0;
+	}
 	next_check.resize(max(optimal, (size_t) dfa.max_range));
 	free_list.resize(next_check.size());
 
 	accept[0] = 0;
-	accept2[0] = 0;
 	first_free = 1;
 	init_free_list(free_list, 0, 1);
 
 	insert_state(free_list, dfa.start, dfa);
 	accept[1] = 0;
-	accept2[1] = 0;
 	num.insert(make_pair(dfa.start, num.size()));
 
 	int count = 2;
@@ -121,8 +127,8 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
 		for (Partition::iterator i = dfa.states.begin(); i != dfa.states.end(); i++) {
 			if (*i != dfa.nonmatching && *i != dfa.start) {
 				insert_state(free_list, *i, dfa);
-				accept[num.size()] = (*i)->perms.allow;
-				accept2[num.size()] = PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny);
+				(*i)->map_perms_to_accept(accept[num.size()],
+							  accept2[num.size()]);
 				num.insert(make_pair(*i, num.size()));
 			}
 			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
@@ -138,8 +144,8 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
 			if (i->second != dfa.nonmatching &&
 			    i->second != dfa.start) {
 				insert_state(free_list, i->second, dfa);
-				accept[num.size()] = i->second->perms.allow;
-				accept2[num.size()] = PACK_AUDIT_CTL(i->second->perms.audit, i->second->perms.quiet & i->second->perms.deny);
+				i->second->map_perms_to_accept(accept[num.size()],
+							       accept2[num.size()]);
 				num.insert(make_pair(i->second, num.size()));
 			}
 			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
@@ -426,7 +432,7 @@ void CHFA::flex_table(ostream &os)
 	th.th_hsize = htonl(hsize);
 	th.th_ssize = htonl(hsize +
 			    flex_table_size(accept.begin(), accept.end()) +
-			    flex_table_size(accept2.begin(), accept2.end()) +
+			    (accept2.size() ? flex_table_size(accept2.begin(), accept2.end()) : 0) +
 			    (eq.size() ? flex_table_size(equiv_vec.begin(), equiv_vec.end()) : 0) +
 			    flex_table_size(base_vec.begin(), base_vec.end()) +
 			    flex_table_size(default_vec.begin(), default_vec.end()) +
@@ -437,7 +443,9 @@ void CHFA::flex_table(ostream &os)
 	os << fill64(sizeof(th) + sizeof(th_version));
 
 	write_flex_table(os, YYTD_ID_ACCEPT, accept.begin(), accept.end());
-	write_flex_table(os, YYTD_ID_ACCEPT2, accept2.begin(), accept2.end());
+	if (accept2.size())
+		write_flex_table(os, YYTD_ID_ACCEPT2, accept2.begin(),
+				 accept2.end());
 	if (eq.size())
 		write_flex_table(os, YYTD_ID_EC, equiv_vec.begin(),
 				 equiv_vec.end());

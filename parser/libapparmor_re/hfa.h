@@ -248,6 +248,11 @@ public:
 	void flatten_relative(State *, int upper_bound);
 
 	int apply_and_clear_deny(void) { return perms.apply_and_clear_deny(); }
+	void map_perms_to_accept(uint32_t &accept1, uint32_t &accept2)
+	{
+		accept1 = perms.allow;
+		accept2 = PACK_AUDIT_CTL(perms.audit, perms.quiet & perms.deny);
+	}
 
 	int label;
 	int flags;
