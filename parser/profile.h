@@ -346,6 +346,7 @@ struct dfa_stuff {
 
 class Profile {
 public:
+	bool uses_prompt_rules;
 	char *ns;
 	char *name;
 	char *attachment;
@@ -379,6 +380,7 @@ public:
 
 	Profile(void)
 	{
+		uses_prompt_rules = false;
 		ns = name = attachment = NULL;
 		altnames = NULL;
 		xmatch = NULL;
