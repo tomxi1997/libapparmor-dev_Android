@@ -1,0 +1,32 @@
+# vim:syntax=apparmor
+# Author: Daniel Richard G. <skunk@iSKUNK.ORG>
+
+abi <abi/3.0>,
+
+include <tunables/global>
+
+profile rpcbind /{usr/,}sbin/rpcbind {
+  include <abstractions/base>
+  include <abstractions/hosts_access>
+  include <abstractions/nameservice>
+
+  # needed to sanely drop privileges
+  capability setgid,
+  capability setuid,
+
+  network inet dgram,
+  network inet6 dgram,
+
+  /etc/default/rpcbind             r,
+  /etc/netconfig                   r,
+  /etc/rpcbind.conf                r,
+  /{usr/,}sbin/rpcbind             mrix,
+  @{run}/rpcbind.lock              rwk,
+  @{run}/rpcbind.sock              rwk,
+  @{run}/rpcbind/portmap.xdr       rw,
+  @{run}/rpcbind/rpcbind.xdr       rw,
+  @{run}/systemd/notify            w,
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/rpcbind>
+}
