@@ -417,7 +417,7 @@ void sd_serialize_xtable(std::ostringstream &buf, char **table,
 		//fprintf(stderr, "Adding padding to xtable count %lu, min %lu\n", count, min_size);
 		for (; count < min_size; count++) {
 			/* fill with null strings */
-			sd_write_strn(buf, "", 1, NULL);
+			sd_write_strn(buf, "\000", 1, NULL);
 		}
 	}
 
@@ -549,20 +549,35 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 		// fprintf(stderr, "profile %s: policy xtable\n", profile->name);
 		// TODO: this is dummy exec make dependent on V1
 		sd_serialize_xtable(buf, profile->exec_table,
-			    //??? work around
-			    profile->policy.perms_table.size());
+			    kernel_supports_permstable32_v1 ?
+				    profile->policy.perms_table.size() : 0);
 	}
 		sd_write_structend(buf);
 	}
 
 	/* either have a single dfa or lists of different entry types */
-	sd_serialize_dfa(buf, profile->dfa.dfa, profile->dfa.size,
-			 profile->dfa.perms_table);
-	if (profile->dfa.dfa) {
-		// fprintf(stderr, "profile %s: dfa xtable\n", profile->name);
-		sd_serialize_xtable(buf, profile->exec_table,
-			    //??? work around
-			    profile->dfa.perms_table.size());
+	if (kernel_supports_permstable32_v1) {
+		/* special compat mode to work around verification problem */
+		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
+				 profile->policy.perms_table);
+		sd_write_name(buf,  "dfa_start");
+		sd_write_uint32(buf, profile->policy.file_start);
+		if (profile->policy.dfa) {
+			// fprintf(stderr, "profile %s: policy xtable\n", profile->name);
+			// TODO: this is dummy exec make dependent on V1
+			sd_serialize_xtable(buf, profile->exec_table,
+					    //permstable32_v1 workaround
+					    profile->policy.perms_table.size());
+		}
+	} else {
+		sd_serialize_dfa(buf, profile->dfa.dfa, profile->dfa.size,
+				 profile->dfa.perms_table);
+		if (profile->dfa.dfa) {
+			// fprintf(stderr, "profile %s: dfa xtable\n", profile->name);
+			sd_serialize_xtable(buf, profile->exec_table,
+					    //??? work around
+					    profile->dfa.perms_table.size());
+		}
 	}
 	sd_write_structend(buf);
 }

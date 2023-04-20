@@ -27,6 +27,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <iostream>
 
 #include <assert.h>
 #include <stdint.h>
@@ -359,7 +360,6 @@ public:
 	Node *root;
 	State *nonmatching, *start;
 	Partition states;
-	//vector <aa_perms> perms_table;
 	bool filedfa;
 };
 

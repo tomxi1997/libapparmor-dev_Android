@@ -339,6 +339,7 @@ struct dfa_stuff {
 	aare_rules *rules;
 	void *dfa;
 	size_t size;
+	size_t file_start;		/* special start in welded dfa */
 	vector <aa_perms> perms_table;
 	dfa_stuff(void): rules(NULL), dfa(NULL), size(0) { }
 };

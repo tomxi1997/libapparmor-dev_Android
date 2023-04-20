@@ -572,8 +572,11 @@ build:
 		/* xmatch doesn't use file dfa exec mode bits NOT the owner
 		 * conditional and for just MAY_EXEC can be processed as
 		 * none file perms
+		 *
+		 * we don't need to build xmatch for buggy permstable32_v1
+		 * so don't
 		 */
-		prof->xmatch = rules->create_dfa(&prof->xmatch_size, &prof->xmatch_len, prof->xmatch_perms_table, parseopts, false, kernel_supports_permstable32);
+		prof->xmatch = rules->create_dfablob(&prof->xmatch_size, &prof->xmatch_len, prof->xmatch_perms_table, parseopts, false, kernel_supports_permstable32 && !kernel_supports_permstable32_v1);
 		delete rules;
 		if (!prof->xmatch)
 			return FALSE;
@@ -771,11 +774,16 @@ int process_profile_regex(Profile *prof)
 	if (!post_process_entries(prof))
 		goto out;
 
-	if (prof->dfa.rules->rule_count > 0) {
+	/* under permstable32_v1 we weld file and policydb together, so
+	 * don't create the file blob here
+	 */
+	if (prof->dfa.rules->rule_count > 0 && !kernel_supports_permstable32_v1) {
 		int xmatch_len = 0;
 		//fprintf(stderr, "Creating file DFA %d\n", kernel_supports_permstable32);
-		prof->dfa.dfa = prof->dfa.rules->create_dfa(&prof->dfa.size,
-							    &xmatch_len, prof->dfa.perms_table, parseopts, true, kernel_supports_permstable32);
+		prof->dfa.dfa = prof->dfa.rules->create_dfablob(&prof->dfa.size,
+					&xmatch_len, prof->dfa.perms_table,
+					parseopts, true,
+					kernel_supports_permstable32);
 		delete prof->dfa.rules;
 		prof->dfa.rules = NULL;
 		if (!prof->dfa.dfa)
@@ -989,6 +997,7 @@ static const char *mediates_ns = CLASS_STR(AA_CLASS_NS);
 static const char *mediates_posix_mqueue = CLASS_STR(AA_CLASS_POSIX_MQUEUE);
 static const char *mediates_sysv_mqueue = CLASS_STR(AA_CLASS_SYSV_MQUEUE);
 static const char *mediates_io_uring = CLASS_STR(AA_CLASS_IO_URING);
+static const char *deny_file = ".*";
 
 int process_profile_policydb(Profile *prof)
 {
@@ -1046,10 +1055,42 @@ int process_profile_policydb(Profile *prof)
 			goto out;
 	}
 
-	if (prof->policy.rules->rule_count > 0) {
+	if (kernel_supports_permstable32_v1) {
+		// MUST have file and policy
+		// This requires file rule processing happen first
+		if (!prof->dfa.rules->rule_count) {
+			// add null dfa
+			if (!prof->dfa.rules->add_rule(deny_file, true, AA_MAY_READ, 0, parseopts))
+				goto out;
+		}
+		if (!prof->policy.rules->rule_count) {
+			if (!prof->policy.rules->add_rule(mediates_file, true, AA_MAY_READ, 0, parseopts))
+				goto out;
+		}
 		int xmatch_len = 0;
-		prof->policy.dfa = prof->policy.rules->create_dfa(&prof->policy.size,
-								  &xmatch_len, prof->policy.perms_table, parseopts, false, kernel_supports_permstable32);
+		prof->policy.dfa = prof->policy.rules->create_welded_dfablob(
+					prof->dfa.rules,
+					&prof->policy.size,
+					&xmatch_len,
+					&prof->policy.file_start,
+					prof->policy.perms_table, parseopts,
+					kernel_supports_permstable32_v1);
+		delete prof->policy.rules;
+		delete prof->dfa.rules;
+		prof->policy.rules = NULL;
+		prof->dfa.rules = NULL;
+		if (!prof->policy.dfa)
+			goto out;
+	} else if (prof->policy.rules->rule_count > 0 &&
+		   // yes not needed as covered above, just making sure
+		   // this doesn't get messed up in the future
+		   !kernel_supports_permstable32_v1) {
+		int xmatch_len = 0;
+		prof->policy.dfa = prof->policy.rules->create_dfablob(&prof->policy.size,
+						&xmatch_len,
+						prof->policy.perms_table,
+						parseopts, false,
+						kernel_supports_permstable32);
 		delete prof->policy.rules;
 
 		prof->policy.rules = NULL;

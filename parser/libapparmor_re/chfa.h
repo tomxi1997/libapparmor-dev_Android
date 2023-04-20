@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "hfa.h"
+#include "../perms.h"
 
 #define BASE32_FLAGS 0xff000000
 #define DiffEncodeBit32 0x80000000
@@ -37,8 +38,10 @@ class CHFA {
 	typedef vector<pair<const State *, size_t> > DefaultBase;
 	typedef vector<pair<const State *, const State *> > NextCheck;
       public:
+	CHFA(void);
 	CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 	     bool permindex);
+
 	void dump(ostream & os);
 	void flex_table(ostream &os);
 	void init_free_list(vector<pair<size_t, size_t> > &free_list,
@@ -47,12 +50,17 @@ class CHFA {
 		     StateTrans &cases);
 	void insert_state(vector<pair<size_t, size_t> > &free_list,
 			  State *state, DFA &dfa);
+	void weld_file_to_policy(CHFA &file_chfa, size_t &new_start,
+				 bool accept_idx,
+				 vector <aa_perms>  &policy_perms,
+				 vector <aa_perms> &file_perms);
 
       private:
 	vector<uint32_t> accept;
 	vector<uint32_t> accept2;
 	DefaultBase default_base;
 	NextCheck next_check;
+	const State *start;
 	map<const State *, size_t> num;
 	map<transchar, transchar> eq;
 	transchar max_eq;

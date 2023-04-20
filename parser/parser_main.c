@@ -1546,7 +1546,11 @@ static bool get_kernel_features(struct aa_features **features)
 
 	kernel_supports_permstable32 = aa_features_supports(*features, "policy/permstable32");
 	if (kernel_supports_permstable32) {
-		//fprintf(stderr, "kernel supports prompt\n");
+		fprintf(stderr, "kernel supports prompt\n");
+	}
+	kernel_supports_permstable32_v1 = aa_features_supports(*features, "policy/permstable32/1");
+	if (kernel_supports_permstable32_v1) {
+		fprintf(stderr, "kernel supports prompt\n");
 	}
 	if (!kernel_supports_diff_encode)
 		/* clear diff_encode because it is not supported */

@@ -27,6 +27,7 @@
 
 #include "../common_optarg.h"
 #include "apparmor_re.h"
+#include "chfa.h"
 #include "expr-tree.h"
 #include "../immunix.h"
 #include "../perms.h"
@@ -110,10 +111,20 @@ class aare_rules {
 	bool add_rule_vec(int deny, uint32_t perms, uint32_t audit, int count,
 			  const char **rulev, optflags const &opts, bool oob);
 	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);
-	void *create_dfa(size_t *size, int *min_match_len,
+	CHFA *create_chfa(int *min_match_len,
+			  vector <aa_perms> &perms_table,
+			  optflags const &opts, bool filedfa,
+			  bool extended_perms);
+	void *create_dfablob(size_t *size, int *min_match_len,
 			 vector <aa_perms> &perms_table,
 			 optflags const &opts,
 			 bool filedfa, bool extended_perms);
+	void *create_welded_dfablob(aare_rules *file_rules,
+				    size_t *size, int *min_match_len,
+				    size_t *new_start,
+				    vector <aa_perms> &perms_table,
+				    optflags const &opts,
+				    bool extended_perms);
 };
 
 #endif				/* __LIBAA_RE_RULES_H */

@@ -360,6 +360,7 @@ extern int features_supports_flag_signal;
 extern int features_supports_flag_error;
 extern int kernel_supports_oob;
 extern int kernel_supports_permstable32;
+extern int kernel_supports_permstable32_v1;
 extern int conf_verbose;
 extern int conf_quiet;
 extern int names_only;

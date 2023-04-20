@@ -189,18 +189,16 @@ bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
 	return true;
 }
 
-/* create a dfa from the ruleset
+/* create a chfa from the ruleset
  * returns: buffer contain dfa tables, @size set to the size of the tables
  *          else NULL on failure, @min_match_len set to the shortest string
  *          that can match the dfa for determining xmatch priority.
  */
-void *aare_rules::create_dfa(size_t *size, int *min_match_len,
-			     vector <aa_perms> &perms_table,
-			     optflags const &opts,
-			     bool filedfa,  bool extended_perms)
+CHFA *aare_rules::create_chfa(int *min_match_len,
+			      vector <aa_perms> &perms_table,
+			      optflags const &opts,
+			      bool filedfa, bool extended_perms)
 {
-	char *buffer = NULL;
-
 	/* finish constructing the expr tree from the different permission
 	 * set nodes */
 	PermExprMap::iterator i = expr_map.begin();
@@ -249,7 +247,7 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len,
 		}
 	}
 
-	stringstream stream;
+	CHFA *chfa = NULL;
 	try {
 		DFA dfa(root, opts, filedfa);
 		if (opts.dump & DUMP_DFA_UNIQ_PERMS)
@@ -311,10 +309,39 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len,
 			//cerr << "creating permstable\n";
 			dfa.compute_perms_table(perms_table);
 		}
-		CHFA chfa(dfa, eq, opts, extended_perms);
+		chfa = new CHFA(dfa, eq, opts, extended_perms);
 		if (opts.dump & DUMP_DFA_TRANS_TABLE)
-			chfa.dump(cerr);
-		chfa.flex_table(stream);
+			chfa->dump(cerr);
+	}
+	catch(int error) {
+		return NULL;
+	}
+
+	return chfa;
+}
+
+/* create a dfa from the ruleset
+ * returns: buffer contain dfa tables, @size set to the size of the tables
+ *          else NULL on failure, @min_match_len set to the shortest string
+ *          that can match the dfa for determining xmatch priority.
+ */
+void *aare_rules::create_dfablob(size_t *size, int *min_match_len,
+				 vector <aa_perms> &perms_table,
+				 optflags const &opts, bool filedfa,
+				 bool extended_perms)
+{
+	char *buffer = NULL;
+	stringstream stream;
+
+	try {
+		CHFA *chfa = create_chfa(min_match_len, perms_table,
+					 opts, filedfa, extended_perms);
+		if (!chfa) {
+			*size = 0;
+			return NULL;
+		}
+		chfa->flex_table(stream);
+		delete (chfa);
 	}
 	catch(int error) {
 		*size = 0;
@@ -330,5 +357,85 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len,
 	if (!buffer)
 		return NULL;
 	buf->sgetn(buffer, *size);
+
+	return buffer;
+}
+
+
+/* create a dfa from the ruleset
+ * returns: buffer contain dfa tables, @size set to the size of the tables
+ *          else NULL on failure, @min_match_len set to the shortest string
+ *          that can match the dfa for determining xmatch priority.
+ */
+void *aare_rules::create_welded_dfablob(aare_rules *file_rules,
+					size_t *size, int *min_match_len,
+					size_t *new_start,
+					vector <aa_perms> &perms_table,
+					optflags const &opts,
+					bool extended_perms)
+{
+	int file_min_len;
+	vector <aa_perms> file_perms;
+	CHFA *file_chfa;
+	try {
+		file_chfa = file_rules->create_chfa(&file_min_len,
+						    file_perms, opts,
+						    true, extended_perms);
+		if (!file_chfa) {
+			*size = 0;
+			return NULL;
+		}
+	}
+	catch(int error) {
+		*size = 0;
+		return NULL;
+	}
+
+	CHFA *policy_chfa;
+	try {
+		policy_chfa = create_chfa(min_match_len,
+					  perms_table, opts,
+					  false, extended_perms);
+		if (!policy_chfa) {
+			delete file_chfa;
+			*size = 0;
+			return NULL;
+		}
+	}
+	catch(int error) {
+		delete file_chfa;
+		*size = 0;
+		return NULL;
+	}
+
+	stringstream stream;
+	try {
+		policy_chfa->weld_file_to_policy(*file_chfa, *new_start,
+						 extended_perms,
+						 perms_table, file_perms);
+		policy_chfa->flex_table(stream);
+	}
+	catch(int error) {
+		delete (file_chfa);
+		delete (policy_chfa);
+		*size = 0;
+		return NULL;
+	}
+	delete file_chfa;
+	delete policy_chfa;
+
+	/* write blob to buffer */
+	stringbuf *buf = stream.rdbuf();
+
+	buf->pubseekpos(0);
+	*size = buf->in_avail();
+	if (file_min_len < *min_match_len)
+		*min_match_len = file_min_len;
+
+	char *buffer = (char *)malloc(*size);
+	if (!buffer)
+		return NULL;
+	buf->sgetn(buffer, *size);
+
 	return buffer;
 }
