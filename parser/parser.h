@@ -324,6 +324,10 @@ do {								\
 /* The parser fills this variable in automatically */
 #define PROFILE_NAME_VARIABLE "profile_name"
 
+#define PROMPT_COMPAT_IGNORE  0
+#define PROMPT_COMPAT_PERMSV2 1
+#define PROMPT_COMPAT_PERMSV1 2
+
 /* from parser_common.c */
 extern uint32_t policy_version;
 extern uint32_t parser_abi_version;
@@ -361,6 +365,7 @@ extern int features_supports_flag_error;
 extern int kernel_supports_oob;
 extern int kernel_supports_permstable32;
 extern int kernel_supports_permstable32_v1;
+extern int prompt_compat_mode;
 extern int conf_verbose;
 extern int conf_quiet;
 extern int names_only;
@@ -376,6 +381,10 @@ extern IncludeCache_t *g_includecache;
 
 extern void pwarnf(bool werr, const char *fmt, ...) __attribute__((__format__(__printf__, 2, 3)));
 extern void common_warn_once(const char *name, const char *msg, const char **warned_name);
+bool prompt_compat_mode_supported(int mode);
+int default_prompt_compat_mode();
+void print_prompt_compat_mode(FILE *f);
+
 
 #define pwarn(F, args...) do { if (parseopts.warn & (F)) pwarnf((parseopts.Werror & (F)), ## args); } while (0)
 

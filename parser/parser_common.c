@@ -89,6 +89,7 @@ int features_supports_flag_error = 0;
 int kernel_supports_oob = 0;		/* out of band transitions */
 int kernel_supports_permstable32 = 0;	/* extended permissions */
 int kernel_supports_permstable32_v1 = 0;	/* extended permissions */
+int prompt_compat_mode = 0;
 int conf_verbose = 0;
 int conf_quiet = 0;
 int names_only = 0;
@@ -167,4 +168,46 @@ void common_warn_once(const char *name, const char *msg, const char **warned_nam
 
 	if (parseopts.Werror & WARN_RULE_NOT_ENFORCED)
 		exit(1);
+}
+
+bool prompt_compat_mode_supported(int mode)
+{
+	if (mode == PROMPT_COMPAT_PERMSV2 &&
+	    (kernel_supports_permstable32 && !kernel_supports_permstable32_v1))
+		return true;
+	else if (mode == PROMPT_COMPAT_PERMSV1 &&
+		 (kernel_supports_permstable32_v1))
+		return true;
+	else if (mode == PROMPT_COMPAT_IGNORE)
+		return true;
+
+	return false;
+}
+
+int default_prompt_compat_mode()
+{
+	if (prompt_compat_mode_supported(PROMPT_COMPAT_PERMSV2))
+		return PROMPT_COMPAT_PERMSV2;
+	if (prompt_compat_mode_supported(PROMPT_COMPAT_PERMSV1))
+		return PROMPT_COMPAT_PERMSV1;
+	if (prompt_compat_mode_supported(PROMPT_COMPAT_IGNORE))
+		return PROMPT_COMPAT_IGNORE;
+	return PROMPT_COMPAT_IGNORE;
+}
+
+void print_prompt_compat_mode(FILE *f)
+{
+	switch (prompt_compat_mode) {
+	case PROMPT_COMPAT_IGNORE:
+		fprintf(f, "ignore");
+		break;
+	case PROMPT_COMPAT_PERMSV2:
+		fprintf(f, "permsv2");
+		break;
+	case PROMPT_COMPAT_PERMSV1:
+		fprintf(f, "permsv1");
+		break;
+	default:
+		fprintf(f, "Unknown prompt compat mode '%d'", prompt_compat_mode);
+	}
 }

@@ -576,8 +576,7 @@ build:
 		 * conditional and for just MAY_EXEC can be processed as
 		 * none file perms
 		 *
-		 * we don't need to build xmatch for buggy permstable32_v1
-		 * so don't
+		 * we don't need to build xmatch for permstable32, so don't
 		 */
 		prof->xmatch = rules->create_dfablob(&prof->xmatch_size, &prof->xmatch_len, prof->xmatch_perms_table, parseopts, false, kernel_supports_permstable32 && !kernel_supports_permstable32_v1);
 		delete rules;
@@ -780,13 +779,13 @@ int process_profile_regex(Profile *prof)
 	/* under permstable32_v1 we weld file and policydb together, so
 	 * don't create the file blob here
 	 */
-	if (prof->dfa.rules->rule_count > 0 && !kernel_supports_permstable32_v1) {
+	if (prof->dfa.rules->rule_count > 0 && prompt_compat_mode != PROMPT_COMPAT_PERMSV1) {
 		int xmatch_len = 0;
 		//fprintf(stderr, "Creating file DFA %d\n", kernel_supports_permstable32);
 		prof->dfa.dfa = prof->dfa.rules->create_dfablob(&prof->dfa.size,
 					&xmatch_len, prof->dfa.perms_table,
 					parseopts, true,
-					kernel_supports_permstable32);
+					 prof->uses_prompt_rules && kernel_supports_permstable32);
 		delete prof->dfa.rules;
 		prof->dfa.rules = NULL;
 		if (!prof->dfa.dfa)
@@ -1131,7 +1130,7 @@ int process_profile_policydb(Profile *prof)
 			goto out;
 	}
 
-	if (kernel_supports_permstable32_v1) {
+	if (prompt_compat_mode == PROMPT_COMPAT_PERMSV1) {
 		// MUST have file and policy
 		// This requires file rule processing happen first
 		if (!prof->dfa.rules->rule_count) {
@@ -1160,13 +1159,13 @@ int process_profile_policydb(Profile *prof)
 	} else if (prof->policy.rules->rule_count > 0 &&
 		   // yes not needed as covered above, just making sure
 		   // this doesn't get messed up in the future
-		   !kernel_supports_permstable32_v1) {
+		   prompt_compat_mode != PROMPT_COMPAT_PERMSV1) {
 		int xmatch_len = 0;
 		prof->policy.dfa = prof->policy.rules->create_dfablob(&prof->policy.size,
 						&xmatch_len,
 						prof->policy.perms_table,
 						parseopts, false,
-						kernel_supports_permstable32);
+						prof->uses_prompt_rules && kernel_supports_permstable32);
 		delete prof->policy.rules;
 
 		prof->policy.rules = NULL;

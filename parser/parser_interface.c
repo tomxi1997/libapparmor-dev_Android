@@ -549,14 +549,14 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 		// fprintf(stderr, "profile %s: policy xtable\n", profile->name);
 		// TODO: this is dummy exec make dependent on V1
 		sd_serialize_xtable(buf, profile->exec_table,
-			    kernel_supports_permstable32_v1 ?
+				    profile->uses_prompt_rules && prompt_compat_mode == PROMPT_COMPAT_PERMSV1 ?
 				    profile->policy.perms_table.size() : 0);
 	}
 		sd_write_structend(buf);
 	}
 
 	/* either have a single dfa or lists of different entry types */
-	if (kernel_supports_permstable32_v1) {
+	if (profile->uses_prompt_rules && prompt_compat_mode == PROMPT_COMPAT_PERMSV1) {
 		/* special compat mode to work around verification problem */
 		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
 				 profile->policy.perms_table);
