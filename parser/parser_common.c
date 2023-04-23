@@ -87,6 +87,7 @@ int features_supports_flag_interruptible = 0;
 int features_supports_flag_signal = 0;
 int features_supports_flag_error = 0;
 int kernel_supports_oob = 0;		/* out of band transitions */
+int kernel_supports_promptdev = 0;	/* prompt via audit perms */
 int kernel_supports_permstable32 = 0;	/* extended permissions */
 int kernel_supports_permstable32_v1 = 0;	/* extended permissions */
 int prompt_compat_mode = 0;
@@ -175,6 +176,9 @@ bool prompt_compat_mode_supported(int mode)
 	if (mode == PROMPT_COMPAT_PERMSV2 &&
 	    (kernel_supports_permstable32 && !kernel_supports_permstable32_v1))
 		return true;
+	else if (mode == PROMPT_COMPAT_DEV &&
+		 kernel_supports_promptdev)
+		return true;
 	else if (mode == PROMPT_COMPAT_PERMSV1 &&
 		 (kernel_supports_permstable32_v1))
 		return true;
@@ -188,6 +192,8 @@ int default_prompt_compat_mode()
 {
 	if (prompt_compat_mode_supported(PROMPT_COMPAT_PERMSV2))
 		return PROMPT_COMPAT_PERMSV2;
+	if (prompt_compat_mode_supported(PROMPT_COMPAT_DEV))
+		return PROMPT_COMPAT_DEV;
 	if (prompt_compat_mode_supported(PROMPT_COMPAT_PERMSV1))
 		return PROMPT_COMPAT_PERMSV1;
 	if (prompt_compat_mode_supported(PROMPT_COMPAT_IGNORE))
@@ -206,6 +212,9 @@ void print_prompt_compat_mode(FILE *f)
 		break;
 	case PROMPT_COMPAT_PERMSV1:
 		fprintf(f, "permsv1");
+		break;
+	case PROMPT_COMPAT_DEV:
+		fprintf(stderr, "dev");
 		break;
 	default:
 		fprintf(f, "Unknown prompt compat mode '%d'", prompt_compat_mode);

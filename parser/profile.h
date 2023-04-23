@@ -149,6 +149,7 @@ static const char *find_error_name_mapping(int code)
 #define FLAG_DEBUG1 2
 #define FLAG_DEBUG2 4
 #define FLAG_INTERRUPTIBLE 8
+#define FLAG_PROMPT_COMPAT 0x10
 
 /* sigh, used in parse union so needs trivial constructors. */
 class flagvals {
@@ -236,6 +237,10 @@ public:
 			os << ", kill.signal=" << signal;
 		if (error)
 			os << ", error=" << find_error_name_mapping(error);
+
+		if (flags & FLAG_PROMPT_COMPAT)
+			os << ", prompt_dev";
+
 		os << "\n";
 
 		return os;

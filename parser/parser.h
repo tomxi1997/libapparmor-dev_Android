@@ -326,7 +326,8 @@ do {								\
 
 #define PROMPT_COMPAT_IGNORE  0
 #define PROMPT_COMPAT_PERMSV2 1
-#define PROMPT_COMPAT_PERMSV1 2
+#define PROMPT_COMPAT_DEV 2
+#define PROMPT_COMPAT_PERMSV1 3
 
 /* from parser_common.c */
 extern uint32_t policy_version;
@@ -363,6 +364,7 @@ extern int features_supports_flag_interruptible;
 extern int features_supports_flag_signal;
 extern int features_supports_flag_error;
 extern int kernel_supports_oob;
+extern int kernel_supports_promptdev;
 extern int kernel_supports_permstable32;
 extern int kernel_supports_permstable32_v1;
 extern int prompt_compat_mode;

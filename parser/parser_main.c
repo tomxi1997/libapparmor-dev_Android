@@ -1568,6 +1568,7 @@ static bool get_kernel_features(struct aa_features **features)
 	else if (aa_features_supports(*features, "policy/versions/v6"))
 		kernel_abi_version = 6;
 
+	kernel_supports_promptdev = aa_features_supports(*features, "policy/perms_compatprompt");
 	kernel_supports_permstable32 = aa_features_supports(*features, "policy/permstable32");
 	if (kernel_supports_permstable32) {
 		fprintf(stderr, "kernel supports prompt\n");
