@@ -53,7 +53,7 @@ class CHFA {
 	DefaultBase default_base;
 	NextCheck next_check;
 	map<const State *, size_t> num;
-	map<transchar, transchar> &eq;
+	map<transchar, transchar> eq;
 	transchar max_eq;
 	ssize_t first_free;
 	unsigned int chfaflags;
