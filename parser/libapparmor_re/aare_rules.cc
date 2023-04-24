@@ -44,10 +44,10 @@ aare_rules::~aare_rules(void)
 	expr_map.clear();
 }
 
-bool aare_rules::add_rule(const char *rule, int deny, uint32_t perms,
+bool aare_rules::add_rule(const char *rule, rule_mode_t mode, uint32_t perms,
 			  uint32_t audit, optflags const &opts)
 {
-	return add_rule_vec(deny, perms, audit, 1, &rule, opts, false);
+	return add_rule_vec(mode, perms, audit, 1, &rule, opts, false);
 }
 
 void aare_rules::add_to_rules(Node *tree, Node *perms)
@@ -71,7 +71,7 @@ static Node *cat_with_oob_separator(Node *l, Node *r)
 	return new CatNode(new CatNode(l, new CharNode(transchar(-1, true))), r);
 }
 
-bool aare_rules::add_rule_vec(int deny, uint32_t perms, uint32_t audit,
+bool aare_rules::add_rule_vec(rule_mode_t mode, uint32_t perms, uint32_t audit,
 			      int count, const char **rulev, optflags const &opts,
 			      bool oob)
 {
@@ -107,7 +107,7 @@ bool aare_rules::add_rule_vec(int deny, uint32_t perms, uint32_t audit,
 	if (reverse)
 		flip_tree(tree);
 
-	accept = unique_perms.insert(deny, perms, audit, exact_match);
+	accept = unique_perms.insert(mode, perms, audit, exact_match);
 
 	if (opts.dump & DUMP_DFA_RULE_EXPR) {
 		const char *separator;
@@ -123,8 +123,11 @@ bool aare_rules::add_rule_vec(int deny, uint32_t perms, uint32_t audit,
 		}
 		cerr << "  ->  ";
 		tree->dump(cerr);
-		if (deny)
+		// TODO: split out from prefixes class
+		if (mode == RULE_DENY)
 			cerr << " deny";
+		else if (mode == RULE_PROMPT)
+			cerr << " prompt";
 		cerr << " (0x" << hex << perms <<"/" << audit << dec << ")";
 		accept->dump(cerr);
  		cerr << "\n\n";

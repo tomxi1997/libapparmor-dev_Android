@@ -64,23 +64,23 @@ static uint32_t dfa_map_xindex(uint16_t mask)
 /*
  * map old dfa inline permissions to new format
  */
-#define dfa_user_allow(accept1, accept2) (((accept1) & 0x7f) | \
+#define dfa_user_allow(accept1) (((accept1) & 0x7f) | \
 				    ((accept1) & 0x80000000))
-#define dfa_user_xbits(accept1, accept2) (((accept1) >> 7) & 0x7f)
+#define dfa_user_xbits(accept1) (((accept1) >> 7) & 0x7f)
 #define dfa_user_audit(accept1, accept2) ((accept2) & 0x7f)
 #define dfa_user_quiet(accept1, accept2) (((accept2) >> 7) & 0x7f)
-#define dfa_user_xindex(accept1, accept2) \
+#define dfa_user_xindex(accept1) \
 	(dfa_map_xindex(accept1 & 0x3fff))
 
-#define dfa_other_allow(accept1, accept2) ((((accept1) >> 14) & \
+#define dfa_other_allow(accept1) ((((accept1) >> 14) & \
 				      0x7f) |				\
 				     ((accept1) & 0x80000000))
-#define dfa_other_xbits(accept1, accept2) \
+#define dfa_other_xbits(accept1) \
 	((((accept1) >> 7) >> 14) & 0x7f)
 #define dfa_other_audit(accept1, accept2) (((accept2) >> 14) & 0x7f)
 #define dfa_other_quiet(accept1, accept2) \
 	((((accept2) >> 7) >> 14) & 0x7f)
-#define dfa_other_xindex(accept1, accept2) \
+#define dfa_other_xindex(accept1) \
 	dfa_map_xindex((accept1 >> 14) & 0x3fff)
 
 /**
@@ -122,39 +122,33 @@ static void compute_fperms_allow(struct aa_perms *perms, uint32_t accept1)
 		perms->allow |= AA_MAY_ONEXEC;
 }
 
-struct aa_perms compute_fperms_user(uint32_t accept1, uint32_t accept2)
+struct aa_perms compute_fperms_user(uint32_t accept1, uint32_t accept2,
+				    uint32_t accept3)
 {
 	struct aa_perms perms = { };
 
-	perms.allow = map_old_perms(dfa_user_allow(accept1, accept2));
+	perms.allow = map_old_perms(dfa_user_allow(accept1));
+	perms.prompt = map_old_perms(dfa_user_allow(accept3));
 	perms.audit = map_old_perms(dfa_user_audit(accept1, accept2));
 	perms.quiet = map_old_perms(dfa_user_quiet(accept1, accept2));
-	perms.xindex = dfa_user_xindex(accept1, accept2);
+	perms.xindex = dfa_user_xindex(accept1);
 
 	compute_fperms_allow(&perms, accept1);
-	// prompt being carried as audit need to change
-	perms.allow &= ~perms.prompt;
-	if (perms.allow & perms.prompt) {
-		//std::cerr << "user allow & prompt\n";
-	}
 	return perms;
 }
 
-struct aa_perms compute_fperms_other(uint32_t accept1, uint32_t accept2)
+struct aa_perms compute_fperms_other(uint32_t accept1, uint32_t accept2,
+				     uint32_t accept3)
 {
 	struct aa_perms perms = { };
 
-	perms.allow = map_old_perms(dfa_other_allow(accept1, accept2));
+	perms.allow = map_old_perms(dfa_other_allow(accept1));
+	perms.prompt = map_old_perms(dfa_other_allow(accept3));
 	perms.audit = map_old_perms(dfa_other_audit(accept1, accept2));
 	perms.quiet = map_old_perms(dfa_other_quiet(accept1, accept2));
-	perms.xindex = dfa_other_xindex(accept1, accept2);
+	perms.xindex = dfa_other_xindex(accept1);
 
 	compute_fperms_allow(&perms, accept1);
-	// prompt being carried as audit need to change
-	perms.allow &= ~perms.prompt;
-	if (perms.allow & perms.prompt) {
-		std::cerr << "other allow & prompt\n";
-	}
 	return perms;
 }
 
@@ -171,13 +165,15 @@ static uint32_t map_xbits(uint32_t x)
 		((x & 0x7e) << 9);
 }
 
-struct aa_perms compute_perms_entry(uint32_t accept1, uint32_t accept2)
+struct aa_perms compute_perms_entry(uint32_t accept1, uint32_t accept2,
+				    uint32_t accept3)
 // don't need to worry about version internally within the parser
 //					   uint32_t version)
 {
 	struct aa_perms perms = { };
 
-	perms.allow = dfa_user_allow(accept1, accept2);
+	perms.allow = dfa_user_allow(accept1);
+	perms.prompt = dfa_user_allow(accept3);
 	perms.audit = dfa_user_audit(accept1, accept2);
 	perms.quiet = dfa_user_quiet(accept1, accept2);
 
@@ -192,7 +188,7 @@ struct aa_perms compute_perms_entry(uint32_t accept1, uint32_t accept2)
 	 *     Unfortunately there is no way to force auditing on the
 	 *     perms represented by the xbits
 	 */
-	perms.allow |= map_other(dfa_other_allow(accept1, accept2));
+	perms.allow |= map_other(dfa_other_allow(accept1));
 	// v9 encoding never rolled out. AA_MAY_LOCK needed to fix
 	// non fs unix locking see kernel commit
 	// 1cf26c3d2c4c apparmor: fix apparmor mediating locking non-fs unix sockets
@@ -205,6 +201,7 @@ struct aa_perms compute_perms_entry(uint32_t accept1, uint32_t accept2)
 	 * for v5-v9 perm mapping in the policydb, the other set is used
 	 * to extend the general perm set
 	 */
+	perms.prompt |= map_other(dfa_other_allow(accept3));
 	perms.audit |= map_other(dfa_other_audit(accept1, accept2));
 	perms.quiet |= map_other(dfa_other_quiet(accept1, accept2));
 	//if (VERSION_GT(version, v8))

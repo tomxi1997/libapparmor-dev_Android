@@ -31,17 +31,18 @@
 #include "expr-tree.h"
 #include "../immunix.h"
 #include "../perms.h"
+#include "../rule.h"
 
 class UniquePerm {
 public:
-	bool deny;
+	rule_mode_t mode;
 	bool exact_match;
 	uint32_t perms;
 	uint32_t audit;
 
 	bool operator<(UniquePerm const &rhs)const
 	{
-		if (deny == rhs.deny) {
+		if (mode >= rhs.mode) {
 			if (exact_match == rhs.exact_match) {
 				if (perms == rhs.perms)
 					return audit < rhs.audit;
@@ -49,7 +50,7 @@ public:
 			}
 			return exact_match;
 		}
-		return deny;
+		return true;  // mode < rhs.mode
 	}
 };
 
@@ -70,15 +71,17 @@ public:
 		nodes.clear();
 	}
 
-	Node *insert(bool deny, uint32_t perms, uint32_t audit,
+	Node *insert(rule_mode_t mode, uint32_t perms, uint32_t audit,
 		     bool exact_match)
 	{
-		UniquePerm tmp = { deny, exact_match, perms, audit };
+		UniquePerm tmp = { mode, exact_match, perms, audit };
 		iterator res = nodes.find(tmp);
 		if (res == nodes.end()) {
 			Node *node;
-			if (deny)
+			if (mode == RULE_DENY)
 				node = new DenyMatchFlag(perms, audit);
+			else if (mode == RULE_PROMPT)
+				node = new PromptMatchFlag(perms, audit);
 			else if (exact_match)
 				node = new ExactMatchFlag(perms, audit);
 			else
@@ -106,10 +109,11 @@ class aare_rules {
 	aare_rules(int reverse): root(NULL), unique_perms(), expr_map(), reverse(reverse), rule_count(0) { };
 	~aare_rules();
 
-	bool add_rule(const char *rule, int deny, uint32_t perms,
+	bool add_rule(const char *rule, rule_mode_t mode, uint32_t perms,
 		      uint32_t audit, optflags const &opts);
-	bool add_rule_vec(int deny, uint32_t perms, uint32_t audit, int count,
-			  const char **rulev, optflags const &opts, bool oob);
+	bool add_rule_vec(rule_mode_t mode, uint32_t perms, uint32_t audit,
+			  int count, const char **rulev, optflags const &opts,
+			  bool oob);
 	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);
 	CHFA *create_chfa(int *min_match_len,
 			  vector <aa_perms> &perms_table,

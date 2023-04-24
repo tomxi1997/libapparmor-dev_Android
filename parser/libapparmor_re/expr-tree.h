@@ -911,6 +911,12 @@ public:
 	}
 };
 
+class PromptMatchFlag: public MatchFlag {
+public:
+	PromptMatchFlag(uint32_t prompt, uint32_t audit): MatchFlag(prompt, audit) {}
+};
+
+
 /* Traverse the syntax tree depth-first in an iterator-like manner. */
 class depth_first_traversal {
 	stack<Node *>pos;

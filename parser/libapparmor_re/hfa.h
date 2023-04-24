@@ -51,16 +51,20 @@ class perms_t {
 public:
 	perms_t(void): allow(0), deny(0), audit(0), quiet(0), exact(0) { };
 
-	bool is_accept(void) { return (allow | audit | quiet); }
+	bool is_accept(void) { return (allow | prompt | audit | quiet); }
 
+	void dump_header(ostream &os)
+	{
+		os << "(allow/deny/prompt/audit/quiet)";
+	}
 	void dump(ostream &os)
 	{
 		os << " (0x " << hex
-		   << allow << "/" << deny << "/" << audit << "/" << quiet
+		   << allow << "/" << deny << "/" << "/" << prompt << "/" << audit << "/" << quiet
 		   << ')' << dec;
 	}
 
-	void clear(void) { allow = deny = audit = quiet = 0; }
+	void clear(void) { allow = deny = prompt = audit = quiet = 0; }
 	void add(perms_t &rhs, bool filedfa)
 	{
 		deny |= rhs.deny;
@@ -97,6 +101,7 @@ public:
 			allow = (allow | (rhs.allow & ~ALL_AA_EXEC_TYPE));
 		else
 			allow |= rhs.allow;
+		prompt |= rhs.prompt;
 		audit |= rhs.audit;
 		quiet = (quiet | rhs.quiet);
 
@@ -114,6 +119,7 @@ public:
 	{
 		if (deny) {
 			allow &= ~deny;
+			prompt &= ~deny;
 			quiet &= deny;
 			deny = 0;
 			return !is_accept();
@@ -127,12 +133,14 @@ public:
 			return allow < rhs.allow;
 		if (deny < rhs.deny)
 			return deny < rhs.deny;
+		if (prompt < rhs.prompt)
+			return prompt < rhs.prompt;
 		if (audit < rhs.audit)
 			return audit < rhs.audit;
 		return quiet < rhs.quiet;
 	}
 
-	uint32_t allow, deny, audit, quiet, exact;
+	uint32_t allow, deny, prompt, audit, quiet, exact;
 };
 
 int accept_perms(NodeVec *state, perms_t &perms, bool filedfa);
@@ -250,10 +258,11 @@ public:
 	void flatten_relative(State *, int upper_bound);
 
 	int apply_and_clear_deny(void) { return perms.apply_and_clear_deny(); }
-	void map_perms_to_accept(uint32_t &accept1, uint32_t &accept2)
+	void map_perms_to_accept(uint32_t &accept1, uint32_t &accept2, uint32_t &accept3)
 	{
 		accept1 = perms.allow;
 		accept2 = PACK_AUDIT_CTL(perms.audit, perms.quiet & perms.deny);
+		accept3 = perms.prompt;
 	}
 
 	int label;

@@ -274,20 +274,20 @@ int dbus_rule::gen_policy_re(Profile &prof)
 	}
 
 	if (perms & AA_DBUS_BIND) {
-		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms & AA_DBUS_BIND,
+		if (!prof.policy.rules->add_rule_vec(rule_mode, perms & AA_DBUS_BIND,
 						     audit == AUDIT_FORCE ? perms & AA_DBUS_BIND : 0,
 						    2, vec, parseopts, false))
 			goto fail;
 	}
 	if (perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE)) {
-		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY,
+		if (!prof.policy.rules->add_rule_vec(rule_mode,
 				       perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE),
 						     audit == AUDIT_FORCE ? perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE) : 0,
 				       6, vec, parseopts, false))
 			goto fail;
 	}
 	if (perms & AA_DBUS_EAVESDROP) {
-		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY,
+		if (!prof.policy.rules->add_rule_vec(rule_mode,
 						    perms & AA_DBUS_EAVESDROP,
 						     audit == AUDIT_FORCE ? perms & AA_DBUS_EAVESDROP : 0,
 						    1, vec, parseopts, false))

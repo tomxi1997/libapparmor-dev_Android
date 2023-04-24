@@ -18,8 +18,8 @@
 #ifndef __AA_POLICY_COMPAT_H
 #define __AA_POLICY_COMPAT_H
 
-struct aa_perms compute_fperms_user(uint32_t accept1, uint32_t accept2);
-struct aa_perms compute_fperms_other(uint32_t accept1, uint32_t accept2);
-struct aa_perms compute_perms_entry(uint32_t accept1, uint32_t accept2);
+struct aa_perms compute_fperms_user(uint32_t accept1, uint32_t accept2, uint32_t accept3);
+struct aa_perms compute_fperms_other(uint32_t accept1, uint32_t accept2, uint32_t accept3);
+struct aa_perms compute_perms_entry(uint32_t accept1, uint32_t accept2, uint32_t accept3);
 
 #endif /* __AA_POLICY_COMPAT_H */

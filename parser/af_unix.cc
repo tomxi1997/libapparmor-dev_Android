@@ -344,7 +344,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 	write_to_prot(buffer);
 	if ((mask & AA_NET_CREATE) && !has_peer_conds()) {
 		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode,
 						 map_perms(AA_NET_CREATE),
 						 map_perms(audit == AUDIT_FORCE ? AA_NET_CREATE : 0),
 						 parseopts))
@@ -369,7 +369,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 		tmp << "\\x00";
 
 		buf = tmp.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode,
 						 map_perms(AA_NET_BIND),
 						 map_perms(audit == AUDIT_FORCE ? AA_NET_BIND : 0),
 						 parseopts))
@@ -394,7 +394,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 					AA_LOCAL_NET_PERMS & ~AA_LOCAL_NET_CMD;
 		if (mask & local_mask) {
 			buf = buffer.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode,
 							 map_perms(mask & local_mask),
 							 map_perms(audit == AUDIT_FORCE ? mask & local_mask : 0),
 							 parseopts))
@@ -408,7 +408,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			/* TODO: backlog conditional: for now match anything*/
 			tmp << "..";
 			buf = tmp.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode,
 							 map_perms(AA_NET_LISTEN),
 							 map_perms(audit == AUDIT_FORCE ? AA_NET_LISTEN : 0),
 							 parseopts))
@@ -421,10 +421,12 @@ int unix_rule::gen_policy_re(Profile &prof)
 			/* TODO: sockopt conditional: for now match anything */
 			tmp << "..";
 			buf = tmp.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
-							 map_perms(mask & AA_NET_OPT),
-							 map_perms(audit == AUDIT_FORCE ? AA_NET_OPT : 0),
-							 parseopts))
+			if (!prof.policy.rules->add_rule(buf.c_str(),
+						rule_mode,
+						map_perms(mask & AA_NET_OPT),
+						map_perms(audit == AUDIT_FORCE ?
+							  AA_NET_OPT : 0),
+						parseopts))
 				goto fail;
 		}
 		mask &= ~AA_LOCAL_NET_PERMS | AA_NET_ACCEPT;
@@ -442,7 +444,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			goto fail;
 
 		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms & AA_PEER_NET_PERMS), map_perms(audit == AUDIT_FORCE ? perms & AA_PEER_NET_PERMS : 0), parseopts))
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, map_perms(perms & AA_PEER_NET_PERMS), map_perms(audit == AUDIT_FORCE ? perms & AA_PEER_NET_PERMS : 0), parseopts))
 			goto fail;
 	}
 

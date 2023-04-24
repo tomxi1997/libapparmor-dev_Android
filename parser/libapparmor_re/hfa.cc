@@ -1076,8 +1076,10 @@ void DFA::dump(ostream & os)
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
 		if (*i == start || (*i)->perms.is_accept()) {
 			os << **i;
-			if (*i == start)
-				os << " <== (allow/deny/audit/quiet)";
+			if (*i == start) {
+				os << " <== ";
+				(*i)->perms.dump_header(os);
+			}
 			if ((*i)->perms.is_accept())
 				(*i)->perms.dump(os);
 			os << "\n";
@@ -1304,16 +1306,17 @@ void DFA::apply_equivalence_classes(map<transchar, transchar> &eq)
 void DFA::compute_perms_table_ent(State *state, size_t pos,
 				  vector <aa_perms> &perms_table)
 {
-	uint32_t accept1, accept2;
+	uint32_t accept1, accept2, accept3;
 
-	state->map_perms_to_accept(accept1, accept2);
+	// until front end doesn't map the way it does
+	state->map_perms_to_accept(accept1, accept2, accept3);
 	if (filedfa) {
 		state->idx = pos * 2;
-		perms_table[pos*2] = compute_fperms_user(accept1, accept2);
-		perms_table[pos*2 + 1] = compute_fperms_other(accept1, accept2);
+		perms_table[pos*2] = compute_fperms_user(accept1, accept2, accept3);
+		perms_table[pos*2 + 1] = compute_fperms_other(accept1, accept2, accept3);
 	} else {
 		state->idx = pos;
-		perms_table[pos] = compute_perms_entry(accept1, accept2);
+		perms_table[pos] = compute_perms_entry(accept1, accept2, accept3);
 	}
 }
 
@@ -1383,6 +1386,7 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 {
 	int error = 0;
 	uint32_t exact_match_allow = 0;
+	uint32_t exact_match_prompt = 0;
 	uint32_t exact_audit = 0;
 
 	perms.clear();
@@ -1405,6 +1409,9 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 		} else if (match->is_type(NODE_TYPE_DENYMATCHFLAG)) {
 			perms.deny |= match->flag;
 			perms.quiet |= match->audit;
+		} else if (dynamic_cast<PromptMatchFlag *>(match)) {
+			perms.prompt |= match->flag;
+			perms.audit |= match->audit;
 		} else {
 			if (filedfa && !is_merged_x_consistent(perms.allow, match->flag))
 				error = 1;
@@ -1415,9 +1422,11 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 
 	if (filedfa) {
 		perms.allow |= exact_match_allow & ~(ALL_AA_EXEC_TYPE);
+		perms.prompt |= exact_match_prompt & ~(ALL_AA_EXEC_TYPE);
 		perms.audit |= exact_audit & ~(ALL_AA_EXEC_TYPE);
 	} else {
 		perms.allow |= exact_match_allow;
+		perms.prompt |= exact_match_prompt;
 		perms.audit |= exact_audit;
 	}
 	if (exact_match_allow & AA_USER_EXEC) {
@@ -1438,6 +1447,8 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 
 	perms.allow &= ~perms.deny;
 	perms.quiet &= perms.deny;
+	perms.prompt &= ~perms.deny;
+	perms.prompt &= ~perms.allow;
 
 	if (error)
 		fprintf(stderr, "profile has merged rule with conflicting x modifiers\n");
