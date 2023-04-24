@@ -538,6 +538,7 @@ void DFA::dump_uniq_perms(const char *s)
 		     << i->deny << " audit:" << i->audit
 		     << " quiet:" << i->quiet << dec << "\n";
 	}
+	//TODO: add prompt
 }
 
 /* Remove dead or unreachable states */
@@ -645,10 +646,13 @@ int DFA::apply_and_clear_deny(void)
 	return c;
 }
 
+
+typedef __uint128_t uint128_t;
+
 /* minimize the number of dfa states */
 void DFA::minimize(optflags const &opts)
 {
-	map<pair<uint64_t, size_t>, Partition *> perm_map;
+	map<pair<uint128_t, size_t>, Partition *> perm_map;
 	list<Partition *> partitions;
 
 	/* Set up the initial partitions
@@ -665,9 +669,9 @@ void DFA::minimize(optflags const &opts)
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
 		size_t hash = 0;
-		uint64_t permtype = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32) | (uint64_t) (*i)->perms.allow;
-		pair<uint64_t, size_t> group = make_pair(permtype, hash);
-		map<pair<uint64_t, size_t>, Partition *>::iterator p = perm_map.find(group);
+		uint128_t permtype = ((uint128_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32) | (uint128_t) (*i)->perms.allow | ((uint128_t) (*i)->perms.prompt << 64);
+		pair<uint128_t, size_t> group = make_pair(permtype, hash);
+		map<pair<uint128_t, size_t>, Partition *>::iterator p = perm_map.find(group);
 		if (p == perm_map.end()) {
 			Partition *part = new Partition();
 			part->push_back(*i);
