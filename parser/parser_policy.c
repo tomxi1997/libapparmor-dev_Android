@@ -244,6 +244,9 @@ int post_process_profile(Profile *profile, int debug_only)
 	if (prompt_compat_mode == PROMPT_COMPAT_DEV && profile->uses_prompt_rules)
 		profile->flags.flags |= FLAG_PROMPT_COMPAT;
 
+	else if (prompt_compat_mode == PROMPT_COMPAT_FLAG && profile->uses_prompt_rules)
+		profile->flags.mode = MODE_PROMPT;
+
 	return error;
 }
 

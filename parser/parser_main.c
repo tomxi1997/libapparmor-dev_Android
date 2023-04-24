@@ -795,13 +795,17 @@ static int process_arg(int c, char *optarg)
 		break;
 	case ARG_PROMPT_COMPAT:
 		if (strcmp(optarg, "permsv2") == 0) {
-			prompt_compat_mode = PROMPT_COMPAT_PERMSV1;
+			prompt_compat_mode = PROMPT_COMPAT_PERMSV2;
 		} else if (strcmp(optarg, "permsv1") == 0) {
 			prompt_compat_mode = PROMPT_COMPAT_PERMSV1;
 		} else if (strcmp(optarg, "default") == 0) {
 			prompt_compat_mode = default_prompt_compat_mode();
+		} else if (strcmp(optarg, "dev") == 0) {
+			prompt_compat_mode = PROMPT_COMPAT_DEV;
 		} else if (strcmp(optarg, "ignore") == 0) {
 			prompt_compat_mode = PROMPT_COMPAT_IGNORE;
+		} else if (strcmp(optarg, "flag") == 0) {
+			prompt_compat_mode = PROMPT_COMPAT_FLAG;
 		} else {
 			PERROR("%s: Invalid --prompt-compat option '%s'\n",
 			       progname, optarg);
@@ -1571,15 +1575,17 @@ static bool get_kernel_features(struct aa_features **features)
 	kernel_supports_promptdev = aa_features_supports(*features, "policy/perms_compatprompt");
 	kernel_supports_permstable32 = aa_features_supports(*features, "policy/permstable32");
 	if (kernel_supports_permstable32) {
-		fprintf(stderr, "kernel supports prompt\n");
+		//fprintf(stderr, "kernel supports prompt\n");
 	}
-	kernel_supports_permstable32_v1 = aa_features_supports(*features, "policy/permstable32/1");
+	kernel_supports_permstable32_v1 = aa_features_supports(*features, "policy/permstable32_version/0x000001");
 	if (kernel_supports_permstable32_v1) {
-		fprintf(stderr, "kernel supports prompt\n");
+		//fprintf(stderr, "kernel supports prompt_v1\n");
 	}
 
 	/* set default prompt_compat_mode to the best that is supported */
-	prompt_compat_mode = default_prompt_compat_mode();
+	if (prompt_compat_mode == PROMPT_COMPAT_UNKNOWN) {
+		prompt_compat_mode = default_prompt_compat_mode();
+	}
 	if (!kernel_supports_diff_encode)
 		/* clear diff_encode because it is not supported */
 		parseopts.control &= ~CONTROL_DFA_DIFF_ENCODE;
