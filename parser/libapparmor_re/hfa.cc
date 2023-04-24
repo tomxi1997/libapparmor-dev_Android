@@ -1308,12 +1308,13 @@ void DFA::apply_equivalence_classes(map<transchar, transchar> &eq)
 }
 
 void DFA::compute_perms_table_ent(State *state, size_t pos,
-				  vector <aa_perms> &perms_table)
+				  vector <aa_perms> &perms_table,
+				  bool prompt)
 {
 	uint32_t accept1, accept2, accept3;
 
 	// until front end doesn't map the way it does
-	state->map_perms_to_accept(accept1, accept2, accept3);
+	state->map_perms_to_accept(accept1, accept2, accept3, prompt);
 	if (filedfa) {
 		state->idx = pos * 2;
 		perms_table[pos*2] = compute_fperms_user(accept1, accept2, accept3);
@@ -1324,7 +1325,7 @@ void DFA::compute_perms_table_ent(State *state, size_t pos,
 	}
 }
 
-void DFA::compute_perms_table(vector <aa_perms> &perms_table)
+void DFA::compute_perms_table(vector <aa_perms> &perms_table, bool prompt)
 {
 	size_t mult = filedfa ? 2 : 1;
 	size_t pos = 2;
@@ -1334,13 +1335,13 @@ void DFA::compute_perms_table(vector <aa_perms> &perms_table)
 
 	// nonmatching and start need to be 0 and 1 so handle outside of loop
 	if (filedfa)
-		compute_perms_table_ent(nonmatching, 0, perms_table);
-	compute_perms_table_ent(start, 1, perms_table);
+	  compute_perms_table_ent(nonmatching, 0, perms_table, prompt);
+	compute_perms_table_ent(start, 1, perms_table, prompt);
 
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
 		if (*i == nonmatching || *i == start)
 			continue;
-		compute_perms_table_ent(*i, pos, perms_table);
+		compute_perms_table_ent(*i, pos, perms_table, prompt);
 		pos++;
 	}
 }

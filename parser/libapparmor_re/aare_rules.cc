@@ -199,8 +199,8 @@ bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
  */
 CHFA *aare_rules::create_chfa(int *min_match_len,
 			      vector <aa_perms> &perms_table,
-			      optflags const &opts,
-			      bool filedfa, bool extended_perms)
+			      optflags const &opts, bool filedfa,
+			      bool extended_perms, bool prompt)
 {
 	/* finish constructing the expr tree from the different permission
 	 * set nodes */
@@ -310,9 +310,9 @@ CHFA *aare_rules::create_chfa(int *min_match_len,
 		//cerr << "Checking extended perms " << extended_perms << "\n";
 		if (extended_perms) {
 			//cerr << "creating permstable\n";
-			dfa.compute_perms_table(perms_table);
+		  dfa.compute_perms_table(perms_table, prompt);
 		}
-		chfa = new CHFA(dfa, eq, opts, extended_perms);
+		chfa = new CHFA(dfa, eq, opts, extended_perms, prompt);
 		if (opts.dump & DUMP_DFA_TRANS_TABLE)
 			chfa->dump(cerr);
 	}
@@ -331,14 +331,15 @@ CHFA *aare_rules::create_chfa(int *min_match_len,
 void *aare_rules::create_dfablob(size_t *size, int *min_match_len,
 				 vector <aa_perms> &perms_table,
 				 optflags const &opts, bool filedfa,
-				 bool extended_perms)
+				 bool extended_perms, bool prompt)
 {
 	char *buffer = NULL;
 	stringstream stream;
 
 	try {
 		CHFA *chfa = create_chfa(min_match_len, perms_table,
-					 opts, filedfa, extended_perms);
+					 opts, filedfa, extended_perms,
+					 prompt);
 		if (!chfa) {
 			*size = 0;
 			return NULL;
@@ -375,7 +376,7 @@ void *aare_rules::create_welded_dfablob(aare_rules *file_rules,
 					size_t *new_start,
 					vector <aa_perms> &perms_table,
 					optflags const &opts,
-					bool extended_perms)
+					bool extended_perms, bool prompt)
 {
 	int file_min_len;
 	vector <aa_perms> file_perms;
@@ -383,7 +384,7 @@ void *aare_rules::create_welded_dfablob(aare_rules *file_rules,
 	try {
 		file_chfa = file_rules->create_chfa(&file_min_len,
 						    file_perms, opts,
-						    true, extended_perms);
+						    true, extended_perms, prompt);
 		if (!file_chfa) {
 			*size = 0;
 			return NULL;
@@ -398,7 +399,7 @@ void *aare_rules::create_welded_dfablob(aare_rules *file_rules,
 	try {
 		policy_chfa = create_chfa(min_match_len,
 					  perms_table, opts,
-					  false, extended_perms);
+					  false, extended_perms, prompt);
 		if (!policy_chfa) {
 			delete file_chfa;
 			*size = 0;
@@ -414,7 +415,7 @@ void *aare_rules::create_welded_dfablob(aare_rules *file_rules,
 	stringstream stream;
 	try {
 		policy_chfa->weld_file_to_policy(*file_chfa, *new_start,
-						 extended_perms,
+						 extended_perms, prompt,
 						 perms_table, file_perms);
 		policy_chfa->flex_table(stream);
 	}

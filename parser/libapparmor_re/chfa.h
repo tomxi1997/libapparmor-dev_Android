@@ -40,8 +40,7 @@ class CHFA {
       public:
 	CHFA(void);
 	CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
-	     bool permindex);
-
+	     bool permindex, bool prompt);
 	void dump(ostream & os);
 	void flex_table(ostream &os);
 	void init_free_list(vector<pair<size_t, size_t> > &free_list,
@@ -51,7 +50,7 @@ class CHFA {
 	void insert_state(vector<pair<size_t, size_t> > &free_list,
 			  State *state, DFA &dfa);
 	void weld_file_to_policy(CHFA &file_chfa, size_t &new_start,
-				 bool accept_idx,
+				 bool accept_idx, bool prompt,
 				 vector <aa_perms>  &policy_perms,
 				 vector <aa_perms> &file_perms);
 

@@ -34,6 +34,8 @@
 
 #include "expr-tree.h"
 #include "policy_compat.h"
+#include "../rule.h"
+extern int prompt_compat_mode;
 
 #define DiffEncodeFlag 1
 
@@ -258,9 +260,13 @@ public:
 	void flatten_relative(State *, int upper_bound);
 
 	int apply_and_clear_deny(void) { return perms.apply_and_clear_deny(); }
-	void map_perms_to_accept(uint32_t &accept1, uint32_t &accept2, uint32_t &accept3)
+	void map_perms_to_accept(uint32_t &accept1, uint32_t &accept2,
+				 uint32_t &accept3, bool prompt)
 	{
 		accept1 = perms.allow;
+		if (prompt && prompt_compat_mode == PROMPT_COMPAT_DEV)
+		  accept2 = PACK_AUDIT_CTL(perms.prompt, perms.quiet & perms.deny);
+		else
 		accept2 = PACK_AUDIT_CTL(perms.audit, perms.quiet & perms.deny);
 		accept3 = perms.prompt;
 	}
@@ -358,8 +364,10 @@ public:
 	void apply_equivalence_classes(map<transchar, transchar> &eq);
 
 	void compute_perms_table_ent(State *state, size_t pos,
-				     vector <aa_perms> &perms_table);
-	void compute_perms_table(vector <aa_perms> &perms_table);
+				     vector <aa_perms> &perms_table,
+				     bool prompt);
+	void compute_perms_table(vector <aa_perms> &perms_table,
+				 bool prompt);
 
 	unsigned int diffcount;
 	int oob_range;

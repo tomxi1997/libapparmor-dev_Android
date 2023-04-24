@@ -27,6 +27,12 @@
 
 using namespace std;
 
+#define PROMPT_COMPAT_IGNORE  0
+#define PROMPT_COMPAT_PERMSV2 1
+#define PROMPT_COMPAT_DEV 2
+#define PROMPT_COMPAT_PERMSV1 3
+
+
 class Profile;
 
 #define RULE_NOT_SUPPORTED 0

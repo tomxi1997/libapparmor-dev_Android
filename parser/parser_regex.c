@@ -578,7 +578,7 @@ build:
 		 *
 		 * we don't need to build xmatch for permstable32, so don't
 		 */
-		prof->xmatch = rules->create_dfablob(&prof->xmatch_size, &prof->xmatch_len, prof->xmatch_perms_table, parseopts, false, kernel_supports_permstable32 && !kernel_supports_permstable32_v1);
+		prof->xmatch = rules->create_dfablob(&prof->xmatch_size, &prof->xmatch_len, prof->xmatch_perms_table, parseopts, false, false, false);
 		delete rules;
 		if (!prof->xmatch)
 			return FALSE;
@@ -785,7 +785,8 @@ int process_profile_regex(Profile *prof)
 		prof->dfa.dfa = prof->dfa.rules->create_dfablob(&prof->dfa.size,
 					&xmatch_len, prof->dfa.perms_table,
 					parseopts, true,
-					 prof->uses_prompt_rules && kernel_supports_permstable32);
+					prof->uses_prompt_rules && kernel_supports_permstable32,
+					prof->uses_prompt_rules);
 		delete prof->dfa.rules;
 		prof->dfa.rules = NULL;
 		if (!prof->dfa.dfa)
@@ -1149,7 +1150,8 @@ int process_profile_policydb(Profile *prof)
 					&xmatch_len,
 					&prof->policy.file_start,
 					prof->policy.perms_table, parseopts,
-					kernel_supports_permstable32_v1);
+					kernel_supports_permstable32_v1,
+					prof->uses_prompt_rules);
 		delete prof->policy.rules;
 		delete prof->dfa.rules;
 		prof->policy.rules = NULL;
@@ -1165,7 +1167,8 @@ int process_profile_policydb(Profile *prof)
 						&xmatch_len,
 						prof->policy.perms_table,
 						parseopts, false,
-						prof->uses_prompt_rules && kernel_supports_permstable32);
+						prof->uses_prompt_rules && kernel_supports_permstable32,
+						prof->uses_prompt_rules);
 		delete prof->policy.rules;
 
 		prof->policy.rules = NULL;

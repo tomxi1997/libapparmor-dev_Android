@@ -55,7 +55,7 @@ void CHFA::init_free_list(vector<pair<size_t, size_t> > &free_list,
  *       permtable index flag
  */
 CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
-	   bool permindex): eq(eq)
+	   bool permindex, bool prompt): eq(eq)
 {
 	if (opts.dump & DUMP_DFA_TRANS_PROGRESS)
 		fprintf(stderr, "Compressing HFA:\r");
@@ -110,11 +110,16 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 		accept[0] = dfa.nonmatching->idx;
 		accept[1] = dfa.start->idx;
 	} else {
+		uint32_t accept3;
 		accept2.resize(max(dfa.states.size(), (size_t) 2));
 		dfa.nonmatching->map_perms_to_accept(accept[0],
-						     accept2[0]);
+						     accept2[0],
+						     accept3,
+						     prompt);
 		dfa.start->map_perms_to_accept(accept[1],
-					       accept2[1]);
+					       accept2[1],
+					       accept3,
+					       prompt);
 	}
 	next_check.resize(max(optimal, (size_t) dfa.max_range));
 	free_list.resize(next_check.size());
@@ -131,12 +136,15 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 	if (!(opts.control & CONTROL_DFA_TRANS_HIGH)) {
 		for (Partition::iterator i = dfa.states.begin(); i != dfa.states.end(); i++) {
 			if (*i != dfa.nonmatching && *i != dfa.start) {
+				uint32_t accept3;
 				insert_state(free_list, *i, dfa);
 				if (permindex)
 					accept[num.size()] = (*i)->idx;
 				else
 					(*i)->map_perms_to_accept(accept[num.size()],
-								  accept2[num.size()]);
+								  accept2[num.size()],
+								  accept3,
+								  prompt);
 				num.insert(make_pair(*i, num.size()));
 			}
 			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
@@ -151,12 +159,15 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 		     i != order.end(); i++) {
 			if (i->second != dfa.nonmatching &&
 			    i->second != dfa.start) {
+				uint32_t accept3;
 				insert_state(free_list, i->second, dfa);
 				if (permindex)
 					accept[num.size()] = i->second->idx;
 				else
 					i->second->map_perms_to_accept(accept[num.size()],
-								       accept2[num.size()]);
+								       accept2[num.size()],
+								       accept3,
+								       prompt);
 				num.insert(make_pair(i->second, num.size()));
 			}
 			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
@@ -484,7 +495,7 @@ void CHFA::flex_table(ostream &os)
 
  */
 void CHFA::weld_file_to_policy(CHFA &file_chfa, size_t &new_start,
-			       bool accept_idx,
+			       bool accept_idx, bool prompt,
 			       vector <aa_perms>  &policy_perms,
 			       vector <aa_perms> &file_perms)
 {
