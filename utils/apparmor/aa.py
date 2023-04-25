@@ -237,7 +237,7 @@ def get_new_profile_filename(profile):
         # Remove leading /
         filename = profile[1:]
     else:
-        filename = "profile_" + profile
+        filename = profile
     filename = filename.replace('/', '.')
     filename = os.path.join(profile_dir, filename)
     return filename
