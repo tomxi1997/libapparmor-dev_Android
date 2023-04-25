@@ -36,14 +36,14 @@
 #include "immunix.h"
 #include "libapparmor_re/apparmor_re.h"
 #include "libapparmor_re/aare_rules.h"
+#include "rule.h"
 
 #include <string>
 
 using namespace std;
 
 #include <set>
-class Profile;
-class rule_t;
+
 
 #define MODULE_NAME "apparmor"
 
@@ -88,11 +88,6 @@ extern dfaflags_t werrflags;
 
 typedef enum pattern_t pattern_t;
 
-struct prefixes {
-	int audit;
-	int deny;
-	int owner;
-};
 
 struct cod_pattern {
 	char *regex;		// posix regex
@@ -127,13 +122,13 @@ struct cod_entry {
 	char *nt_name;
 	Profile *prof;		 	/* Special profile defined
 					 * just for this executable */
-	int mode;			/* mode is 'or' of AA_* bits */
-	int audit;			/* audit flags for mode */
-	int deny;			/* TRUE or FALSE */
+	perms_t perms;			/* perms is 'or' of AA_* bits */
+	audit_t audit;
+	rule_mode_t rule_mode;
 
-	int alias_ignore;		/* ignore for alias processing */
+	bool alias_ignore;		/* ignore for alias processing */
 
-	int subset;
+	bool subset;
 
 	pattern_t pattern_type;
 	struct cod_pattern pat;
@@ -449,12 +444,12 @@ extern char *processunquoted(const char *string, int len);
 extern int get_keyword_token(const char *keyword);
 extern int get_rlimit(const char *name);
 extern char *process_var(const char *var);
-extern int parse_mode(const char *mode);
-extern int parse_X_mode(const char *X, int valid, const char *str_mode, int *mode, int fail);
+extern perms_t parse_perms(const char *permstr);
+extern int parse_X_perms(const char *X, int valid, const char *str_perms, perms_t *perms, int fail);
 bool label_contains_ns(const char *label);
 bool parse_label(bool *_stack, char **_ns, char **_name,
 		 const char *label, bool yyerr);
-extern struct cod_entry *new_entry(char *id, int mode, char *link_id);
+extern struct cod_entry *new_entry(char *id, perms_t perms, char *link_id);
 
 /* returns -1 if value != true or false, otherwise 0 == false, 1 == true */
 extern int str_to_boolean(const char* str);
@@ -504,8 +499,6 @@ extern void add_to_list(Profile *profile);
 extern void add_hat_to_policy(Profile *policy, Profile *hat);
 extern int add_entry_to_x_table(Profile *prof, char *name);
 extern void add_entry_to_policy(Profile *policy, struct cod_entry *entry);
-extern void post_process_file_entries(Profile *prof);
-extern void post_process_rule_entries(Profile *prof);
 extern int post_process_policy(int debug_only);
 extern int process_profile_regex(Profile *prof);
 extern int process_profile_variables(Profile *prof);

@@ -120,7 +120,7 @@
 					 * remapped to a mount option*/
 
 
-class mnt_rule: public rule_t {
+class mnt_rule: public perms_rule_t {
 	int gen_policy_remount(Profile &prof, int &count, unsigned int flags,
 			       unsigned int opt_flags);
 	int gen_policy_bind_mount(Profile &prof, int &count, unsigned int flags,
@@ -143,12 +143,10 @@ public:
 
 	std::vector<unsigned int> flagsv, opt_flagsv;
 
-	int allow, audit;
-	int deny;
 
 	mnt_rule(struct cond_entry *src_conds, char *device_p,
 		   struct cond_entry *dst_conds unused, char *mnt_point_p,
-		   int allow_p);
+		   perms_t perms_p);
 	virtual ~mnt_rule()
 	{
 		free_value_list(opts);
@@ -158,10 +156,17 @@ public:
 		free(trans);
 	}
 
+	virtual bool valid_prefix(const prefixes &p, const char *&error) {
+		if (p.owner) {
+			error = "owner prefix not allowed on mount rules";
+			return false;
+		}
+		return true;
+	};
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
-	virtual void post_process(Profile &prof unused);
+	virtual void post_parse_profile(Profile &prof unused);
 
 protected:
 	virtual void warn_once(const char *name) override;

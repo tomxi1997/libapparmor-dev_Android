@@ -63,14 +63,15 @@
 
 int parser_token = 0;
 
-struct cod_entry *do_file_rule(char *id, int mode, char *link_id, char *nt);
+struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt);
 mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 		      struct cond_entry *dst_conds, char *dst,
-		      int mode);
+		      perms_t perms);
 mnt_rule *do_pivot_rule(struct cond_entry *old, char *root,
 			char *transition);
 static void abi_features(char *filename, bool search);
-void add_local_entry(Profile *prof);
+bool add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
+bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 
 %}
 
@@ -200,9 +201,10 @@ void add_local_entry(Profile *prof);
 	unix_rule *unix_entry;
 	userns_rule *userns_entry;
 	mqueue_rule *mqueue_entry;
+	prefix_rule_t *prefix_entry;
 
 	flagvals flags;
-	int fmode;
+	perms_t fperms;
 	uint64_t cap;
 	unsigned int allowed_protocol;
 	char *set_var;
@@ -214,16 +216,19 @@ void add_local_entry(Profile *prof);
 	int boolean;
 	struct prefixes prefix;
 	IncludeCache_t *includecache;
+	audit_t audit;
+	rule_mode_t rule_mode;
 }
 
 %type <id> 	TOK_ID
 %type <id>	TOK_CONDID
 %type <id>	TOK_CONDLISTID
 %type <mode> 	TOK_MODE
-%type <fmode>   file_mode
+%type <fperms>   file_perms
 %type <prof>	profile_base
 %type <prof> 	profile
 %type <prof>	rules
+%type <prof>	block
 %type <prof>	hat
 %type <prof>	local_profile
 %type <prof>	cond_rule
@@ -252,40 +257,41 @@ void add_local_entry(Profile *prof);
 %type <id>	id_or_var
 %type <id>	opt_id_or_var
 %type <boolean> opt_subset_flag
-%type <boolean> opt_audit_flag
+%type <audit>	opt_audit_flag
 %type <boolean> opt_owner_flag
 %type <boolean> opt_profile_flag
 %type <boolean> opt_flags
-%type <boolean> opt_perm_mode
+%type <rule_mode> opt_rule_mode
 %type <id>	opt_id
 %type <prefix>  opt_prefix
-%type <fmode>	dbus_perm
-%type <fmode>	dbus_perms
-%type <fmode>	opt_dbus_perm
+%type <fperms>	dbus_perm
+%type <fperms>	dbus_perms
+%type <fperms>	opt_dbus_perm
 %type <dbus_entry>	dbus_rule
-%type <fmode>	signal_perm
-%type <fmode>	signal_perms
-%type <fmode>	opt_signal_perm
+%type <prefix_entry>	prefix_rule
+%type <fperms>	signal_perm
+%type <fperms>	signal_perms
+%type <fperms>	opt_signal_perm
 %type <signal_entry>	signal_rule
-%type <fmode>	ptrace_perm
-%type <fmode>	ptrace_perms
-%type <fmode>	opt_ptrace_perm
+%type <fperms>	ptrace_perm
+%type <fperms>	ptrace_perms
+%type <fperms>	opt_ptrace_perm
 %type <ptrace_entry>	ptrace_rule
-%type <fmode>	net_perm
-%type <fmode>	net_perms
-%type <fmode>	opt_net_perm
+%type <fperms>	net_perm
+%type <fperms>	net_perms
+%type <fperms>	opt_net_perm
 %type <unix_entry>	unix_rule
 %type <id>	opt_target
 %type <id>	opt_named_transition
 %type <boolean> opt_exec_mode
 %type <boolean> opt_file
-%type <fmode>  	userns_perm
-%type <fmode>  	userns_perms
-%type <fmode>	opt_userns_perm
+%type <fperms>  userns_perm
+%type <fperms>  userns_perms
+%type <fperms>	opt_userns_perm
 %type <userns_entry>	userns_rule
-%type <fmode>  	mqueue_perm
-%type <fmode>  	mqueue_perms
-%type <fmode>	opt_mqueue_perm
+%type <fperms>  mqueue_perm
+%type <fperms>  mqueue_perms
+%type <fperms>	opt_mqueue_perm
 %type <mqueue_entry>	mqueue_rule
 %%
 
@@ -394,8 +400,7 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list flags TOK_OPEN
 			 */
 			prof->flags.mode = MODE_COMPLAIN;
 
-		post_process_file_entries(prof);
-		post_process_rule_entries(prof);
+		prof->post_parse_profile();
 		prof->flags.debug(cerr);
 
 		/* restore previous blocks include cache */
@@ -432,7 +437,6 @@ local_profile:   TOK_PROFILE profile_base
 
 		if ($2)
 			PDEBUG("Matched: local profile %s { ... }\n", prof->name);
-		prof->local = 1;
 		$$ = prof;
 	};
 
@@ -646,25 +650,25 @@ flagval:	TOK_VALUE
 		$$ = fv;
 	};
 
-opt_subset_flag: { /* nothing */ $$ = 0; }
-	| TOK_SUBSET { $$ = 1; }
-	| TOK_LE { $$ = 1; }
+opt_subset_flag: { /* nothing */ $$ = false; }
+	| TOK_SUBSET { $$ = true; }
+	| TOK_LE { $$ = true; }
 
-opt_audit_flag: { /* nothing */ $$ = 0; }
-	| TOK_AUDIT { $$ = 1; };
+opt_audit_flag: { /* nothing */ $$ = AUDIT_UNSPECIFIED; }
+	| TOK_AUDIT { $$ = AUDIT_FORCE; };
 
 opt_owner_flag: { /* nothing */ $$ = 0; }
 	| TOK_OWNER { $$ = 1; };
 	| TOK_OTHER { $$ = 2; };
 
-opt_perm_mode: { /* nothing */ $$ = 0; }
-	| TOK_ALLOW { $$ = 0; }
-	| TOK_DENY { $$ = 1; }
+opt_rule_mode: { /* nothing */ $$ = RULE_UNSPECIFIED; }
+	| TOK_ALLOW { $$ = RULE_ALLOW; }
+	| TOK_DENY { $$ = RULE_DENY; }
 
-opt_prefix: opt_audit_flag opt_perm_mode opt_owner_flag
+opt_prefix: opt_audit_flag opt_rule_mode opt_owner_flag
 	{
 		$$.audit = $1;
-		$$.deny = $2;
+		$$.rule_mode = $2;
 		$$.owner = $3;
 	}
 
@@ -681,64 +685,44 @@ rules: rules abi_rule { /* nothing */ }
 
 rules:  rules opt_prefix rule
 	{
+		const char *error;
 		PDEBUG("matched: rules rule\n");
 		PDEBUG("rules rule: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `rule' returned NULL."));
-		$3->deny = $2.deny;
-		if (($2.deny && ($3->mode & AA_EXEC_BITS) &&
-		     ($3->mode & ALL_AA_EXEC_TYPE)))
-			yyerror(_("Invalid mode, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
-		else if (!$2.deny && ($3->mode & AA_EXEC_BITS) &&
-			 !($3->mode & ALL_AA_EXEC_TYPE) &&
-			 !($3->nt_name))
-			yyerror(_("Invalid mode, 'x' must be preceded by exec qualifier 'i', 'p', 'c', or 'u'"));
-
-		if ($2.owner == 1)
-			$3->mode &= (AA_USER_PERMS | AA_SHARED_PERMS);
-		else if ($2.owner == 2)
-			$3->mode &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
-		/* only set audit ctl quieting if the rule is not audited */
-		if (($2.deny && !$2.audit) || (!$2.deny && $2.audit))
-			$3->audit = $3->mode & ~ALL_AA_EXEC_TYPE;
-
+		if (!add_prefix($3, $2, error)) {
+			yyerror(_("%s"), error);
+		}
 		add_entry_to_policy($1, $3);
 		$$ = $1;
 	};
 
+block: TOK_OPEN rules TOK_CLOSE
+	{
+		$$ = $2;
+	};
 
-rules: rules opt_prefix TOK_OPEN rules TOK_CLOSE
+rules: rules opt_prefix block
 	{
 		struct cod_entry *entry, *tmp;
-		if ($2.deny)
-			yyerror(_("deny prefix not allowed"));
 
-		PDEBUG("matched: %s%s%sblock\n", $2.audit ? "audit " : "",
-		       $2.deny ? "deny " : "", $2.owner ? "owner " : "");
-		list_for_each_safe($4->entries, entry, tmp) {
+		PDEBUG("matched: %s%s%sblock\n", $2.audit == AUDIT_FORCE ? "audit " : "",
+		       $2.rule_mode == RULE_DENY ? "deny " : "", $2.owner ? "owner " : "");
+		list_for_each_safe($3->entries, entry, tmp) {
+			const char *error;
 			entry->next = NULL;
-			if (entry->mode & AA_EXEC_BITS) {
-				if (entry->deny &&
-				    (entry->mode & ALL_AA_EXEC_TYPE))
-					yyerror(_("Invalid mode, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'"));
-				else if (!entry->deny &&
-					 !(entry->mode & ALL_AA_EXEC_TYPE))
-					yyerror(_("Invalid mode, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'"));
+			if (!add_prefix(entry, $2, error)) {
+				yyerror(_("%s"), error);
 			}
-			if ($2.owner == 1)
- 				entry->mode &= (AA_USER_PERMS | AA_SHARED_PERMS);
-			else if ($2.owner == 2)
-				entry->mode &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
-
-			if ($2.audit && !entry->deny)
-				entry->audit = entry->mode & ~ALL_AA_EXEC_TYPE;
-			else if (!$2.audit && entry->deny)
-				 entry->audit = entry->mode & ~ALL_AA_EXEC_TYPE;
+			/* transfer rule for now, TODO keep block and just
+			 * apply add_prefix to block rule and have it do
+			 * the work
+			 */
 			add_entry_to_policy($1, entry);
 		}
-		$4->entries = NULL;
+		$3->entries = NULL;
 		// fix me transfer rules and free sub profile
-		delete $4;
+		delete $3;
 		$$ = $1;
 	};
 
@@ -759,30 +743,30 @@ rules: rules opt_prefix network_rule
 			 * downgrade if needed
 			 */
 			if (entry->family == AF_UNIX) {
-				unix_rule *rule = new unix_rule(entry->type, $2.audit, $2.deny);
+				unix_rule *rule = new unix_rule(entry->type, $2.audit, $2.rule_mode);
 				if (!rule)
 					yyerror(_("Memory allocation error."));
 				$1->rule_ents.push_back(rule);
 			}
 			if (entry->type > SOCK_PACKET) {
 				/* setting mask instead of a bit */
-				if ($2.deny) {
+				if ($2.rule_mode == RULE_DENY) {
 					$1->net.deny[entry->family] |= entry->type;
-					if (!$2.audit)
+					if ($2.audit != AUDIT_FORCE)
 						$1->net.quiet[entry->family] |= entry->type;
 				} else {
 					$1->net.allow[entry->family] |= entry->type;
-					if ($2.audit)
+					if ($2.audit == AUDIT_FORCE)
 						$1->net.audit[entry->family] |= entry->type;
 				}
 			} else {
-				if ($2.deny) {
+				if ($2.rule_mode == RULE_DENY) {
 					$1->net.deny[entry->family] |= 1 << entry->type;
-					if (!$2.audit)
+					if ($2.audit != AUDIT_FORCE)
 						$1->net.quiet[entry->family] |= 1 << entry->type;
 				} else {
 					$1->net.allow[entry->family] |= 1 << entry->type;
-					if ($2.audit)
+					if ($2.audit == AUDIT_FORCE)
 						$1->net.audit[entry->family] |= 1 << entry->type;
 				}
 			}
@@ -792,99 +776,19 @@ rules: rules opt_prefix network_rule
 		$$ = $1;
 	}
 
-rules:  rules opt_prefix mnt_rule
-	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on mount rules"));
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = $3->allow;
-		} else if ($2.audit) {
-			$3->audit = $3->allow;
-		}
+prefix_rule : mnt_rule { $$ = $1; }
+	| dbus_rule { $$ = $1; }
+	| signal_rule { $$ = $1; }
+	| ptrace_rule { $$ = $1; }
+	| unix_rule { $$ = $1; }
+	| userns_rule { $$ = $1; }
+	| mqueue_rule { $$ = $1; }
 
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix dbus_rule
+rules:  rules opt_prefix prefix_rule
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on dbus rules"));
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = $3->mode;
-		} else if ($2.audit) {
-			$3->audit = $3->mode;
-		}
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix signal_rule
-	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on signal rules"));
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = $3->mode;
-		} else if ($2.audit) {
-			$3->audit = $3->mode;
-		}
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix ptrace_rule
-	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on ptrace rules"));
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = $3->mode;
-		} else if ($2.audit) {
-			$3->audit = $3->mode;
-		}
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix unix_rule
-	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on unix rules"));
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = $3->mode;
-		} else if ($2.audit) {
-			$3->audit = $3->mode;
-		}
-		$1->rule_ents.push_back($3);
-		$$ = $1;
-	}
-
-rules:  rules opt_prefix userns_rule
-	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on userns rules"));
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = $3->mode;
-		} else if ($2.audit) {
-			$3->audit = $3->mode;
-		}
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
@@ -897,13 +801,13 @@ rules:	rules opt_prefix change_profile
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on unix rules"));
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = $3->mode;
-		} else if ($2.audit) {
-			$3->audit = $3->mode;
+		if (($2.rule_mode == RULE_DENY) && $2.audit == AUDIT_FORCE) {
+			$3->rule_mode = RULE_DENY;
+		} else if ($2.rule_mode == RULE_DENY) {
+			$3->rule_mode = RULE_DENY;
+			$3->audit = AUDIT_FORCE;
+		} else if ($2.audit != AUDIT_UNSPECIFIED) {
+			$3->audit = $2.audit;
 		}
 		add_entry_to_policy($1, $3);
 		$$ = $1;
@@ -914,33 +818,17 @@ rules:  rules opt_prefix capability
 		if ($2.owner)
 			yyerror(_("owner prefix not allowed on capability rules"));
 
-		if ($2.deny && $2.audit) {
+		if ($2.rule_mode == RULE_DENY && $2.audit == AUDIT_FORCE) {
 			$1->caps.deny |= $3;
-		} else if ($2.deny) {
+		} else if ($2.rule_mode == RULE_DENY) {
 			$1->caps.deny |= $3;
 			$1->caps.quiet |= $3;
 		} else {
 			$1->caps.allow |= $3;
-			if ($2.audit)
+			if ($2.audit != AUDIT_UNSPECIFIED)
 				$1->caps.audit |= $3;
 		}
 
-		$$ = $1;
-	};
-
-rules:  rules opt_prefix mqueue_rule
-	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on mqueue rules")); //is this true?
-		if ($2.deny && $2.audit) {
-			$3->deny = 1;
-		} else if ($2.deny) {
-			$3->deny = 1;
-			$3->audit = $3->mode;
-		} else if ($2.audit) {
-			$3->audit = $3->mode;
-		}
-		$1->rule_ents.push_back($3);
 		$$ = $1;
 	};
 
@@ -959,7 +847,6 @@ rules:	rules local_profile
 		if (!$2)
 			yyerror(_("Assert: 'local_profile rule' returned NULL."));
 		add_hat_to_policy($1, $2);
-		add_local_entry($2);
 		$$ = $1;
 	};
 
@@ -1068,42 +955,42 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 	};
 
 
-cond_rule: TOK_IF expr TOK_OPEN rules TOK_CLOSE
+cond_rule: TOK_IF expr block
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional rules\n");
 		if ($2) {
-			ret = $4;
+			ret = $3;
 		} else {
-			delete $4;
+			delete $3;
 		}
 		$$ = ret;
 	}
 
-cond_rule: TOK_IF expr TOK_OPEN rules TOK_CLOSE TOK_ELSE TOK_OPEN rules TOK_CLOSE
+cond_rule: TOK_IF expr block TOK_ELSE block
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else rules\n");
 		if ($2) {
-			ret = $4;
-			delete $8;
+			ret = $3;
+			delete $5;
 		} else {
-			ret = $8;
-			delete $4;
+			ret = $5;
+			delete $3;
 		}
 		$$ = ret;
 	}
 
-cond_rule: TOK_IF expr TOK_OPEN rules TOK_CLOSE TOK_ELSE cond_rule
+cond_rule: TOK_IF expr block TOK_ELSE cond_rule
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else-if rules\n");
 		if ($2) {
-			ret = $4;
-			delete $7;
+			ret = $3;
+			delete $5;
 		} else {
-			ret = $7;
-			delete $4;
+			ret = $5;
+			delete $3;
 		}
 		$$ = ret;
 	}
@@ -1183,12 +1070,12 @@ opt_exec_mode: { /* nothing */ $$ = EXEC_MODE_EMPTY; }
 opt_file: { /* nothing */ $$ = 0; }
 	| TOK_FILE { $$ = 1; }
 
-frule:	id_or_var file_mode opt_named_transition TOK_END_OF_RULE
+frule:	id_or_var file_perms opt_named_transition TOK_END_OF_RULE
 	{
 		$$ = do_file_rule($1, $2, NULL, $3);
 	};
 
-frule:	file_mode opt_subset_flag id_or_var opt_named_transition TOK_END_OF_RULE
+frule:	file_perms opt_subset_flag id_or_var opt_named_transition TOK_END_OF_RULE
 	{
 		if ($2 && ($1 & ~AA_LINK_BITS))
 			yyerror(_("subset can only be used with link rules."));
@@ -1223,19 +1110,19 @@ file_rule: TOK_FILE TOK_END_OF_RULE
 file_rule_tail: opt_exec_mode frule
 	{
 		if ($1 != EXEC_MODE_EMPTY) {
-			if (!($2->mode & AA_EXEC_BITS))
+			if (!($2->perms & AA_EXEC_BITS))
 				yyerror(_("unsafe rule missing exec permissions"));
 			if ($1 == EXEC_MODE_UNSAFE) {
-				$2->mode |= (($2->mode & AA_EXEC_BITS) << 8) &
+				$2->perms |= (($2->perms & AA_EXEC_BITS) << 8) &
 					 ALL_AA_EXEC_UNSAFE;
 			}
 			else if ($1 == EXEC_MODE_SAFE)
-				$2->mode &= ~ALL_AA_EXEC_UNSAFE;
+				$2->perms &= ~ALL_AA_EXEC_UNSAFE;
 		}
 		$$ = $2;
 	};
 
-file_rule_tail: opt_exec_mode id_or_var file_mode id_or_var
+file_rule_tail: opt_exec_mode id_or_var file_perms id_or_var
 	{
 		/* Oopsie, we appear to be missing an EOL marker. If we
 		 * were *smart*, we could work around it. Since we're
@@ -1387,7 +1274,7 @@ dbus_perm: TOK_VALUE
 		else if (strcmp($1, "eavesdrop") == 0)
 			$$ = AA_DBUS_EAVESDROP;
 		else if ($1) {
-			parse_dbus_mode($1, &$$, 1);
+			parse_dbus_perms($1, &$$, 1);
 		} else
 			$$ = 0;
 
@@ -1402,7 +1289,7 @@ dbus_perm: TOK_VALUE
 	| TOK_EAVESDROP { $$ = AA_DBUS_EAVESDROP; }
 	| TOK_MODE
 	{
-		parse_dbus_mode($1, &$$, 1);
+		parse_dbus_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1457,7 +1344,7 @@ net_perm: TOK_VALUE
 		else if (strcmp($1, "receive") == 0 || strcmp($1, "read") == 0)
 			$$ = AA_NET_RECEIVE;
 		else if ($1) {
-			parse_net_mode($1, &$$, 1);
+			parse_net_perms($1, &$$, 1);
 		} else
 			$$ = 0;
 
@@ -1480,7 +1367,7 @@ net_perm: TOK_VALUE
 	| TOK_WRITE { $$ = AA_NET_SEND; }
 	| TOK_MODE
 	{
-		parse_unix_mode($1, &$$, 1);
+		parse_unix_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1515,7 +1402,7 @@ signal_perm: TOK_VALUE
 		else if (strcmp($1, "receive") == 0 || strcmp($1, "read") == 0)
 			$$ = AA_MAY_RECEIVE;
 		else if ($1) {
-			parse_signal_mode($1, &$$, 1);
+			parse_signal_perms($1, &$$, 1);
 		} else
 			$$ = 0;
 
@@ -1528,7 +1415,7 @@ signal_perm: TOK_VALUE
 	| TOK_WRITE { $$ = AA_MAY_SEND; }
 	| TOK_MODE
 	{
-		parse_signal_mode($1, &$$, 1);
+		parse_signal_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1557,7 +1444,7 @@ ptrace_perm: TOK_VALUE
 		else if (strcmp($1, "readby") == 0)
 			$$ = AA_MAY_READBY;
 		else if ($1)
-			parse_ptrace_mode($1, &$$, 1);
+			parse_ptrace_perms($1, &$$, 1);
 		else
 			$$ = 0;
 
@@ -1571,7 +1458,7 @@ ptrace_perm: TOK_VALUE
 	| TOK_READBY { $$ = AA_MAY_READBY; }
 	| TOK_MODE
 	{
-		parse_ptrace_mode($1, &$$, 1);
+		parse_ptrace_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1632,7 +1519,7 @@ mqueue_perm: TOK_VALUE
 		else if (strcmp($1, "read") == 0)
 			$$ = AA_MQUEUE_READ;
 		else if ($1) {
-			parse_mqueue_mode($1, &$$, 1);
+			parse_mqueue_perms($1, &$$, 1);
 		} else
 			$$ = 0;
 
@@ -1648,7 +1535,7 @@ mqueue_perm: TOK_VALUE
 	| TOK_READ { $$ = AA_MQUEUE_READ; }
 	| TOK_MODE
 	{
-		parse_mqueue_mode($1, &$$, 1);
+		parse_mqueue_perms($1, &$$, 1);
 		free($1);
 	}
 
@@ -1674,18 +1561,18 @@ mqueue_rule: TOK_MQUEUE opt_mqueue_perm opt_conds TOK_END_OF_RULE
 hat_start: TOK_CARET {}
 	| TOK_HAT {}
 
-file_mode: TOK_MODE
+file_perms: TOK_MODE
 	{
 		/* A single TOK_MODE maps to the same permission in all
 		 * of user::other */
-		$$ = parse_mode($1);
+		$$ = parse_perms($1);
 		free($1);
 	}
 
 change_profile: TOK_CHANGE_PROFILE opt_exec_mode opt_id opt_named_transition TOK_END_OF_RULE
 	{
 		struct cod_entry *entry;
-		int mode = AA_CHANGE_PROFILE;
+		perms_t perms = AA_CHANGE_PROFILE;
 		int exec_mode = $2;
 		char *exec = $3;
 		char *target = $4;
@@ -1694,9 +1581,9 @@ change_profile: TOK_CHANGE_PROFILE opt_exec_mode opt_id opt_named_transition TOK
 			/* exec bits required to trigger rule conflict if
 			 * for overlapping safe and unsafe exec rules
 			 */
-			mode |= AA_EXEC_BITS;
+			perms |= AA_EXEC_BITS;
 			if (exec_mode == EXEC_MODE_UNSAFE)
-				mode |= ALL_AA_EXEC_UNSAFE;
+				perms |= ALL_AA_EXEC_UNSAFE;
 			else if (exec_mode == EXEC_MODE_SAFE &&
 				 !features_supports_stacking) {
 				pwarn(WARN_RULE_DOWNGRADED, "downgrading change_profile safe rule to unsafe due to lack of necessary kernel support\n");
@@ -1720,7 +1607,7 @@ change_profile: TOK_CHANGE_PROFILE opt_exec_mode opt_id opt_named_transition TOK
 				yyerror(_("Memory allocation error."));
 		}
 
-		entry = new_entry(target, mode, exec);
+		entry = new_entry(target, perms, exec);
 		if (!entry)
 			yyerror(_("Memory allocation error."));
 
@@ -1793,41 +1680,16 @@ void yyerror(const char *msg, ...)
 	exit(1);
 }
 
-struct cod_entry *do_file_rule(char *id, int mode, char *link_id, char *nt)
+struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt)
 {
 		struct cod_entry *entry;
-		PDEBUG("Matched: tok_id (%s) tok_mode (0x%x)\n", id, mode);
-		entry = new_entry(id, mode, link_id);
+		PDEBUG("Matched: tok_id (%s) tok_perms (0x%x)\n", id, perms);
+		entry = new_entry(id, perms, link_id);
 		if (!entry)
 			yyerror(_("Memory allocation error."));
 		entry->nt_name = nt;
 		PDEBUG("rule.entry: (%s)\n", entry->name);
 		return entry;
-}
-
-/* Note: NOT currently in use, used for 
- * /foo x -> { /bah, }   style transitions
- */
-void add_local_entry(Profile *prof)
-{
-	/* ugh this has to be called after the hat is attached to its parent */
-	if (prof->local_mode) {
-		struct cod_entry *entry;
-		char *trans = (char *) malloc(strlen(prof->parent->name) +
-				    strlen(prof->name) + 3);
-		char *name = strdup(prof->name);
-		if (!trans)
-			yyerror(_("Memory allocation error."));
-		sprintf(name, "%s//%s", prof->parent->name, prof->name);
-
-		entry = new_entry(name, prof->local_mode, NULL);
-		entry->audit = prof->local_audit;
-		entry->nt_name = trans;
-		if (!entry)
-			yyerror(_("Memory allocation error."));
-
-		add_entry_to_policy(prof, entry);
-	}
 }
 
 static const char *mnt_cond_msg[] = {"",
@@ -1859,7 +1721,7 @@ int verify_mnt_conds(struct cond_entry *conds, int src)
 
 mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 		      struct cond_entry *dst_conds, char *dst,
-		      int mode)
+		      perms_t perms)
 {
 	if (verify_mnt_conds(src_conds, MNT_SRC_OPT) != 0)
 		yyerror(_("bad mount rule"));
@@ -1871,7 +1733,7 @@ mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 	if (dst_conds)
 		yyerror(_("mount point conditions not currently supported"));
 
-	mnt_rule *ent = new mnt_rule(src_conds, src, dst_conds, dst, mode);
+	mnt_rule *ent = new mnt_rule(src_conds, src, dst_conds, dst, perms);
 	if (!ent) {
 		yyerror(_("Memory allocation error."));
 	}
@@ -1957,3 +1819,44 @@ static void abi_features(char *filename, bool search)
 	}
 
 };
+
+bool check_x_qualifier(struct cod_entry *entry, const char *&error)
+{
+	if (entry->perms & AA_EXEC_BITS) {
+		if ((entry->rule_mode == RULE_DENY) &&
+		    (entry->perms & ALL_AA_EXEC_TYPE)) {
+			error = _("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'");
+			return false;
+		} else if ((entry->rule_mode != RULE_DENY) &&
+			   !(entry->perms & ALL_AA_EXEC_TYPE)) {
+			error = _("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'");
+			return false;
+		}
+	}
+	return true;
+}
+
+// cod_entry version of ->add_prefix here just as file rules aren't converted yet
+bool add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
+{
+	/* modifiers aren't correctly stored for cod_entries yet so
+	 * we can't conflict on them easily. Leave that until conversion
+	 * to rule_t
+	 */
+	/* apply rule mode */
+	entry->rule_mode = p.rule_mode;
+
+	/* apply owner/other */
+	if (p.owner == 1)
+		entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
+	else if (p.owner == 2)
+		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
+
+	/* implied audit modifier */
+	if (p.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
+		entry->audit = AUDIT_FORCE;
+	else if (p.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
+		entry->audit = AUDIT_FORCE;
+
+	return check_x_qualifier(entry, error);
+}

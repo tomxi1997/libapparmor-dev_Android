@@ -98,7 +98,7 @@
 #define AA_LINK_BITS			((AA_OLD_MAY_LINK << AA_USER_SHIFT) | \
 					 (AA_OLD_MAY_LINK << AA_OTHER_SHIFT))
 
-#define SHIFT_MODE(MODE, SHIFT)		((((MODE) & AA_BASE_PERMS) << (SHIFT))\
+#define SHIFT_PERMS(MODE, SHIFT)		((((MODE) & AA_BASE_PERMS) << (SHIFT))\
 					 | ((MODE) & ~AA_FILE_PERMS))
 #define SHIFT_TO_BASE(MODE, SHIFT)	((((MODE) & AA_FILE_PERMS) >> (SHIFT))\
 					 | ((MODE) & ~AA_FILE_PERMS))

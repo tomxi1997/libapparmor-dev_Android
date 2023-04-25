@@ -32,13 +32,21 @@
 #define AA_CLASS_NS_DOMAIN	8
 #define AA_CLASS_PTRACE		9
 #define AA_CLASS_SIGNAL		10
+#define AA_CLASS_XMATCH		11
+#define AA_CLASS_ENV		12
+#define AA_CLASS_ARGV		13
 #define AA_CLASS_NETV8		14
 #define AA_CLASS_LABEL		16
 #define AA_CLASS_POSIX_MQUEUE	17
 #define AA_CLASS_SYSV_MQUEUE	18
+#define AA_CLASS_MODULE		19
+#define AA_CLASS_DISPLAY_LSM	20
 #define AA_CLASS_NS		21
+#define AA_CLASS_IO_URING	22
 
+#define AA_CLASS_X		31
 /* defined in libapparmor's apparmor.h #define AA_CLASS_DBUS 32 */
-#define AA_CLASS_X		33
+
+extern const char *aa_class_table[];
 
 #endif /* __AA_POLICYDB_H */

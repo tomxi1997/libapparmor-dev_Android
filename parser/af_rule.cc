@@ -90,43 +90,34 @@ int af_rule::move_base_cond(struct cond_entry *ent, bool peer)
 	return true;
 }
 
-ostream &af_rule::dump_prefix(ostream &os)
-{
-	if (audit)
-		os << "audit ";
-	if (deny)
-		os << "deny ";
-	return os;
-}
-
 ostream &af_rule::dump_local(ostream &os)
 {
-	if (mode != AA_VALID_NET_PERMS) {
+	if (perms != AA_VALID_NET_PERMS) {
 		os << " (";
 
-		if (mode & AA_NET_SEND)
+		if (perms & AA_NET_SEND)
 			os << "send ";
-		if (mode & AA_NET_RECEIVE)
+		if (perms & AA_NET_RECEIVE)
 			os << "receive ";
-		if (mode & AA_NET_CREATE)
+		if (perms & AA_NET_CREATE)
 			os << "create ";
-		if (mode & AA_NET_SHUTDOWN)
+		if (perms & AA_NET_SHUTDOWN)
 			os << "shutdown ";
-		if (mode & AA_NET_CONNECT)
+		if (perms & AA_NET_CONNECT)
 			os << "connect ";
-		if (mode & AA_NET_SETATTR)
+		if (perms & AA_NET_SETATTR)
 			os << "setattr ";
-		if (mode & AA_NET_GETATTR)
+		if (perms & AA_NET_GETATTR)
 			os << "getattr ";
-		if (mode & AA_NET_BIND)
+		if (perms & AA_NET_BIND)
 			os << "bind ";
-		if (mode & AA_NET_ACCEPT)
+		if (perms & AA_NET_ACCEPT)
 			os << "accept ";
-		if (mode & AA_NET_LISTEN)
+		if (perms & AA_NET_LISTEN)
 			os << "listen ";
-		if (mode & AA_NET_SETOPT)
+		if (perms & AA_NET_SETOPT)
 			os << "setopt ";
-		if (mode & AA_NET_GETOPT)
+		if (perms & AA_NET_GETOPT)
 			os << "getopt ";
 		os << ")";
 	}
@@ -148,8 +139,8 @@ ostream &af_rule::dump_peer(ostream &os)
 
 ostream &af_rule::dump(ostream &os)
 {
-	dump_prefix(os);
-	os << af_name;
+	prefix_rule_t::dump(os);
+	os << af_name();
 	dump_local(os);
 	if (has_peer_conds()) {
 		os << " peer=(";

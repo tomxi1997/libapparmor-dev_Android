@@ -25,6 +25,8 @@
 
 #include "rule.h"
 
+#define AF_ANY -1
+
 enum cond_side { local_cond, peer_cond, either_cond };
 
 struct supported_cond {
@@ -35,23 +37,21 @@ struct supported_cond {
 	enum cond_side side ;
 };
 
-class af_rule: public rule_t {
+class af_rule: public perms_rule_t {
 public:
-	std::string af_name;
+	int af;
 	char *sock_type;
 	int sock_type_n;
 	char *proto;
 	int proto_n;
 	char *label;
 	char *peer_label;
-	int mode;
-	int audit;
-	bool deny;
 
-	af_rule(const char *name): af_name(name), sock_type(NULL),
+	af_rule(int f):
+		perms_rule_t(AA_CLASS_NET),
+		af(f), sock_type(NULL),
 		sock_type_n(-1), proto(NULL), proto_n(0), label(NULL),
-		peer_label(NULL), mode(0), audit(0), deny(0)
-	{}
+		peer_label(NULL) { }
 
 	virtual ~af_rule()
 	{
@@ -61,18 +61,21 @@ public:
 		free(peer_label);
 	};
 
+	const char *af_name(void) {
+		if (af != AF_ANY)
+			return net_find_af_name(af);
+		return "*";
+	}
 	bool cond_check(struct supported_cond *cond, struct cond_entry *ent,
 			bool peer, const char *rname);
 	int move_base_cond(struct cond_entry *conds, bool peer);
 
 	virtual bool has_peer_conds(void) { return peer_label ? true : false; }
-	virtual ostream &dump_prefix(ostream &os);
 	virtual ostream &dump_local(ostream &os);
 	virtual ostream &dump_peer(ostream &os);
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof) = 0;
-	virtual void post_process(Profile &prof unused) { };
 };
 
 #endif /* __AA_AF_RULE_H */

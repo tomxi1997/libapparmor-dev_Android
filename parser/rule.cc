@@ -19,6 +19,43 @@
 #include "parser.h"
 #include <iostream>
 
+const char *aa_class_table[] = {
+	"nullcond",
+	"unknown",
+	"file",
+	"capability",
+	"network",
+	"rlimit",
+	"domain",
+	"mount",
+	"unknown8",
+	"ptrace",
+	"signal",
+	"xmatch",
+	"env",
+	"argv",
+	"network",
+	"unknown15",
+	"label",
+	"mqueue",
+	"mqueue",
+	"module",
+	"display_lsm",
+	"userns",
+	"io_uring",
+	"unknown23",
+	"unknown24",
+	"unknown25",
+	"unknown26",
+	"unknown27",
+	"unknown28",
+	"unknown29",
+	"unknown30",
+	"X",
+	"dbus",
+	NULL
+};
+
 std::ostream &operator<<(std::ostream &os, rule_t &rule)
 {
 	return rule.dump(os);

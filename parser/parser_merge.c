@@ -44,12 +44,15 @@ static int file_comp(const void *c1, const void *c2)
 		return res;
 
 	if ((*e1)->link_name)
-		res = (*e2)->subset - (*e1)->subset;
+		res = ((int) (*e2)->subset) - ((int) (*e1)->subset);
 	if (res)
 		return res;
 
-	if ((*e1)->deny != (*e2)->deny)
-		return (*e1)->deny < (*e2)->deny ? -1 : 1;
+	if ((*e1)->rule_mode != (*e2)->rule_mode)
+		return (*e1)->rule_mode < (*e2)->rule_mode ? -1 : 1;
+
+	if ((*e1)->audit != (*e2)->audit)
+		return (*e1)->audit < (*e2)->audit ? -1 : 1;
 
 	return strcmp((*e1)->name, (*e2)->name);
 }
@@ -89,13 +92,12 @@ static int process_file_entries(Profile *prof)
 		}
 
 		/* check for merged x consistency */
-		if (!is_merged_x_consistent(cur->mode, next->mode)) {
+		if (!is_merged_x_consistent(cur->perms, next->perms)) {
 			PERROR(_("profile %s: has merged rule %s with conflicting x modifiers\n"),
 				prof->name, cur->name);
 			return -1;
 		}
-		cur->mode |= next->mode;
-		cur->audit |= next->audit;
+		cur->perms |= next->perms;
 		cur->next = next->next;
 
 		next->next = NULL;

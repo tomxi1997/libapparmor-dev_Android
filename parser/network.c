@@ -32,9 +32,9 @@
 #include "network.h"
 
 
-int parse_net_mode(const char *str_mode, int *mode, int fail)
+int parse_net_perms(const char *str_mode, perms_t *mode, int fail)
 {
-	return parse_X_mode("net", AA_VALID_NET_PERMS, str_mode, mode, fail);
+	return parse_X_perms("net", AA_VALID_NET_PERMS, str_mode, mode, fail);
 }
 
 /* Bleah C++ doesn't have non-trivial designated initializers so we just

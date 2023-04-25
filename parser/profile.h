@@ -189,9 +189,7 @@ public:
 
 	/* char *sub_name; */			/* subdomain name or NULL */
 	/* int default_deny; */			/* TRUE or FALSE */
-	int local;
-	int local_mode;				/* true if local, not hat */
-	int local_audit;
+	bool local;
 
 	Profile *parent;
 
@@ -221,8 +219,6 @@ public:
 		xattrs.list = NULL;
 		xattrs.name = NULL;
 
-		local = local_mode = local_audit = 0;
-
 		parent = NULL;
 
 		flags = { 0, MODE_UNSPECIFIED, 0, 0 };
@@ -249,6 +245,12 @@ public:
 		return strcmp(name, rhs.name) < 0;
 	}
 
+	/*
+	 * Requires the merged rules have customized methods
+	 * cmp(), is_mergeable() and merge()
+	 */
+	virtual bool merge_rules(void);
+
 	void dump(void)
 	{
 		if (ns)
@@ -259,12 +261,10 @@ public:
 		else
 			printf("Name:\t\t<NULL>\n");
 
-		if (local) {
-			if (parent)
-				printf("Local To:\t%s\n", parent->name);
-			else
-				printf("Local To:\t<NULL>\n");
-		}
+		if (parent)
+			printf("Local To:\t%s\n", parent->name);
+		else
+			printf("Local To:\t<NULL>\n");
 
 		flags.dump(cerr);
 		caps.dump();
@@ -312,6 +312,9 @@ public:
 	{
 		cout << get_name(fqp);;
 	}
+
+	void post_parse_profile(void);
+	void add_implied_rules(void);
 };
 
 

@@ -23,9 +23,9 @@
 #include "rule.h"
 #include "profile.h"
 
-extern int parse_dbus_mode(const char *str_mode, int *mode, int fail);
+extern int parse_dbus_perms(const char *str_mode, perms_t *mode, int fail);
 
-class dbus_rule: public rule_t {
+class dbus_rule: public perms_rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
 	char *bus;
@@ -39,11 +39,8 @@ public:
 	char *path;
 	char *interface;
 	char *member;
-	int mode;
-	int audit;
-	int deny;
 
-	dbus_rule(int mode_p, struct cond_entry *conds,
+	dbus_rule(perms_t perms_p, struct cond_entry *conds,
 		  struct cond_entry *peer_conds);
 	virtual ~dbus_rule() {
 		free(bus);
@@ -53,11 +50,17 @@ public:
 		free(interface);
 		free(member);
 	};
+	virtual bool valid_prefix(const prefixes &p, const char *&error) {
+		if (p.owner) {
+			error = "owner prefix not allowed on dbus rules";
+			return false;
+		}
+		return true;
+	};
 
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
-	virtual void post_process(Profile &prof unused) { };
 
 protected:
 	virtual void warn_once(const char *name) override;

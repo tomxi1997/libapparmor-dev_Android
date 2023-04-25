@@ -575,7 +575,7 @@ build:
 
 static int warn_change_profile = 1;
 
-static bool is_change_profile_mode(int mode)
+static bool is_change_profile_perms(perms_t perms)
 {
 	/**
 	 * A change_profile entry will have the AA_CHANGE_PROFILE bit set.
@@ -583,13 +583,13 @@ static bool is_change_profile_mode(int mode)
 	 * set by the frontend parser. That means that it is incorrect to
 	 * identify change_profile modes using a test like this:
 	 *
-	 *   (mode & ~AA_CHANGE_PROFILE)
+	 *   (perms & ~AA_CHANGE_PROFILE)
 	 *
 	 * The above test would incorrectly return true on a
 	 * change_profile mode that has the
 	 * (AA_EXEC_BITS | ALL_AA_EXEC_UNSAFE) bits set.
 	 */
-	return mode & AA_CHANGE_PROFILE;
+	return perms & AA_CHANGE_PROFILE;
 }
 
 static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
@@ -602,7 +602,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		return TRUE;
 
 
-	if (!is_change_profile_mode(entry->mode))
+	if (!is_change_profile_perms(entry->perms))
 		filter_slashes(entry->name);
 	ptype = convert_aaregex_to_pcre(entry->name, 0, glob_default, tbuf, &pos);
 	if (ptype == ePatternInvalid)
@@ -613,10 +613,10 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 	/* ix implies m but the apparmor module does not add m bit to
 	 * dfa states like it does for pcre
 	 */
-	if ((entry->mode >> AA_OTHER_SHIFT) & AA_EXEC_INHERIT)
-		entry->mode |= AA_OLD_EXEC_MMAP << AA_OTHER_SHIFT;
-	if ((entry->mode >> AA_USER_SHIFT) & AA_EXEC_INHERIT)
-		entry->mode |= AA_OLD_EXEC_MMAP << AA_USER_SHIFT;
+	if ((entry->perms >> AA_OTHER_SHIFT) & AA_EXEC_INHERIT)
+		entry->perms |= AA_OLD_EXEC_MMAP << AA_OTHER_SHIFT;
+	if ((entry->perms >> AA_USER_SHIFT) & AA_EXEC_INHERIT)
+		entry->perms |= AA_OLD_EXEC_MMAP << AA_USER_SHIFT;
 
 	/* the link bit on the first pair entry should not get masked
 	 * out by a deny rule, as both pieces of the link pair must
@@ -627,24 +627,26 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 	 * than link in the entry.
 	 * TODO: split link and change_profile entries earlier
 	 */
-	if (entry->deny) {
-		if ((entry->mode & ~AA_LINK_BITS) &&
-		    !is_change_profile_mode(entry->mode) &&
-		    !dfarules->add_rule(tbuf.c_str(), entry->deny,
-					entry->mode & ~(AA_LINK_BITS | AA_CHANGE_PROFILE),
-					entry->audit & ~(AA_LINK_BITS | AA_CHANGE_PROFILE),
+	if (entry->rule_mode == RULE_DENY) {
+		if ((entry->perms & ~AA_LINK_BITS) &&
+		    !is_change_profile_perms(entry->perms) &&
+		    !dfarules->add_rule(tbuf.c_str(), entry->rule_mode == RULE_DENY,
+					entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE),
+					entry->audit == AUDIT_FORCE ? entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE) : 0,
 					dfaflags))
 			return FALSE;
-	} else if (!is_change_profile_mode(entry->mode)) {
-		if (!dfarules->add_rule(tbuf.c_str(), entry->deny, entry->mode,
-					entry->audit, dfaflags))
+	} else if (!is_change_profile_perms(entry->perms)) {
+		if (!dfarules->add_rule(tbuf.c_str(),
+				entry->rule_mode == RULE_DENY, entry->perms,
+				entry->audit == AUDIT_FORCE ? entry->perms : 0,
+				dfaflags))
 			return FALSE;
 	}
 
-	if (entry->mode & (AA_LINK_BITS)) {
+	if (entry->perms & (AA_LINK_BITS)) {
 		/* add the pair rule */
 		std::string lbuf;
-		int perms = AA_LINK_BITS & entry->mode;
+		int perms = AA_LINK_BITS & entry->perms;
 		const char *vec[2];
 		int pos;
 		vec[0] = tbuf.c_str();
@@ -660,10 +662,10 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 			perms |= LINK_TO_LINK_SUBSET(perms);
 			vec[1] = "/[^/].*";
 		}
-		if (!dfarules->add_rule_vec(entry->deny, perms, entry->audit & AA_LINK_BITS, 2, vec, dfaflags, false))
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, perms, entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0, 2, vec, dfaflags, false))
 			return FALSE;
 	}
-	if (is_change_profile_mode(entry->mode)) {
+	if (is_change_profile_perms(entry->perms)) {
 		const char *vec[3];
 		std::string lbuf, xbuf;
 		autofree char *ns = NULL;
@@ -671,7 +673,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		int index = 1;
 		uint32_t onexec_perms = AA_ONEXEC;
 
-		if ((warnflags & WARN_RULE_DOWNGRADED) && entry->audit && warn_change_profile) {
+		if ((warnflags & WARN_RULE_DOWNGRADED) && entry->audit == AUDIT_FORCE && warn_change_profile) {
 			/* don't have profile name here, so until this code
 			 * gets refactored just throw out a generic warning
 			 */
@@ -711,13 +713,13 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		}
 
 		/* regular change_profile rule */
-		if (!dfarules->add_rule_vec(entry->deny,
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY,
 					    AA_CHANGE_PROFILE | onexec_perms,
 					    0, index - 1, &vec[1], dfaflags, false))
 			return FALSE;
 
 		/* onexec rules - both rules are needed for onexec */
-		if (!dfarules->add_rule_vec(entry->deny, onexec_perms,
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, onexec_perms,
 					    0, 1, vec, dfaflags, false))
 			return FALSE;
 
@@ -725,8 +727,8 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		 * pick up any exec bits, from the frontend parser, related to
 		 * unsafe exec transitions
 		 */
-		onexec_perms |= (entry->mode & (AA_EXEC_BITS | ALL_AA_EXEC_UNSAFE));
-		if (!dfarules->add_rule_vec(entry->deny, onexec_perms,
+		onexec_perms |= (entry->perms & (AA_EXEC_BITS | ALL_AA_EXEC_UNSAFE));
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, onexec_perms,
 					    0, index, vec, dfaflags, false))
 			return FALSE;
 	}
@@ -841,6 +843,8 @@ int clear_and_convert_entry(std::string& buffer, char *entry)
 int post_process_policydb_ents(Profile *prof)
 {
 	for (RuleList::iterator i = prof->rule_ents.begin(); i != prof->rule_ents.end(); i++) {
+		if ((*i)->flags & RULE_FLAG_DELETED)
+			continue;
 		if ((*i)->gen_policy_re(*prof) == RULE_ERROR)
 			return FALSE;
 	}
