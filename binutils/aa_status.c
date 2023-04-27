@@ -628,8 +628,11 @@ static int print_usage(const char *command, bool error)
 
 	printf("Usage: %s [OPTIONS]\n"
 	 "Displays various information about the currently loaded AppArmor policy.\n"
+	 "Default if no options given\n"
+	 "  --show=all\n\n"
 	 "OPTIONS (one only):\n"
 	 "  --enabled       returns error code if AppArmor not enabled\n"
+	 "  --show=X        What information to show. {profiles,processes,all}\n"
 	 "  --count         print the number of entries. Implies --quiet\n"
 	 "  --profiled      prints the number of loaded policies\n"
 	 "  --enforced      prints the number of loaded enforcing policies\n"
@@ -659,6 +662,8 @@ static int print_usage(const char *command, bool error)
 #define ARG_JSON	136
 #define ARG_PRETTY	137
 #define ARG_COUNT	138
+#define ARG_SHOW	139
+#define ARG_MODE	140
 #define ARG_VERBOSE 'v'
 #define ARG_HELP 'h'
 
@@ -678,6 +683,7 @@ static char **parse_args(int argc, char **argv)
 		{"verbose", no_argument, 0, ARG_VERBOSE},
 		{"help", no_argument, 0, ARG_HELP},
 		{"count", no_argument, 0, ARG_COUNT},
+		{"show", 1, 0, ARG_SHOW},
 		{NULL, 0, 0, 0},
 	};
 
@@ -737,6 +743,19 @@ static char **parse_args(int argc, char **argv)
 		case ARG_COUNT:
 			opt_count = true;
 			/* default opt_show */
+			break;
+		case ARG_SHOW:
+			if (strcmp(optarg, "all") == 0) {
+				opt_show = SHOW_PROFILES | SHOW_PROCESSES;
+			} else if (strcmp(optarg, "profiles") == 0) {
+				opt_show = SHOW_PROFILES;
+			} else if (strcmp(optarg, "processes") == 0) {
+				opt_show = SHOW_PROCESSES;
+			} else {
+				dfprintf(stderr, "Error: Invalid --show option '%s'.\n", optarg);
+				print_usage(argv[0], true);
+				break;
+			}
 			break;
 		default:
 			dfprintf(stderr, "Error: Invalid command.\n");
