@@ -45,16 +45,19 @@ static const unsigned char aa_status_json_version[] = "2";
 struct filter_set {
 	regex_t mode;
 	regex_t profile;
+	regex_t pid;
 };
 
 typedef struct {
 	regex_t *mode;
 	regex_t *profile;
+	regex_t *pid;
 } filters_t;
 
 static void init_filters(filters_t *filters, struct filter_set *base) {
 	filters->mode = &base->mode;
 	filters->profile = &base->profile;
+	filters->pid = &base->pid;
 };
 
 static void free_filters(filters_t *filters)
@@ -63,6 +66,8 @@ static void free_filters(filters_t *filters)
 		regfree(filters->mode);
 	if (filters->profile)
 		regfree(filters->profile);
+	if (filters->pid)
+		regfree(filters->pid);
 }
 
 struct profile {
@@ -111,6 +116,7 @@ bool opt_pretty = false;
 bool opt_count = false;
 const char *opt_mode = ".*";
 const char *opt_profiles = ".*";
+const char *opt_pid = ".*";
 
 const char *profile_statuses[] = {"enforce", "complain", "kill", "unconfined"};
 const char *process_statuses[] = {"enforce", "complain", "kill", "unconfined", "mixed"};
@@ -427,6 +433,8 @@ static int filter_processes(struct process *processes,
 	for (i = 0; i < n; i++) {
 		if (regexec(filters->mode, processes[i].mode, 0, NULL, 0) != 0)
 			continue;
+		if (regexec(filters->pid, processes[i].pid, 0, NULL, 0) != 0)
+			continue;
 		if (regexec(filters->profile, processes[i].profile, 0, NULL, 0) == 0)
 		{
 			struct process *_filtered = realloc(*filtered, (*nfiltered + 1) * sizeof(**filtered));
@@ -702,6 +710,7 @@ static int usage_filters(void)
 	 "  --mode:      regular expression to match the profile mode"
 	 "               modes: enforce, complain, kill, unconfined, mixed\n"
 	 "  --profiles:  regular expression to match displayed profile names\n"
+	 "  --pid:       regular expression to match displayed processes pids\n"
 	);
 	for (i = 0; i < ARRAY_SIZE(process_statuses); i++) {
 		printf("%s%s", i ? ", " : "", process_statuses[i]);
@@ -731,6 +740,7 @@ static int print_usage(const char *command, bool error)
 	 "  --mode=filter   regular expression to match profile modes. see filters\n"
 	 "                  or a regular expression\n"
 	 "  --profiles=filter which profiles to display. see filters\n"
+	 "  --pid=filter      which processes to display. see filters\n"
 	 "  --json          displays multiple data points in machine-readable JSON format\n"
 	 "  --pretty-json   same data as --json, formatted for human consumption as well\n"
 	 "  --verbose       (default) displays data points about loaded policy set\n"
@@ -757,6 +767,7 @@ static int print_usage(const char *command, bool error)
 #define ARG_SHOW	139
 #define ARG_MODE	140
 #define ARG_PROFILES	141
+#define ARG_PID		142
 #define ARG_VERBOSE 'v'
 #define ARG_HELP 'h'
 
@@ -778,6 +789,7 @@ static int parse_args(int argc, char **argv)
 		{"count", no_argument, 0, ARG_COUNT},
 		{"show", 1, 0, ARG_SHOW},
 		{"profiles", 1, 0, ARG_PROFILES},
+		{"pid", 1, 0, ARG_PID},
 		{"mode", 1, 0, ARG_MODE},
 		{NULL, 0, 0, 0},
 	};
@@ -872,6 +884,10 @@ static int parse_args(int argc, char **argv)
 			opt_profiles = optarg;
 			/* default opt_mode */
 			break;
+		case ARG_PID:
+			opt_pid = optarg;
+			/* default opt_mode */
+			break;
 		case ARG_MODE:
 			opt_mode = optarg;
 			break;
@@ -921,6 +937,12 @@ int main(int argc, char **argv)
 	if (regcomp(filters.profile, opt_profiles, REG_NOSUB) != 0) {
 		dfprintf(stderr, "Error: failed to compile profiles filter '%s'\n",
 			 opt_profiles);
+		ret = AA_EXIT_INTERNAL_ERROR;
+		goto out;
+	}
+	if (regcomp(filters.pid, opt_pid, REG_NOSUB) != 0) {
+		dfprintf(stderr, "Error: failed to compile ps filter '%s'\n",
+			 opt_pid);
 		ret = AA_EXIT_INTERNAL_ERROR;
 		goto out;
 	}
