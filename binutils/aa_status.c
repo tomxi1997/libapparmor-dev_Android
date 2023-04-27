@@ -44,19 +44,23 @@ static const unsigned char aa_status_json_version[] = "2";
 
 struct filter_set {
 	regex_t mode;
+	regex_t profile;
 };
 
 typedef struct {
 	regex_t *mode;
+	regex_t *profile;
 } filters_t;
 
 static void init_filters(filters_t *filters, struct filter_set *base) {
 	filters->mode = &base->mode;
+	filters->profile = &base->profile;
 };
 
 static void free_filters(filters_t *filters)
 {
 	regfree(filters->mode);
+	regfree(filters->profile);
 }
 
 struct profile {
@@ -104,7 +108,7 @@ bool opt_json = false;
 bool opt_pretty = false;
 bool opt_count = false;
 const char *opt_mode = ".*";
-
+const char *opt_profiles = ".*";
 
 const char *profile_statuses[] = {"enforce", "complain", "kill", "unconfined"};
 const char *process_statuses[] = {"enforce", "complain", "kill", "unconfined", "mixed"};
@@ -246,7 +250,9 @@ static int filter_profiles(struct profile *profiles,
 	*nfiltered = 0;
 
 	for (i = 0; i < n; i++) {
-		if (regexec(filters->mode, profiles[i].status, 0, NULL, 0) == 0) {
+		if (regexec(filters->mode, profiles[i].status, 0, NULL, 0) != 0)
+			continue;
+		if (regexec(filters->profile, profiles[i].name, 0, NULL, 0) == 0) {
 			struct profile *_filtered = realloc(*filtered, (*nfiltered + 1) * sizeof(**filtered));
 			if (_filtered == NULL) {
 				free_profiles(*filtered, *nfiltered);
@@ -417,7 +423,10 @@ static int filter_processes(struct process *processes,
 	*nfiltered = 0;
 
 	for (i = 0; i < n; i++) {
-		if (regexec(filters->mode, processes[i].mode, 0, NULL, 0) == 0) {
+		if (regexec(filters->mode, processes[i].mode, 0, NULL, 0) != 0)
+			continue;
+		if (regexec(filters->profile, processes[i].profile, 0, NULL, 0) == 0)
+		{
 			struct process *_filtered = realloc(*filtered, (*nfiltered + 1) * sizeof(**filtered));
 			if (_filtered == NULL) {
 				free_processes(*filtered, *nfiltered);
@@ -690,6 +699,7 @@ static int usage_filters(void)
 	 "support filters are below\n\n"
 	 "  --mode:      regular expression to match the profile mode"
 	 "               modes: enforce, complain, kill, unconfined, mixed\n"
+	 "  --profiles:  regular expression to match displayed profile names\n"
 	);
 	for (i = 0; i < ARRAY_SIZE(process_statuses); i++) {
 		printf("%s%s", i ? ", " : "", process_statuses[i]);
@@ -718,6 +728,7 @@ static int print_usage(const char *command, bool error)
 	 "  --count         print the number of entries. Implies --quiet\n"
 	 "  --mode=filter   regular expression to match profile modes. see filters\n"
 	 "                  or a regular expression\n"
+	 "  --profiles=filter which profiles to display. see filters\n"
 	 "  --json          displays multiple data points in machine-readable JSON format\n"
 	 "  --pretty-json   same data as --json, formatted for human consumption as well\n"
 	 "  --verbose       (default) displays data points about loaded policy set\n"
@@ -743,6 +754,7 @@ static int print_usage(const char *command, bool error)
 #define ARG_COUNT	138
 #define ARG_SHOW	139
 #define ARG_MODE	140
+#define ARG_PROFILES	141
 #define ARG_VERBOSE 'v'
 #define ARG_HELP 'h'
 
@@ -763,6 +775,7 @@ static int parse_args(int argc, char **argv)
 		{"help", 2, 0, ARG_HELP},
 		{"count", no_argument, 0, ARG_COUNT},
 		{"show", 1, 0, ARG_SHOW},
+		{"profiles", 1, 0, ARG_PROFILES},
 		{"mode", 1, 0, ARG_MODE},
 		{NULL, 0, 0, 0},
 	};
@@ -853,6 +866,10 @@ static int parse_args(int argc, char **argv)
 				break;
 			}
 			break;
+		case ARG_PROFILES:
+			opt_profiles = optarg;
+			/* default opt_mode */
+			break;
 		case ARG_MODE:
 			opt_mode = optarg;
 			break;
@@ -866,7 +883,6 @@ static int parse_args(int argc, char **argv)
 
 	return optind;
 }
-
 
 int main(int argc, char **argv)
 {
@@ -900,7 +916,12 @@ int main(int argc, char **argv)
 			 opt_mode);
 		return AA_EXIT_INTERNAL_ERROR;
 	}
-	
+	if (regcomp(filters.profile, opt_profiles, REG_NOSUB) != 0) {
+		dfprintf(stderr, "Error: failed to compile profiles filter '%s'\n",
+			 opt_profiles);
+		return AA_EXIT_INTERNAL_ERROR;
+	}
+
 	/* check apparmor is available and we have permissions */
 	ret = open_profiles(&fp);
 	if (ret != 0)
