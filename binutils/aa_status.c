@@ -42,6 +42,23 @@ static const unsigned char aa_status_json_version[] = "2";
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 #define __unused __attribute__ ((__unused__))
 
+struct filter_set {
+	regex_t mode;
+};
+
+typedef struct {
+	regex_t *mode;
+} filters_t;
+
+static void init_filters(filters_t *filters, struct filter_set *base) {
+	filters->mode = &base->mode;
+};
+
+static void free_filters(filters_t *filters)
+{
+	regfree(filters->mode);
+}
+
 struct profile {
 	char *name;
 	char *status;
@@ -210,7 +227,7 @@ static int compare_profiles(const void *a, const void *b) {
  * filter_profiles - create a filtered profile list
  * @profiles: list of profiles
  * @n: number of elements in @profiles
- * @mode_filter: filter for the mode
+ * @filters: filters to apply
  * @filtered: return: new list of profiles that match the filter
  * @nfiltered: return: number of elements in @filtered
  *
@@ -218,7 +235,7 @@ static int compare_profiles(const void *a, const void *b) {
  */
 static int filter_profiles(struct profile *profiles,
 			   size_t n,
-			   regex_t *mode_filter,
+			   filters_t *filters,
 			   struct profile **filtered,
 			   size_t *nfiltered)
 {
@@ -229,7 +246,7 @@ static int filter_profiles(struct profile *profiles,
 	*nfiltered = 0;
 
 	for (i = 0; i < n; i++) {
-		if (regexec(mode_filter, profiles[i].status, 0, NULL, 0) == 0) {
+		if (regexec(filters->mode, profiles[i].status, 0, NULL, 0) == 0) {
 			struct profile *_filtered = realloc(*filtered, (*nfiltered + 1) * sizeof(**filtered));
 			if (_filtered == NULL) {
 				free_profiles(*filtered, *nfiltered);
@@ -381,7 +398,7 @@ exit:
  * filter_processes: create a new filtered process list by applying @filter
  * @processes: list of processes to filter
  * @n: number of entries in @processes
- * @mode_filter: regex to filter @processes modes against
+ * @filters: regex filters @processes against
  * @filtered: return: new list of processes matching filter
  * @nfiltered: number of entries in @filtered
  *
@@ -389,7 +406,7 @@ exit:
  */
 static int filter_processes(struct process *processes,
 			    size_t n,
-			    regex_t *mode_filter,
+			    filters_t *filters,
 			    struct process **filtered,
 			    size_t *nfiltered)
 {
@@ -400,7 +417,7 @@ static int filter_processes(struct process *processes,
 	*nfiltered = 0;
 
 	for (i = 0; i < n; i++) {
-		if (regexec(mode_filter, processes[i].mode, 0, NULL, 0) == 0) {
+		if (regexec(filters->mode, processes[i].mode, 0, NULL, 0) == 0) {
 			struct process *_filtered = realloc(*filtered, (*nfiltered + 1) * sizeof(**filtered));
 			if (_filtered == NULL) {
 				free_processes(*filtered, *nfiltered);
@@ -424,20 +441,20 @@ static int filter_processes(struct process *processes,
 /**
  * simple_filtered_count - count the number of profiles with mode == filter
  * @outf: output file destination
- * @mode_filter: mode string to filter profiles on
+ * @filters: filters to filter profiles on
  * @profiles: profiles list to filter
  * @nprofiles: number of entries in @profiles
  *
  * Return: 0 on success, else shell error code
  */
-static int simple_filtered_count(FILE *outf, regex_t *mode_filter,
+static int simple_filtered_count(FILE *outf, filters_t *filters,
 				 struct profile *profiles, size_t nprofiles)
 {
 	struct profile *filtered = NULL;
 	size_t nfiltered;
 	int ret;
 
-	ret = filter_profiles(profiles, nprofiles, mode_filter,
+	ret = filter_profiles(profiles, nprofiles, filters,
 			      &filtered, &nfiltered);
 	fprintf(outf, "%zd\n", nfiltered);
 	free_profiles(filtered, nfiltered);
@@ -448,19 +465,19 @@ static int simple_filtered_count(FILE *outf, regex_t *mode_filter,
 /**
  * simple_filtered_process_count - count processes with mode == filter
  * @outf: output file destination
- * @mode_filter: mode string to filter processes on
+ * @filters: filters to filter processes on
  * @processes: process list to filter
  * @nprocesses: number of entries in @processes
  *
  * Return: 0 on success, else shell error code
  */
-static int simple_filtered_process_count(FILE *outf, regex_t *mode_filter,
+static int simple_filtered_process_count(FILE *outf, filters_t *filters,
 					 struct process *processes, size_t nprocesses) {
 	struct process *filtered = NULL;
 	size_t nfiltered;
 	int ret;
 
-	ret = filter_processes(processes, nprocesses, mode_filter, &filtered,
+	ret = filter_processes(processes, nprocesses, filters, &filtered,
 			       &nfiltered);
 	fprintf(outf, "%zd\n", nfiltered);
 	free_processes(filtered, nfiltered);
@@ -492,14 +509,14 @@ static void json_footer(FILE *outf)
 /**
  * detailed_profiles - output a detailed listing of apparmor profile status
  * @outf: output file
- * @filter: mode filter
+ * @filters: filters to apply
  * @json: whether output should be in json format
  * @profiles: list of profiles to output
  * @nprofiles: number of profiles in @profiles
  *
  * Return: 0 on success, else shell error
  */
-static int detailed_profiles(FILE *outf, regex_t *mode_filter, bool json,
+static int detailed_profiles(FILE *outf, filters_t *filters, bool json,
 			     struct profile *profiles, size_t nprofiles) {
 	int ret;
 	size_t i;
@@ -513,20 +530,23 @@ static int detailed_profiles(FILE *outf, regex_t *mode_filter, bool json,
 	for (i = 0; i < ARRAY_SIZE(profile_statuses); i++) {
 		size_t nfiltered = 0, j;
 		struct profile *filtered = NULL;
-		regex_t sub_filter;
-		if (regexec(mode_filter, profile_statuses[i], 0, NULL, 0) == REG_NOMATCH)
+		filters_t subfilters = *filters;
+		regex_t mode_filter;
+
+		if (regexec(filters->mode, profile_statuses[i], 0, NULL, 0) == REG_NOMATCH)
 			/* skip processing for entries that don't match filter*/
 			continue;
-		/* need sub_filter as we want to split on matches to specific
+		/* need subfilter as we want to split on matches to specific
 		 * status
 		 */
-		if (regcomp(&sub_filter, profile_statuses[i], REG_NOSUB) != 0) {
+		subfilters.mode = &mode_filter;
+		if (regcomp(&mode_filter, profile_statuses[i], REG_NOSUB) != 0) {
 			dfprintf(stderr, "Error: failed to compile sub filter '%s'\n",
 				 profile_statuses[i]);
 			return AA_EXIT_INTERNAL_ERROR;
 		}
-		ret = filter_profiles(profiles, nprofiles, &sub_filter, &filtered, &nfiltered);
-		regfree(&sub_filter);
+		ret = filter_profiles(profiles, nprofiles, &subfilters, &filtered, &nfiltered);
+		regfree(&mode_filter);
 		if (ret != 0) {
 			return ret;
 		}
@@ -555,14 +575,14 @@ static int detailed_profiles(FILE *outf, regex_t *mode_filter, bool json,
 /**
  * detailed_processses - output a detailed listing of apparmor process status
  * @outf: output file
- * @mode_filter: mode filter regex
+ * @filters: filter regexs
  * @json: whether output should be in json format
  * @processes: list of processes to output
  * @nprocesses: number of processes in @processes
  *
  * Return: 0 on success, else shell error
  */
-static int detailed_processes(FILE *outf, regex_t *mode_filter, bool json,
+static int detailed_processes(FILE *outf, filters_t *filters, bool json,
 			      struct process *processes, size_t nprocesses) {
 	int ret;
 	size_t i;
@@ -576,20 +596,22 @@ static int detailed_processes(FILE *outf, regex_t *mode_filter, bool json,
 	for (i = 0; i < ARRAY_SIZE(process_statuses); i++) {
 		size_t nfiltered = 0, j;
 		struct process *filtered = NULL;
-		regex_t sub_filter;
-		if (regexec(mode_filter, process_statuses[i], 0, NULL, 0) == REG_NOMATCH)
+		filters_t subfilters = *filters;
+		regex_t mode_filter;
+		if (regexec(filters->mode, process_statuses[i], 0, NULL, 0) == REG_NOMATCH)
 			/* skip processing for entries that don't match filter*/
 			continue;
 		/* need sub_filter as we want to split on matches to specific
 		 * status
 		 */
-		if (regcomp(&sub_filter, process_statuses[i], REG_NOSUB) != 0) {
+		subfilters.mode = &mode_filter;
+		if (regcomp(&mode_filter, process_statuses[i], REG_NOSUB) != 0) {
 			dfprintf(stderr, "Error: failed to compile sub filter '%s'\n",
 				 profile_statuses[i]);
 			return AA_EXIT_INTERNAL_ERROR;
 		}
-		ret = filter_processes(processes, nprocesses, &sub_filter, &filtered, &nfiltered);
-		regfree(&sub_filter);
+		ret = filter_processes(processes, nprocesses, &subfilters, &filtered, &nfiltered);
+		regfree(&mode_filter);
 		if (ret != 0)
 			goto exit;
 
@@ -856,7 +878,8 @@ int main(int argc, char **argv)
 	int ret = EXIT_SUCCESS;
 	const char *progname = argv[0];
 	FILE *outf = stdout, *outf_save = NULL;
-	regex_t mode_filter;
+	struct filter_set filter_set;
+	filters_t filters;
 
 	if (argc > 1) {
 		int pos = parse_args(argc, argv);
@@ -871,7 +894,8 @@ int main(int argc, char **argv)
 		/* default opt_json */
 	}
 
-	if (regcomp(&mode_filter, opt_mode, REG_NOSUB) != 0) {
+	init_filters(&filters, &filter_set);
+	if (regcomp(filters.mode, opt_mode, REG_NOSUB) != 0) {
 		dfprintf(stderr, "Error: failed to compile mode filter '%s'\n",
 			 opt_mode);
 		return AA_EXIT_INTERNAL_ERROR;
@@ -905,10 +929,10 @@ int main(int argc, char **argv)
 		json_header(outf);
 	if (opt_show & SHOW_PROFILES) {
 		if (opt_count) {
-			ret = simple_filtered_count(outf, &mode_filter,
+			ret = simple_filtered_count(outf, &filters,
 						    profiles, nprofiles);
 		} else {
-			ret = detailed_profiles(outf, &mode_filter, opt_json,
+			ret = detailed_profiles(outf, &filters, opt_json,
 						profiles, nprofiles);
 		}
 		if (ret != 0)
@@ -923,10 +947,10 @@ int main(int argc, char **argv)
 		if (ret != 0) {
 			dfprintf(stderr, "Failed to get processes: %d....\n", ret);
 		} else if (opt_count) {
-			ret = simple_filtered_process_count(outf, &mode_filter,
+			ret = simple_filtered_process_count(outf, &filters,
 							processes, nprocesses);
 		} else {
-			ret = detailed_processes(outf, &mode_filter, opt_json,
+			ret = detailed_processes(outf, &filters, opt_json,
 						 processes, nprocesses);
 		}
 		free_processes(processes, nprocesses);
@@ -965,7 +989,7 @@ int main(int argc, char **argv)
 
 out:
 	free_profiles(profiles, nprofiles);
-	regfree(&mode_filter);
+	free_filters(&filters);
 
 	exit(ret);
 }
