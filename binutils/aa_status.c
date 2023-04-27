@@ -630,6 +630,7 @@ static int print_usage(const char *command, bool error)
 	 "Displays various information about the currently loaded AppArmor policy.\n"
 	 "OPTIONS (one only):\n"
 	 "  --enabled       returns error code if AppArmor not enabled\n"
+	 "  --count         print the number of entries. Implies --quiet\n"
 	 "  --profiled      prints the number of loaded policies\n"
 	 "  --enforced      prints the number of loaded enforcing policies\n"
 	 "  --complaining   prints the number of loaded non-enforcing policies\n"
@@ -657,6 +658,7 @@ static int print_usage(const char *command, bool error)
 #define ARG_PS_MIXED	135
 #define ARG_JSON	136
 #define ARG_PRETTY	137
+#define ARG_COUNT	138
 #define ARG_VERBOSE 'v'
 #define ARG_HELP 'h'
 
@@ -675,6 +677,7 @@ static char **parse_args(int argc, char **argv)
 		{"pretty-json", no_argument, 0, ARG_PRETTY},
 		{"verbose", no_argument, 0, ARG_VERBOSE},
 		{"help", no_argument, 0, ARG_HELP},
+		{"count", no_argument, 0, ARG_COUNT},
 		{NULL, 0, 0, 0},
 	};
 
@@ -729,6 +732,10 @@ static char **parse_args(int argc, char **argv)
 		case ARG_PRETTY:
 			opt_pretty = true;
 			opt_json = true;
+			/* default opt_show */
+			break;
+		case ARG_COUNT:
+			opt_count = true;
 			/* default opt_show */
 			break;
 		default:
