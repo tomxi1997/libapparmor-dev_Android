@@ -72,8 +72,8 @@ genprofile $file2:$fileperm
 sync; echo 3 > /proc/sys/vm/drop_caches
 runchecktest "OPEN RW (nfs file create after cache drop) " xpass $file2
 
-if [ "$(kernel_features network)" == "true" -o \
-	   "$(kernel_features network_v8)" == "true" ]; then
+if [ "$(kernel_features network)" = "true" -o \
+	   "$(kernel_features network_v8)" = "true" ]; then
 	# PASS TEST
 	# Allowing network streams and file access should pass regardless
 	genprofile "network:inet stream" $file3:$fileperm
