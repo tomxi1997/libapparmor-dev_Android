@@ -59,8 +59,10 @@ static void init_filters(filters_t *filters, struct filter_set *base) {
 
 static void free_filters(filters_t *filters)
 {
-	regfree(filters->mode);
-	regfree(filters->profile);
+	if (filters->mode)
+		regfree(filters->mode);
+	if (filters->profile)
+		regfree(filters->profile);
 }
 
 struct profile {
@@ -919,7 +921,8 @@ int main(int argc, char **argv)
 	if (regcomp(filters.profile, opt_profiles, REG_NOSUB) != 0) {
 		dfprintf(stderr, "Error: failed to compile profiles filter '%s'\n",
 			 opt_profiles);
-		return AA_EXIT_INTERNAL_ERROR;
+		ret = AA_EXIT_INTERNAL_ERROR;
+		goto out;
 	}
 
 	/* check apparmor is available and we have permissions */
