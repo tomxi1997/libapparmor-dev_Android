@@ -6,6 +6,7 @@
   # configuration queries
   capability ipc_lock,
 
+  /etc/nvidia/nvidia-application-profiles* r,
   /usr/share/nvidia/nvidia-application-profiles* r,
 
   # libvdpau config file for nvidia workarounds
@@ -29,9 +30,11 @@
   owner @{HOME}/.nv/ w,
   owner @{HOME}/.nv/GLCache/ rw,
   owner @{HOME}/.nv/GLCache/** rwk,
+  owner @{HOME}/.nv/nvidia-application-profiles* r,
   owner @{PROC}/@{pid}/comm r, # somehwere in libnvidia-glcore.so
 
   unix (send, receive) type=dgram peer=(addr="@nvidia[0-9a-f]*"),
+  unix (send, receive) type=dgram peer=(addr="@var/run/nvidia-xdriver-*"),
 
   # Include additions to the abstraction
   include if exists <abstractions/nvidia.d>

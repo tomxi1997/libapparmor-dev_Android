@@ -24,6 +24,7 @@
 
   /etc/gtk-{3,4}.0/ r,
   /etc/gtk-{3,4}.0/*.conf r,
+  /etc/gtk-{3,4}.0/settings.ini r,
 
   /etc/gtk/gtkrc r,
 
@@ -40,6 +41,8 @@
   owner @{HOME}/.config/gtk-{3,4}.0/settings.ini r,
   owner @{HOME}/.config/gtk-{3,4}.0/bookmarks r,
   owner @{HOME}/.config/gtk-{3,4}.0/gtk.css r,
+  owner @{HOME}/.config/gtk-{3,4}.0/colors.css r,
+  owner @{HOME}/.config/gtk-{3,4}.0/servers r,
 
   # for gtk file dialog
   owner @{HOME}/.config/gtk-2.0/ rw,
