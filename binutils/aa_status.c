@@ -723,11 +723,11 @@ static int usage_filters(void)
 	 "those entries that will match the filter. Filters use posix\n"
 	 "regular expression syntax. The possible values for exes that\n"
 	 "support filters are below\n\n"
-	 "  --mode:      regular expression to match the profile mode"
-	 "               modes: enforce, complain, kill, unconfined, mixed\n"
-	 "  --profiles:  regular expression to match displayed profile names\n"
-	 "  --pid:       regular expression to match displayed processes pids\n"
-	 "  --exe:	 regular expression to match executable\n"
+	 "  --filter.mode: regular expression to match the profile mode"
+	 "                 modes: enforce, complain, kill, unconfined, mixed\n"
+	 "  --filter.profiles: regular expression to match displayed profile names\n"
+	 "  --filter.pid:  regular expression to match displayed processes pids\n"
+	 "  --filter.exe:  regular expression to match executable\n"
 	);
 	for (i = 0; i < ARRAY_SIZE(process_statuses); i++) {
 		printf("%s%s", i ? ", " : "", process_statuses[i]);
@@ -754,11 +754,10 @@ static int print_usage(const char *command, bool error)
 	 "  --enabled       returns error code if AppArmor not enabled\n"
 	 "  --show=X        What information to show. {profiles,processes,all}\n"
 	 "  --count         print the number of entries. Implies --quiet\n"
-	 "  --mode=filter   regular expression to match profile modes. see filters\n"
-	 "                  or a regular expression\n"
-	 "  --profiles=filter which profiles to display. see filters\n"
-	 "  --pid=filter      which processes to display. see filters\n"
-	 "  --exe=filter      which processes to display. see filters\n"
+	 "  --filter.mode=filter      see filters\n"
+	 "  --filter.profiles=filter  see filters\n"
+	 "  --filter.pid=filter       see filters\n"
+	 "  --filter.exe=filter       see filters\n"
 	 "  --json          displays multiple data points in machine-readable JSON format\n"
 	 "  --pretty-json   same data as --json, formatted for human consumption as well\n"
 	 "  --verbose       (default) displays data points about loaded policy set\n"
@@ -809,10 +808,10 @@ static int parse_args(int argc, char **argv)
 		{"help", 2, 0, ARG_HELP},
 		{"count", no_argument, 0, ARG_COUNT},
 		{"show", 1, 0, ARG_SHOW},
-		{"profiles", 1, 0, ARG_PROFILES},
-		{"pid", 1, 0, ARG_PID},
-		{"exe", 1, 0, ARG_EXE},
-		{"mode", 1, 0, ARG_MODE},
+		{"filter.profiles", 1, 0, ARG_PROFILES},
+		{"filter.pid", 1, 0, ARG_PID},
+		{"filter.exe", 1, 0, ARG_EXE},
+		{"filter.mode", 1, 0, ARG_MODE},
 		{NULL, 0, 0, 0},
 	};
 
