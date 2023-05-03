@@ -351,6 +351,9 @@ userns: userns.c userns.h
 userns_setns: userns_setns.c userns.h
 	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LDLIBS}
 
+mount: mount.c
+	${CC} ${CFLAGS} -std=gnu99 ${LDFLAGS} $^ -o $@ ${LDLIBS}
+
 build-dep:
 	@if [ `whoami` = "root" ] ;\
 	then \
