@@ -68,8 +68,8 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   # Networking
   network inet stream,
   network inet6 stream,
-  @{PROC}/[0-9]*/net/if_inet6 r,
-  @{PROC}/[0-9]*/net/ipv6_route r,
+  @{PROC}/@{pid}/net/if_inet6 r,
+  @{PROC}/@{pid}/net/ipv6_route r,
 
   # Should maybe be in abstractions
   /etc/mime.types r,
@@ -81,19 +81,21 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /tmp/.X[0-9]*-lock r,
 
   @{PROC}/self/exe ixr,
-  @{PROC}/[0-9]*/fd/ r,
+  @{PROC}/@{pid}/fd/ r,
+  @{PROC}/filesystems r,
   @{PROC}/vmstat r,
   @{PROC}/ r,
-  @{PROC}/[0-9]*/task/[0-9]*/stat r,
-  owner @{PROC}/[0-9]*/cmdline r,
-  owner @{PROC}/[0-9]*/io r,
-  owner @{PROC}/[0-9]*/setgroups w,
-  owner @{PROC}/[0-9]*/{uid,gid}_map w,
-  @{PROC}/[0-9]*/smaps r,
-  @{PROC}/[0-9]*/stat r,
-  @{PROC}/[0-9]*/statm r,
-  owner @{PROC}/[0-9]*/task/[0-9]*/status r,
-  deny @{PROC}/[0-9]*/oom_{,score_}adj w,
+  @{PROC}/@{pid}/task/@{tid}/stat r,
+  owner @{PROC}/@{pid}/cmdline r,
+  owner @{PROC}/@{pid}/io r,
+  owner @{PROC}/@{pid}/setgroups w,
+  owner @{PROC}/@{pid}/{uid,gid}_map w,
+  @{PROC}/@{pid}/smaps r,
+  @{PROC}/@{pid}/stat r,
+  @{PROC}/@{pid}/statm r,
+  @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/task/@{tid}/status r,
+  deny @{PROC}/@{pid}/oom_{,score_}adj w,
   @{PROC}/sys/kernel/yama/ptrace_scope r,
   @{PROC}/sys/net/ipv4/tcp_fastopen r,
 
@@ -122,7 +124,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   deny /run/udev/data/** r,
 
   # Needed for the crash reporter
-  owner @{PROC}/[0-9]*/auxv r,
+  owner @{PROC}/@{pid}/auxv r,
 
   # chromium mmaps all kinds of things for speed.
   /etc/passwd m,
@@ -147,8 +149,8 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
 
   # Allow ptracing ourselves and our helpers
   ptrace (trace) peer=@{profile_name},
-  ptrace (trace) peer=@{profile_name}//lsb_release,
   ptrace (trace) peer=@{profile_name}//xdgsettings,
+  ptrace (trace) peer=lsb_release,
 
   # Make browsing directories work
   / r,
@@ -205,7 +207,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /{usr/,}bin/ps Uxr,
   /usr/lib/@{chromium}/xdg-settings Cxr -> xdgsettings,
   /usr/bin/xdg-settings Cxr -> xdgsettings,
-  /usr/bin/lsb_release Cxr -> lsb_release,
+  /usr/bin/lsb_release Pxr -> lsb_release,
 
   # GSettings
   owner /{,var/}run/user/*/dconf/     rw,
@@ -254,24 +256,6 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
     owner @{HOME}/.local/share/applications/mimeapps.list* rw,
   }
 
-  profile lsb_release {
-    include <abstractions/base>
-    include <abstractions/python>
-    /usr/bin/lsb_release r,
-    /{usr/,}bin/dash ixr,
-    /usr/bin/dpkg-query ixr,
-    /usr/include/python2.[4567]/pyconfig.h r,
-    /etc/lsb-release r,
-    /etc/debian_version r,
-    /etc/dpkg/origins/** r,
-    /usr/share/distro-info/** r,
-    /var/lib/dpkg/** r,
-
-    /usr/local/lib/python3.{1,}[0-9]/dist-packages/ r,
-    /usr/bin/ r,
-    /usr/bin/python3.{1,}[0-9] mr,
-  }
-
   profile sandbox {
     # Be fanatical since it is setuid root and don't use an abstraction
     /{usr/,}lib{,32,64}/libgcc_s.so* mr,
@@ -280,10 +264,16 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
     /{usr/,}lib/@{multiarch}/libm-*.so* mr,
     /{usr/,}lib{,32,64}/libpthread-*.so* mr,
     /{usr/,}lib/@{multiarch}/libpthread-*.so* mr,
+    /{usr/,}lib{,32,64}/libatomic.so* mr,
+    /{usr/,}lib/@{multiarch}/libatomic.so* mr,
     /{usr/,}lib{,32,64}/libc-*.so* mr,
     /{usr/,}lib/@{multiarch}/libc-*.so* mr,
+    /{usr/,}lib{,32,64}/libdl-*.so* mr,
+    /{usr/,}lib/@{multiarch}/libdl-*.so* mr,
     /{usr/,}lib{,32,64}/libld-*.so* mr,
     /{usr/,}lib/@{multiarch}/libld-*.so* mr,
+    /{usr/,}lib{,32,64}/librt-*.so* mr,
+    /{usr/,}lib/@{multiarch}/librt-*.so* mr,
     /{usr/,}lib{,32,64}/ld-*.so* mr,
     /{usr/,}lib{,32,64}/@{multiarch}/ld-*.so* mr,
     /{usr/,}lib{,32,64}/tls/*/{cmov,nosegneg}/libm-*.so* mr,
@@ -320,12 +310,12 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
     unix (getattr, getopt, setopt, shutdown) addr=none,
 
     @{PROC}/ r,
-    @{PROC}/[0-9]*/ r,
-    @{PROC}/[0-9]*/fd/ r,
-    deny @{PROC}/[0-9]*/oom_adj w,
-    deny @{PROC}/[0-9]*/oom_score_adj w,
-    @{PROC}/[0-9]*/status r,
-    @{PROC}/[0-9]*/task/[0-9]*/stat r,
+    @{PROC}/@{pid}/ r,
+    @{PROC}/@{pid}/fd/ r,
+    deny @{PROC}/@{pid}/oom_adj w,
+    deny @{PROC}/@{pid}/oom_score_adj w,
+    @{PROC}/@{pid}/status r,
+    @{PROC}/@{pid}/task/@{tid}/stat r,
 
     /usr/bin/@{chromium} r,
     /usr/lib/@{chromium}/@{chromium} Px,
@@ -338,5 +328,4 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/chromium_browser>
-
 }
