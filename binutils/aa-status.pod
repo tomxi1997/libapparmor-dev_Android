@@ -72,11 +72,18 @@ displays the number of loaded non-enforcing AppArmor policies.
 
 =item --kill
 
-displays the number of loaded enforcing AppArmor policies that will kill tasks on policy violations.
+displays the number of loaded enforcing AppArmor policies that will
+kill tasks on policy violations.
+
+=item --prompt
+
+displays the number of loaded enforcing AppArmor policies, with
+fallback to userspace mediation.
 
 =item --special-unconfined
 
-displays the number of loaded non-enforcing AppArmor policies that are in the special unconfined mode.
+displays the number of loaded non-enforcing AppArmor policies that are
+in the special unconfined mode.
 
 =item --process-mixed
 displays the number of processes confined by profile stacks with
@@ -96,6 +103,40 @@ set in a JSON format, fit for machine consumption.
 
 same as --json, formatted to be readable by humans as well
 as by machines.
+
+=item --show
+
+what data sets to show information about. Currently I<processes>,
+I<profiles>, I<all> for both processes and profiles. The default is
+I<all>.
+
+=item --count
+
+display only counts for selected information.
+
+=item --filter.mode=filter
+
+Allows specifying a posix regular expression filter that will be
+applied against the displayed processess and profiles apparmor profile
+mode, reducing the output.
+
+=item --filter.profiles=filter
+
+Allows specifying a posix regular expression filter that will be
+applied against the displayed processess and profiles confining
+profile, reducing the output.
+
+=item --filter.pid=filter
+
+Allows specifying a posix regular expression filter that will be
+applied against the displayed processes, so that only processes pids
+matching the expression will be displayed.
+
+=item --filter.exe=filter
+
+Allows specifying a posix regular expression filter that will be
+applied against the displayed processes, so that only processes
+executable name matching the expression will be displayed.
 
 =item --help
 
@@ -124,7 +165,8 @@ if apparmor is enabled but no policy is loaded.
 
 =item B<3>
 
-if the apparmor control files aren't available under /sys/kernel/security/.
+if the apparmor control files aren't available under
+/sys/kernel/security/.
 
 =item B<4>
 
@@ -140,8 +182,9 @@ if an internal error occurred.
 =head1 BUGS
 
 B<aa-status> must be run as root to read the state of the loaded
-policy from the apparmor module. It uses the /proc filesystem to determine
-which processes are confined and so is susceptible to race conditions.
+policy from the apparmor module. It uses the /proc filesystem to
+determine which processes are confined and so is susceptible to race
+conditions.
 
 If you find any additional bugs, please report them at
 L<https://gitlab.com/apparmor/apparmor/-/issues>.
