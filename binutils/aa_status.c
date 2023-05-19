@@ -620,6 +620,7 @@ static int detailed_processes(FILE *outf, filters_t *filters, bool json,
 			      struct process *processes, size_t nprocesses) {
 	int ret;
 	size_t i;
+	int need_finish = 0;
 
 	if (json) {
 		fprintf(outf, "\"processes\": {");
@@ -677,19 +678,22 @@ static int detailed_processes(FILE *outf, filters_t *filters, bool json,
 				} else {
 					fprintf(outf, "%s\"%s\": [{\"profile\": \"%s\", \"pid\": \"%s\", \"status\": \"%s\"}",
 					       // first element will be a unique executable
-					       j == 0 ? "" : "], ",
+					       j == 0 && !need_finish ? "" : "], ",
 					       filtered[j].exe, filtered[j].profile, filtered[j].pid, filtered[j].mode);
 				}
 
+				need_finish = 1;
 			}
-			if (j > 0) {
-				fprintf(outf, "]");
-			}
+
 		}
 		free_processes(filtered, nfiltered);
 	}
 	if (json) {
-		fprintf(outf, "}}\n");
+		if (need_finish > 0) {
+			fprintf(outf, "]");
+		}
+
+		fprintf(outf, "}\n");
 	}
 
 exit:
