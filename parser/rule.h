@@ -18,6 +18,7 @@
 #ifndef __AA_RULE_H
 #define __AA_RULE_H
 
+#include <cstdint>
 #include <list>
 #include <ostream>
 
