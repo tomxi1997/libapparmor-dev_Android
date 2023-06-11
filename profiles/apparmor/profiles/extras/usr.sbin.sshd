@@ -62,7 +62,7 @@ include <tunables/global>
   /usr/sbin/sshd mrix,
   /usr/share/ssh/blacklist.* r,
   /var/log/btmp rw,
-  owner /{,var/}run/sshd{,.init}.pid wl,
+  owner @{run}/sshd{,.init}.pid wl,
   @{HOME}/.ssh/authorized_keys{,2} r,
 
   @{PROC}/cmdline r,
@@ -75,8 +75,10 @@ include <tunables/global>
   owner @{PROC}/@{pid}/oom_adj rw,
   owner @{PROC}/@{pid}/oom_score_adj rw,
 
-  /sys/fs/cgroup/*/user/*/[0-9]*/ rw,
-  /sys/fs/cgroup/systemd/user.slice/user-[0-9]*.slice/session-c[0-9]*.scope/ rw,
+  @{run}/systemd/notify w,
+
+  @{sys}/fs/cgroup/*/user/*/[0-9]*/ rw,
+  @{sys}/fs/cgroup/systemd/user.slice/user-[0-9]*.slice/session-c[0-9]*.scope/ rw,
 
   /{usr/,}bin/ash      Uxr,
   /{usr/,}bin/bash     Uxr,
@@ -112,7 +114,7 @@ include <tunables/global>
 
     /usr/bin/passwd r,
     /dev/pts/[0-9]* rw,
-    /{,var/}run/utmp rwk,
+    @{run}/utmp rwk,
 
     owner /etc/.pwd.lock rwk,
     owner /etc/nshadow rw,
@@ -127,9 +129,13 @@ include <tunables/global>
     owner @{HOME}/.cache/keyring-*/control rw,
   }
 
-  /etc.legal r,
+  /etc/legal r,
   /etc/motd r,
-  /{,var/}run/motd{,.dynamic}{,.new} rw,
+  @{run}/motd{,.dynamic}{,.new} rw,
+  @{run}/motd.d/ r,
+  @{run}/motd.d/* r,
+  owner @{HOME}/.cache/ w,
+  owner @{HOME}/.cache/motd.legal-displayed w,
   /tmp/krb5cc* wk,
   /tmp/ssh-[a-zA-Z0-9]*/ w,
   /tmp/ssh-[a-zA-Z0-9]*/agent.[0-9]* wl,
