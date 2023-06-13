@@ -150,7 +150,7 @@ coverity:
     - .ubuntu-before_script
   only:
     refs:
-      - coverity
+      - master
   script:
       - apt-get install --no-install-recommends -y curl git texlive-latex-recommended
       - *install-c-build-deps
