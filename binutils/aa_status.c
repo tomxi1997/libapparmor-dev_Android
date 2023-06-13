@@ -618,7 +618,7 @@ static int detailed_profiles(FILE *outf, filters_t *filters, bool json,
  */
 static int detailed_processes(FILE *outf, filters_t *filters, bool json,
 			      struct process *processes, size_t nprocesses) {
-	int ret;
+	int ret = 0;
 	size_t i;
 	int need_finish = 0;
 
