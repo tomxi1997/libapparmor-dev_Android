@@ -28,13 +28,22 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
   include <abstractions/dbus-strict>
   include <abstractions/dbus-session-strict>
   include <abstractions/dconf>
+  include <abstractions/fonts>
   include <abstractions/gnome>
   include <abstractions/ibus>
+  include <abstractions/mesa>
   include <abstractions/nameservice>
   include <abstractions/openssl>
   include <abstractions/p11-kit>
   include <abstractions/ubuntu-unity7-base>
   include <abstractions/ubuntu-unity7-launcher>
+  include <abstractions/vulkan>
+
+  # needed for sandbox user namespaces (see about:support#sandbox)
+  capability sys_admin,
+
+  capability sys_chroot,
+  capability sys_ptrace,
 
   include <abstractions/dbus-accessibility-strict>
   dbus (send)
@@ -61,11 +70,24 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
   dbus (receive)
        bus=system
        path=/org/freedesktop/NetworkManager,
+  dbus (send)
+       bus=system
+       path=/org/freedesktop/hostname1
+       interface=org.freedesktop.DBus.Properties
+       member=GetAll
+       peer=(label=unconfined),
 
   # used by third_party/rust/audio_thread_priority
   dbus (send)
        bus=system
        path=/org/freedesktop/RealtimeKit1,
+
+  dbus (receive)
+       bus=system
+       path=/org/freedesktop/login1
+       interface=org.freedesktop.login1.Manager
+       member={SessionNew,SessionRemoved,UserNew}
+       peer=(label=unconfined),
 
   # should maybe be in abstractions
   /etc/ r,
@@ -74,21 +96,25 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
   /etc/xdg/*buntu/applications/defaults.list    r, # for all derivatives
   /etc/xfce4/defaults.list r,
   /usr/share/xubuntu/applications/defaults.list r,
+  #owner @{HOME}/.config/mimeapps.list{,.*} rw,
   owner @{HOME}/.local/share/applications/defaults.list r,
   owner @{HOME}/.local/share/applications/mimeapps.list r,
   owner @{HOME}/.local/share/applications/mimeinfo.cache r,
+  #owner @{HOME}/.local/share/mime/ w,
+  #owner @{HOME}/.local/share/mime/packages/ w,
+  #owner @{HOME}/.local/share/mime/packages/user-extension-{htm,html,shtml,xht,xhtml}.xml{,.*} w,
   /var/lib/snapd/desktop/applications/mimeinfo.cache r,
   /var/lib/snapd/desktop/applications/*.desktop r,
   owner /tmp/** m,
   owner /var/tmp/** m,
-  owner /{,var/}run/shm/shmfd-* rw,
-  owner /{dev,run}/shm/org.{chromium,mozilla}.* rwk,
-  owner /{dev,run}/shm/wayland.mozilla.ipc.[0-9]* rw,
+  owner /{dev,run,var/run}/shm/shmfd-* rw,
+  owner /{dev,run,var/run}/shm/org.{chromium,mozilla}.* rwk,
+  owner /{dev,run,var/run}/shm/wayland.mozilla.ipc.[0-9]* rw,
   /tmp/.X[0-9]*-lock r,
   /etc/udev/udev.conf r,
   # Doesn't seem to be required, but noisy. Maybe allow 'r' for 'b*' if needed.
   # Possibly move to an abstraction if anything else needs it.
-  deny /run/udev/data/** r,
+  deny @{run}/udev/data/** r,
   # let the shell know we launched something
   dbus (send)
      bus=session
@@ -133,14 +159,19 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
   @{PROC}/@{pid}/cmdline r,
   @{PROC}/@{pid}/mountinfo r,
   @{PROC}/@{pid}/stat r,
+  owner @{PROC}/@{pid}/task/@{tid}/comm r,
   owner @{PROC}/@{pid}/task/@{tid}/stat r,
   @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/cgroup r,
+  owner @{PROC}/@{pid}/oom_score_adj w,
+  owner @{PROC}/@{pid}/setgroups w,
+  owner @{PROC}/@{pid}/{uid,gid}_map w,
   @{PROC}/filesystems r,
   @{PROC}/sys/vm/overcommit_memory r,
   # prevent crash LP: #1931602
   /sys/devices/pci[0-9]*/**/{uevent,resource,irq,class} r,
   /sys/devices/platform/**/uevent r,
-  /sys/devices/pci*/**/{busnum,idVendor,idProduct} r,
+  /sys/devices/pci*/**/{busnum,config,idVendor,idProduct,revision} r,
   /sys/devices/pci*/**/{,subsystem_}device r,
   /sys/devices/pci*/**/{,subsystem_}vendor r,
   /sys/devices/system/node/node[0-9]*/meminfo r,
@@ -192,7 +223,22 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
   owner @{HOME}/.cache/mozilla/@{MOZ_APP_NAME}/**/*.sqlite k,
   owner @{HOME}/.config/gtk-3.0/bookmarks r,
   owner @{HOME}/.config/dconf/user w,
-  owner /{,var/}run/user/*/dconf/user w,
+  owner @{run}/user/[0-9]*/dconf/ w,
+  owner @{run}/user/[0-9]*/dconf/user w,
+  owner @{run}/user/[0-9]*/gvfsd/socket-* rw,
+  owner @{run}/user/[0-9]*/speech-dispatcher/speechd.sock rw,
+  dbus (receive)
+       bus=session
+       path=/ca/desrt/dconf/Writer/user
+       interface=ca.desrt.dconf.Writer
+       member=Notify
+       peer=(label=unconfined),
+  dbus (send)
+       bus=session
+       path=/ca/desrt/dconf/Writer/user
+       interface=ca.desrt.dconf.Writer
+       member=Change
+       peer=(name=ca.desrt.dconf),
   dbus (send)
        bus=session
        path=/org/gnome/GConf/Server
@@ -205,9 +251,39 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
        peer=(label=unconfined),
   dbus (send)
        bus=session
+       path=/org/gtk/Private/RemoteVolumeMonitor
+       interface=org.gtk.Private.RemoteVolumeMonitor
+       member={IsSupported,List}
+       peer=(label=unconfined),
+  dbus (send)
+       bus=session
+       path=/org/gtk/vfs/Daemon
+       interface=org.gtk.vfs.Daemon
+       member={GetConnection,ListMonitorImplementations}
+       peer=(label=unconfined),
+  dbus (send)
+       bus=session
+       path=/org/gtk/vfs/client/enumerator/[0-9]*
+       interface=org.gtk.vfs.Enumerator
+       member={Done,GotInfo}
+       peer=(label=unconfined),
+  dbus (send)
+       bus=session
+       path=/org/gtk/vfs/metadata
+       interface=org.gtk.vfs.Metadata
+       member=Set
+       peer=(label=unconfined),
+  dbus (send)
+       bus=session
+       path=/org/gtk/vfs/mount/[0-9]*
+       interface=org.gtk.vfs.Mount
+       member={CreateFileMonitor,Enumerate,QueryInfo}
+       peer=(label=unconfined),
+  dbus (send)
+       bus=session
        path=/org/gtk/vfs/mounttracker
        interface=org.gtk.vfs.MountTracker
-       member=ListMountableInfo
+       member={ListMountableInfo,ListMounts2,LookupMount,Mounted}
        peer=(label=unconfined),
 
   # Allow access to xdg-desktop-portal and xdg-document-portal (LP: #1974449)
@@ -228,7 +304,7 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
        bus=session
        path=/org/freedesktop/DBus
        interface=org.freedesktop.DBus
-       member=RequestName
+       member={ReleaseName,RequestName}
        peer=(name=org.freedesktop.DBus),
   dbus (bind)
        bus=session
@@ -269,6 +345,13 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
        interface=org.freedesktop.ScreenSaver
        member={Inhibit,UnInhibit,SimulateUserActivity}
        peer=(label=unconfined),
+  # power-management-spec is obsolete
+  deny dbus (send)
+       bus=session
+       path=/org/freedesktop/PowerManagement/Inhibit
+       interface=org.freedesktop.PowerManagement.Inhibit
+       member={Inhibit,UnInhibit}
+       peer=(label=unconfined),
 
   # gnome, kde and cinnamon screensaver
   dbus (send)
@@ -278,13 +361,42 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
        member=SimulateUserActivity
        peer=(label=unconfined),
 
+  # MPRIS D-Bus Interface Specification
+  dbus (bind)
+       bus=session
+       name=org.mpris.MediaPlayer2.firefox.instance[0-9]*,
+  dbus (receive)
+       bus=session
+       path=/org/mpris/MediaPlayer2
+       interface=org.freedesktop.DBus.Properties
+       member={GetAll,Set}
+       peer=(label=unconfined),
+  dbus (send)
+       bus=session
+       path=/org/mpris/MediaPlayer2
+       interface=org.freedesktop.DBus.Properties
+       member=PropertiesChanged
+       peer=(label=unconfined),
+  dbus (receive)
+       bus=session
+       path=/org/mpris/MediaPlayer2
+       interface=org.mpris.MediaPlayer2.Player
+       member={Pause,Play,PlayPause,Stop}
+       peer=(label=unconfined),
+
   # UPower
   dbus (send)
        bus=system
        path=/org/freedesktop/UPower
        interface=org.freedesktop.UPower
        member=EnumerateDevices
-       peer=(label=unconfined),
+       peer=(name=org.freedesktop.UPower),
+  dbus (send)
+       bus=system
+       path=/org/freedesktop/UPower/devices/*
+       interface=org.freedesktop.DBus.Properties
+       member=GetAll
+       peer=(name=org.freedesktop.UPower),
 
   # File browser
   dbus (send)
@@ -299,15 +411,15 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
   # Allow 'x' for downloaded extensions, but inherit policy for safety
   owner @{HOME}/.mozilla/**/extensions/** mixr,
 
+  # Widevine CDM plugin (LP: #1777070)
+  ptrace (trace) peer=@{profile_name},
+  owner @{HOME}/.mozilla/firefox/*/gmp-widevinecdm/*/libwidevinecdm.so m,
+
   deny @{MOZ_LIBDIR}/update.test w,
   deny /usr/lib/mozilla/extensions/**/ w,
   deny /usr/lib/xulrunner-addons/extensions/**/ w,
   deny /usr/share/mozilla/extensions/**/ w,
   deny /usr/share/mozilla/ w,
-
-  # needed by widevine
-  ptrace (trace) peer=@{profile_name},
-  @{HOME}/.mozilla/firefox/*/gmp-widevinecdm/*/lib*so m,
 
   # Miscellaneous (to be abstracted)
   # Ideally these would use a child profile. They are all ELF executables
@@ -318,6 +430,10 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
   /bin/uname Uxr,
 
   /usr/bin/lsb_release Pxr -> lsb_release,
+
+  # These should be started outside of Firefox
+  deny /usr/bin/dbus-launch x,
+  deny /usr/bin/speech-dispatcher x,
 
   # Addons
   include if exists <abstractions/ubuntu-browsers.d/firefox>
