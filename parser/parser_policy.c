@@ -33,6 +33,7 @@
 #include "parser.h"
 #include "profile.h"
 #include "parser_yacc.h"
+#include "network.h"
 
 /* #define DEBUG */
 #ifdef DEBUG

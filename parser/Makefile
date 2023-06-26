@@ -99,7 +99,7 @@ EXTRA_CFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
 SRCS = parser_common.c parser_include.c parser_interface.c parser_lex.c \
        parser_main.c parser_misc.c parser_merge.c parser_symtab.c \
        parser_yacc.c parser_regex.c parser_variable.c parser_policy.c \
-       parser_alias.c common_optarg.c lib.c network.c \
+       parser_alias.c common_optarg.c lib.c network.cc \
        mount.cc dbus.cc profile.cc rule.cc signal.cc ptrace.cc \
        af_rule.cc af_unix.cc policy_cache.c default_features.c userns.cc \
        mqueue.cc io_uring.cc
@@ -295,7 +295,7 @@ signal.o: signal.cc $(HDRS)
 ptrace.o: ptrace.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
-network.o: network.c $(HDRS)
+network.o: network.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
 default_features.o: default_features.c $(HDRS)
