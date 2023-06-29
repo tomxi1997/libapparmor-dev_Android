@@ -1358,3 +1358,121 @@ int aa_query_link_path(const char *label, const char *target, const char *link,
 				      strlen(target), link, strlen(link),
 				      allowed, audited);
 }
+
+static int alloc_substring(char ***v, char *s, char *p,
+			   size_t max_size, size_t n, bool immutable)
+{
+	if (max_size) {
+		if (n >= max_size) {
+			errno = E2BIG;
+			return -1;
+		}
+	} else {
+		char ** tmpv;
+		tmpv = (char **) realloc(*v, (n + 1) * sizeof(char *));
+		if (tmpv == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+		*v = tmpv;
+	}
+	if (immutable) {
+		char *tmp;
+		tmp = (char *) malloc(p - s + 1);
+		if (tmp == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+		memcpy(tmp, s, p - s);
+		tmp[p - s] = 0;
+		(*v)[n] = tmp;
+	} else {
+		(*v)[n] = s;
+		if (*p)
+			*p = 0;
+	}
+
+	return 0;
+}
+
+/**
+ * aa_split_overlay_str - split a string into potentially multiple strings
+ * @str: the string to split
+ * @vec: vector to put string pointers into, IF null will be allocated
+ * @max_size: maximum number of ents to put in @vec, IF 0 dynamic
+ * @immutable: true if @str should not be modified.
+ *
+ * Returns: the number of entries in vec on success. -1 on error and errno set.
+ *
+ * Split a comma or colon separated string into substrings.
+ *
+ * IF @vec == NULL
+ *    the vec will be dynamically allocated
+ * ELSE
+ *    passed in @vec will be used, and NOT updated/extended
+ *
+ * IF @max_size == 0 && @vec == NULL
+ *    @vec will be dynamically resized
+ * ELSE
+ *    @vec will be fixed at @max_size
+ *
+ * IF @immutable is true
+ *    the substrings placed in @vec will be allocated copies.
+ * ELSE
+ *    @str will be updated in place and @vec[x] will point into @str
+ */
+int aa_split_overlay_str(char *str, char ***vec, size_t max_size, bool immutable)
+{
+	char *s = str;
+	char *p = str;
+	int rc, n = 0;
+	char **v = *vec;
+
+	if (!*vec) {
+		if (max_size) {
+			v = (char **) malloc(max_size * sizeof(char *));
+			if (v == NULL) {
+				rc = ENOMEM;
+				goto err;
+			}
+		}
+	}
+
+	while (*p) {
+		if (*p == '\\') {
+			if (*(p + 1) != 0)
+				p++;
+		} else if (*p == ',' || *p == ':') {
+			if (p != s) {
+				if (alloc_substring(&v, s, p, max_size, n, immutable) == -1) {
+					rc = errno;
+					goto err;
+				}
+				n++;
+			}
+			p++;
+			s = p;
+		} else
+			p++;
+	}
+	if (p != s) {
+		if (alloc_substring(&v, s, p, max_size, n, immutable) == -1) {
+			rc = errno;
+			goto err;
+		}
+		n++;
+	}
+
+	*vec = v;
+	return n;
+err:
+	if (immutable) {
+		for (int i = 0; i < n; i++) {
+			free(v[i]);
+		}
+	}
+	if (!*vec)
+		free(v);
+	errno = rc;
+	return -1;
+}
