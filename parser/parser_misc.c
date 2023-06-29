@@ -124,6 +124,9 @@ static struct keyword_table keyword_table[] = {
 	{"mqueue",		TOK_MQUEUE},
 	{"delete",		TOK_DELETE},
 	{"open",		TOK_OPEN},
+	{"io_uring",		TOK_IO_URING},
+	{"override_creds",	TOK_OVERRIDE_CREDS},
+	{"sqpoll",		TOK_SQPOLL},
 
 	/* terminate */
 	{NULL, 0}

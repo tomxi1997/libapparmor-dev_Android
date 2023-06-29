@@ -146,6 +146,9 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 %token TOK_USERNS
 %token TOK_MQUEUE
 %token TOK_DELETE
+%token TOK_IO_URING
+%token TOK_OVERRIDE_CREDS
+%token TOK_SQPOLL
 
  /* rlimits */
 %token TOK_RLIMIT
@@ -183,6 +186,7 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 	#include "af_unix.h"
 	#include "userns.h"
 	#include "mqueue.h"
+	#include "io_uring.h"
 }
 
 %union {
@@ -201,6 +205,7 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 	unix_rule *unix_entry;
 	userns_rule *userns_entry;
 	mqueue_rule *mqueue_entry;
+	io_uring_rule *io_uring_entry;
 	prefix_rule_t *prefix_entry;
 
 	flagvals flags;
@@ -293,6 +298,10 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 %type <fperms>  mqueue_perms
 %type <fperms>	opt_mqueue_perm
 %type <mqueue_entry>	mqueue_rule
+%type <fperms>	io_uring_perm
+%type <fperms>	io_uring_perms
+%type <fperms>	opt_io_uring_perm
+%type <io_uring_entry>	io_uring_rule
 %%
 
 
@@ -783,6 +792,7 @@ prefix_rule : mnt_rule { $$ = $1; }
 	| unix_rule { $$ = $1; }
 	| userns_rule { $$ = $1; }
 	| mqueue_rule { $$ = $1; }
+	| io_uring_rule { $$ = $1; }
 
 rules:  rules opt_prefix prefix_rule
 	{
@@ -1555,6 +1565,38 @@ mqueue_rule: TOK_MQUEUE opt_mqueue_perm opt_conds TOK_END_OF_RULE
 	| TOK_MQUEUE opt_mqueue_perm opt_conds TOK_ID TOK_END_OF_RULE
 	{
 		mqueue_rule *ent = new mqueue_rule($2, $3, $4);
+		$$ = ent;
+	}
+
+io_uring_perm: TOK_VALUE
+	{
+		if (strcmp($1, "override_creds") == 0)
+			$$ = AA_IO_URING_OVERRIDE_CREDS;
+		else if (strcmp($1, "sqpoll") == 0)
+			$$ = AA_IO_URING_SQPOLL;
+		else
+			$$ = 0;
+
+		if ($1)
+			free($1);
+	}
+	| TOK_OVERRIDE_CREDS { $$ = AA_IO_URING_OVERRIDE_CREDS; }
+	| TOK_SQPOLL { $$ = AA_IO_URING_SQPOLL; }
+
+io_uring_perms: { /* nothing */ $$ = 0; }
+	| io_uring_perms io_uring_perm { $$ = $1 | $2; }
+	| io_uring_perms TOK_COMMA io_uring_perm { $$ = $1 | $3; }
+
+opt_io_uring_perm: { /* nothing */ $$ = 0; }
+	| io_uring_perm { $$ = $1; }
+	| TOK_OPENPAREN io_uring_perms TOK_CLOSEPAREN { $$ = $2; }
+
+io_uring_rule: TOK_IO_URING opt_io_uring_perm opt_conds opt_cond_list TOK_END_OF_RULE
+	{
+		io_uring_rule *ent;
+		ent = new io_uring_rule($2, $3, $4.list);
+		if (!ent)
+			yyerror(_("Memory allocation error."));
 		$$ = ent;
 	}
 

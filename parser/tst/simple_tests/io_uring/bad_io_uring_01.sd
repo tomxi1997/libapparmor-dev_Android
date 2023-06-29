@@ -1,0 +1,8 @@
+#
+#=Description basic io_uring invalid access
+#=EXRESULT FAIL
+#
+/usr/bin/io_uring-test {
+  io_uring read,
+
+}

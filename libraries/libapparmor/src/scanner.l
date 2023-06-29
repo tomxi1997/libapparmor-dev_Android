@@ -172,6 +172,7 @@ key_fstype		"fstype"
 key_flags		"flags"
 key_srcname		"srcname"
 key_class		"class"
+key_tcontext		"tcontext"
 audit			"audit"
 
 /* network addrs */
@@ -327,6 +328,7 @@ yy_flex_debug = 0;
 {key_peer_profile}	{ BEGIN(safe_string); return(TOK_KEY_PEER_PROFILE); }
 {key_label}		{ BEGIN(safe_string); return(TOK_KEY_LABEL); }
 {key_peer_label}	{ BEGIN(safe_string); return(TOK_KEY_PEER_LABEL); }
+{key_tcontext}		{ BEGIN(safe_string); return(TOK_KEY_PEER_LABEL); }
 {key_family}		{ return(TOK_KEY_FAMILY); }
 {key_sock_type}		{ return(TOK_KEY_SOCK_TYPE); }
 {key_protocol}		{ return(TOK_KEY_PROTOCOL); }

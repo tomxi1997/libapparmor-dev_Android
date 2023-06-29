@@ -1,0 +1,13 @@
+START
+File: testcase_io_uring_01.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1680266735.359:69
+Operation: uring_sqpoll
+Mask: sqpoll
+Denied Mask: sqpoll
+Profile: /root/apparmor/tests/regression/apparmor/io_uring
+Command: io_uring
+PID: 1320
+Class: io_uring
+Epoch: 1680266735
+Audit subid: 69

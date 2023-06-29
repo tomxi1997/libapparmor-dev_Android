@@ -29,6 +29,7 @@ from apparmor.rule.rlimit import RlimitRule, RlimitRuleset
 from apparmor.rule.signal import SignalRule, SignalRuleset
 from apparmor.rule.userns import UserNamespaceRule, UserNamespaceRuleset
 from apparmor.rule.mqueue import MessageQueueRule, MessageQueueRuleset
+from apparmor.rule.io_uring import IOUringRule, IOUringRuleset
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -46,6 +47,7 @@ ruletypes = {
     'signal':         {'rule': SignalRule,        'ruleset': SignalRuleset},
     'userns':         {'rule': UserNamespaceRule, 'ruleset': UserNamespaceRuleset},
     'mqueue':         {'rule': MessageQueueRule,  'ruleset': MessageQueueRuleset},
+    'io_uring':       {'rule': IOUringRule,       'ruleset': IOUringRuleset},
 }
 
 
@@ -198,6 +200,7 @@ class ProfileStorage:
             'file',
             'change_profile',
             'userns',
+            'io_uring',
         ]
 
         data = []

@@ -443,6 +443,22 @@ sub gen_mqueue($@) {
   }
 }
 
+sub gen_io_uring($@) {
+  my ($rule, $qualifier) = @_;
+  my @rules = split (/:/, $rule);
+  if (@rules == 2) {
+      if ($rules[1] =~ /^ALL$/) {
+	  push (@{$output_rules{$hat}}, "  ${qualifier}io_uring,\n");
+      } else {
+	  push (@{$output_rules{$hat}}, "  ${qualifier}io_uring $rules[1],\n");
+      }
+  } elsif (@rules == 3) {
+      push (@{$output_rules{$hat}}, "  ${qualifier}io_uring $rules[1] $rules[2],\n");
+  } else {
+      (!$nowarn) && print STDERR "Warning: invalid io_uring description '$rule', ignored\n";
+  }
+}
+
 sub emit_flags($) {
   my $hat = shift;
 
@@ -514,6 +530,8 @@ sub gen_from_args() {
       gen_path($rule);
     } elsif ($rule =~ /^mqueue:/) {
       gen_mqueue($rule, $qualifier);
+    } elsif ($rule =~ /^io_uring:/) {
+      gen_io_uring($rule, $qualifier);
     } else {
       gen_file($rule, $qualifier);
     }

@@ -1,0 +1,8 @@
+#
+#=Description io_uring invalid label
+#=EXRESULT FAIL
+#
+/usr/bin/io_uring-test {
+  io_uring label=,
+
+}

@@ -1,0 +1,1 @@
+[ 4584.491076] audit: type=1400 audit(1680266735.147:63): apparmor="DENIED" operation="uring_override" class="io_uring" profile="/root/apparmor/tests/regression/apparmor/io_uring" pid=1193 comm="io_uring" requested="override_creds" denied="override_creds" tcontext="/root/apparmor/tests/regression/apparmor/io_uring"
