@@ -463,7 +463,7 @@ static char *procattr_path(pid_t pid, const char *attr)
 
 static int procattr_open(pid_t tid, const char *attr, int flags)
 {
-	char *tmp;
+	autofree char *tmp = NULL;
 	int fd;
 
 	tmp = procattr_path(tid, attr);
@@ -471,7 +471,7 @@ static int procattr_open(pid_t tid, const char *attr, int flags)
 		return -1;
 	}
 	fd = open(tmp, flags);
-	free(tmp);
+
 	/* Test is we can fallback to the old interface (this is ugly).
 	 * If we haven't tried the old interface already
 	 *    proc_attr_base == proc_attr_base_old - no fallback
@@ -483,11 +483,14 @@ static int procattr_open(pid_t tid, const char *attr, int flags)
 	 *       old interface where is_enabled() is only successful if
 	 *       the old interface is available to apparmor.
 	 */
-	if (fd == -1 && tmp != proc_attr_base_old && param_check_enabled() != 0) {
-		if (asprintf(&tmp, proc_attr_base_old, tid, attr) < 0)
-			return -1;
-		fd = open(tmp, flags);
+	if (fd == -1 && param_check_enabled() != 0 && strncmp(tmp, proc_attr_base_old, strlen(proc_attr_base_old)) != 0) {
 		free(tmp);
+		if (asprintf(&tmp, proc_attr_base_old, tid, attr) < 0) {
+			/* tmp is undefined, make sure it is null for autofree*/
+			tmp = NULL;
+			return -1;
+		}
+		fd = open(tmp, flags);
 	}
 
 	return fd;
