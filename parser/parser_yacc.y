@@ -631,8 +631,9 @@ flagval:	TOK_VALUE
 		enum profile_mode mode;
 
 		if (strcmp($1, "debug") == 0) {
-			yyerror(_("Profile flag 'debug' is no longer valid."));
-		} if ((mode = str_to_mode($1))) {
+			/* DEBUG2 is left for internal compiler use atm */
+			fv.flags |= FLAG_DEBUG1;
+		} else if ((mode = str_to_mode($1))) {
 			fv.mode = mode;
 		} else if (strcmp($1, "audit") == 0) {
 			fv.audit = 1;
