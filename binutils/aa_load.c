@@ -179,6 +179,7 @@ static int load_policy_dir(const char *dir_path)
 			}
 			if (asprintf(&file, "%s/%s", dir_path, dir->d_name) == -1) {
 				error("Failure allocating memory");
+				closedir(d);
 				return -1;
 			}
 			load_policy_file(file);
