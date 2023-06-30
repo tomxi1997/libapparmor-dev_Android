@@ -51,9 +51,6 @@ static void print_error(int error)
 	case -ESPIPE:
 		PERROR(_("Bad write position\n"));
 		break;
-	case -EPERM:
-		PERROR(_("Permission denied\n"));
-		break;
 	case -ENOMEM:
 		PERROR(_("Out of memory\n"));
 		break;
@@ -75,8 +72,13 @@ static void print_error(int error)
 	case -ENOENT:
 		PERROR(_("Profile doesn't exist\n"));
 		break;
+	case -EPERM:
+		PERROR(_("%s: Permission denied. You need policy admin privileges to manage profiles.\n\n"),
+		       progname);
+		break;
 	case -EACCES:
-		PERROR(_("Permission denied; attempted to load a profile while confined?\n"));
+		PERROR(_("%s: Access denied. You need policy admin privileges to manage profiles.\n\n"),
+		       progname);
 		break;
 	default:
 		PERROR(_("Unknown error (%d): %s\n"), -error, strerror(-error));

@@ -855,12 +855,6 @@ int have_enough_privilege(void)
 	uid = getuid();
 	euid = geteuid();
 
-	if (uid != 0 && euid != 0) {
-		PERROR(_("%s: Sorry. You need root privileges to run this program.\n\n"),
-		       progname);
-		return EPERM;
-	}
-
 	if (uid != 0 && euid == 0) {
 		PERROR(_("%s: Warning! You've set this program setuid root.\n"
 			 "Anybody who can run this program can update "
