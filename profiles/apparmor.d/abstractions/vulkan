@@ -1,7 +1,7 @@
 # vim:syntax=apparmor
 # Vulkan access requirements
 
-  abi <abi/3.0>,
+  abi <abi/4.0>,
 
   # System files
   /dev/dri/ r, # libvulkan_radeon.so, libvulkan_intel.so (Mesa)

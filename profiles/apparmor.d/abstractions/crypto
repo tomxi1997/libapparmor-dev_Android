@@ -11,7 +11,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/3.0>,
+  abi <abi/4.0>,
 
   @{etc_ro}/gcrypt/hwf.deny r,
   @{etc_ro}/gcrypt/random.conf r,

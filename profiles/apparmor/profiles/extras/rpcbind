@@ -1,7 +1,7 @@
 # vim:syntax=apparmor
 # Author: Daniel Richard G. <skunk@iSKUNK.ORG>
 
-abi <abi/3.0>,
+abi <abi/4.0>,
 
 include <tunables/global>
 
