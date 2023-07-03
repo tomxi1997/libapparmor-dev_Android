@@ -58,6 +58,12 @@ public:
 
 	bool is_type(int type) { return rule_type == type; }
 
+	// rule has been marked as should be skipped by regular processing
+	bool skip_processing()
+	{
+		return (flags == RULE_FLAG_DELETED ||
+			flags == RULE_FLAG_MERGED);
+	}
 	//virtual bool operator<(rule_t const &rhs)const = 0;
 	virtual std::ostream &dump(std::ostream &os) = 0;
 

@@ -318,7 +318,7 @@ void post_process_file_entries(Profile *prof)
 void post_process_rule_entries(Profile *prof)
 {
 	for (RuleList::iterator i = prof->rule_ents.begin(); i != prof->rule_ents.end(); i++) {
-		if ((*i)->flags & RULE_FLAG_DELETED)
+	  if ((*i)->skip_processing())
 			continue;
 		(*i)->post_parse_profile(*prof);
   }
