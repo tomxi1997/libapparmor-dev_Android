@@ -113,7 +113,7 @@ B<XATTR VALUE FILEGLOB> = I<FILEGLOB>
 
 B<PROFILE FLAG CONDS> =  [ 'flags=' ] '(' comma or white space separated list of I<PROFILE FLAGS> ')'
 
-B<PROFILE FLAGS> = I<PROFILE MODE> | I<AUDIT_MODE> | 'mediate_deleted' | 'attach_disconnected' | 'chroot_relative'
+B<PROFILE FLAGS> = I<PROFILE MODE> | I<AUDIT_MODE> | 'mediate_deleted' | 'attach_disconnected' | 'chroot_relative' | 'debug'
 
 B<PROFILE MODE> = 'enforce' | 'complain' | 'kill' | 'unconfined'
 
@@ -488,6 +488,12 @@ allowed. Its intent is a debug and policy development tool.
 
 =item B<chroot_relative> This forces file names to be relative to a
 chroot and behave as if the chroot is a mount namespace.
+
+=item B<debug> This flag allows turning on kernel debug messages on
+a per profile basis. It works in conjunction with other kernel debug
+flags to control what messages will be output. Its effect is kernel
+dependent, and it should never appear in policy except when trying
+to debug kernel or policy problems.
 
 =back
 

@@ -126,7 +126,6 @@ exception_not_raised = (
     'profile/flags/flags_bad15.sd',
     'profile/flags/flags_bad18.sd',
     'profile/flags/flags_bad19.sd',
-    'profile/flags/flags_bad20.sd',
     'profile/flags/flags_bad2.sd',
     'profile/flags/flags_bad3.sd',
     'profile/flags/flags_bad4.sd',
@@ -137,7 +136,6 @@ exception_not_raised = (
     'profile/flags/flags_bad_debug_1.sd',
     'profile/flags/flags_bad_debug_2.sd',
     'profile/flags/flags_bad_debug_3.sd',
-    'profile/flags/flags_bad_debug_4.sd',
     # detection of conflicting flags not supported
     'profile/flags/flags_bad30.sd',
     'profile/flags/flags_bad31.sd',
