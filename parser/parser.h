@@ -99,6 +99,8 @@ struct value_list {
 	struct value_list *next;
 };
 
+int cmp_value_list(value_list *lhs, value_list *rhs);
+
 struct cond_entry {
 	char *name;
 	int eq;			/* where equals was used in specifying list */
@@ -454,6 +456,8 @@ extern struct cod_entry *new_entry(char *id, perms_t perms, char *link_id);
 
 /* returns -1 if value != true or false, otherwise 0 == false, 1 == true */
 extern int str_to_boolean(const char* str);
+extern int null_strcmp(const char *s1, const char *s2);
+extern bool strcomp (const char *lhs, const char *rhs);
 extern struct cod_entry *copy_cod_entry(struct cod_entry *cod);
 extern void free_cod_entries(struct cod_entry *list);
 void debug_cod_entries(struct cod_entry *list);

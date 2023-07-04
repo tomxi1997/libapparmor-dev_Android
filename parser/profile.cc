@@ -121,38 +121,39 @@ Profile::~Profile()
 		free(net.quiet);
 }
 
-static bool comp (rule_t *lhs, rule_t *rhs) { return (*lhs < *rhs); }
+static bool comp (rule_t *lhs, rule_t *rhs)
+{
+	return (*lhs < *rhs);
+}
 
-bool Profile::merge_rules(void)
+// TODO: move to block rule
+// returns number of rules merged
+// returns negative number on error
+int Profile::merge_rules(void)
 {
 	int count = 0;
+	std::vector<rule_t *> table;
 
-	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); ) {
-		if ((*i)->is_mergeable())
-			count++;
+	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); i++) {
+		if ((*i)->is_mergeable() && !(*i)->skip())
+			table.push_back(*i);
 	}
-	if (count < 2)
+	if (table.size() < 2)
 		return 0;
-
-	std::vector<rule_t *> table(count);
-	int n = 0;
-	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); ) {
-		if ((*i)->is_mergeable())
-			table[n++] = *i;
-	}
-
 	std::sort(table.begin(), table.end(), comp);
-
-	for (int i = 0, j = 1; j < count; j++) {
+	unsigned long n = table.size();
+	for (unsigned long i = 0, j = 1; j < n; j++) {
+		if (table[j]->skip())
+			continue;
 		if (table[i]->cmp(*table[j]) == 0) {
-			if (!table[i]->merge(*table[j]))
-				return false;
+			if (table[i]->merge(*table[j]))
+				count++;
 			continue;
 		}
 		i = j;
 	}
 
-	return true;
+	return count;
 }
 
 
@@ -318,7 +319,7 @@ void post_process_file_entries(Profile *prof)
 void post_process_rule_entries(Profile *prof)
 {
 	for (RuleList::iterator i = prof->rule_ents.begin(); i != prof->rule_ents.end(); i++) {
-	  if ((*i)->skip_processing())
+		if ((*i)->skip())
 			continue;
 		(*i)->post_parse_profile(*prof);
   }

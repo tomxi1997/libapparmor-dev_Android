@@ -34,6 +34,8 @@
 #include <sys/apparmor.h>
 #include <sys/apparmor_private.h>
 
+#include <algorithm>
+
 #include "capability.h"
 #include "lib.h"
 #include "parser.h"
@@ -269,6 +271,25 @@ static const char *strn_token(const char *str, size_t &len)
 
 	len = str - start;
 	return start;
+}
+
+int null_strcmp(const char *s1, const char *s2)
+{
+	if (s1) {
+		if (s2)
+			return strcmp(s1, s2);
+		return 1;
+	} else if (s2) {
+		return -1;
+	}
+
+	// both null
+	return 0;
+}
+
+bool strcomp (const char *lhs, const char *rhs)
+{
+	return null_strcmp(lhs, rhs) < 0;
 }
 
 /*
@@ -1063,6 +1084,50 @@ void debug_cod_entries(struct cod_entry *list)
 			printf("\tlink:\t(%s)\n", item->link_name ? item->link_name : "/**");
 
 	}
+}
+
+// these need to move to stl
+int ordered_cmp_value_list(value_list *lhs, value_list *rhs)
+{
+	std::vector<const char *> lhstable;
+	std::vector<const char *> rhstable;
+
+	struct value_list *entry;
+	list_for_each(lhs, entry) {
+		lhstable.push_back(entry->value);
+	}
+	list_for_each(rhs, entry) {
+		rhstable.push_back(entry->value);
+	}
+
+	int res = lhstable.size() - rhstable.size();
+	if (res)
+		return res;
+
+	std::sort(lhstable.begin(), lhstable.end(), strcomp);
+	std::sort(rhstable.begin(), rhstable.end(), strcomp);
+
+	for (unsigned long i = 0; i < lhstable.size(); i++) {
+		res = null_strcmp(lhstable[i], rhstable[i]);
+		if (res)
+			return res;
+	}
+
+	return 0;
+}
+
+int cmp_value_list(value_list *lhs, value_list *rhs)
+{
+	if (lhs) {
+		if (rhs) {
+			return ordered_cmp_value_list(lhs, rhs);
+		}
+		return 1;
+	} else if (rhs) {
+		return -1;
+	}
+
+	return 0;
 }
 
 struct value_list *new_value_list(char *value)

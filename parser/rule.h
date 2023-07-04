@@ -38,6 +38,10 @@ class Profile;
 // RULE_TYPE_CLASS needs to be last because various class follow it
 #define RULE_TYPE_CLASS		3
 
+// rule_cast should only be used after a comparison of rule_type to ensure
+// that it is valid. Change to dynamic_cast for debugging
+//#define rule_cast dynamic_cast
+#define rule_cast static_cast
 
 typedef enum { RULE_FLAG_NONE = 0,
 	       RULE_FLAG_DELETED = 1,	// rule deleted - skip
@@ -48,21 +52,38 @@ typedef enum { RULE_FLAG_NONE = 0,
 					// added because it is implied
 } rule_flags_t;
 
+inline rule_flags_t operator|(rule_flags_t a, rule_flags_t b)
+{
+    return static_cast<rule_flags_t>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
+}
+
+inline rule_flags_t operator&(rule_flags_t a, rule_flags_t b)
+{
+    return static_cast<rule_flags_t>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
+}
+
+inline rule_flags_t& operator|=(rule_flags_t &a, const rule_flags_t &b)
+{
+	a = a | b;
+	return a;
+}
+
 class rule_t {
 public:
 	int rule_type;
 	rule_flags_t flags;
 
-	rule_t(int t): rule_type(t), flags(RULE_FLAG_NONE) { }
+	rule_t *removed_by;
+
+	rule_t(int t): rule_type(t), flags(RULE_FLAG_NONE), removed_by(NULL) { }
 	virtual ~rule_t() { };
 
 	bool is_type(int type) { return rule_type == type; }
 
 	// rule has been marked as should be skipped by regular processing
-	bool skip_processing()
+	bool skip()
 	{
-		return (flags == RULE_FLAG_DELETED ||
-			flags == RULE_FLAG_MERGED);
+		return (flags & RULE_FLAG_DELETED);
 	}
 	//virtual bool operator<(rule_t const &rhs)const = 0;
 	virtual std::ostream &dump(std::ostream &os) = 0;
@@ -81,15 +102,37 @@ public:
 	// to support expansion in include names and profile names
 	virtual int expand_variables(void) = 0;
 
-	// called by duplicate rule merge/elimination after final expand_vars
-	virtual bool is_mergeable(void) { return false; }
 	virtual int cmp(rule_t const &rhs) const {
-		return rule_type < rhs.rule_type;
+		return rule_type - rhs.rule_type;
 	}
 	virtual bool operator<(rule_t const &rhs) const {
 		return cmp(rhs) < 0;
 	}
-	virtual bool merge(rule_t &rhs __attribute__ ((unused))) { return false; };
+	// called by duplicate rule merge/elimination after final expand_vars
+	// to get default rule dedup
+	// child object need to provide
+	// - cmp, operator<
+	// - is_mergeable() returning true
+	// if a child object wants to provide merging of permissions,
+	// it needs to provide a custom cmp fn that doesn't include
+	// permissions and a merge routine that does more than flagging
+	// as dup as below
+	virtual bool is_mergeable(void) { return false; }
+
+	// returns true if merged
+	virtual bool merge(rule_t &rhs)
+	{
+		if (rule_type != rhs.rule_type)
+			return false;
+		if (skip() || rhs.skip())
+			return false;
+		// default merge is just dedup
+		flags |= RULE_FLAG_MERGED;
+		rhs.flags |= (RULE_FLAG_MERGED | RULE_FLAG_DELETED);
+		rhs.removed_by = this;
+
+		return true;
+	};
 
 	// called late frontend to generate data for regex backend
 	virtual int gen_policy_re(Profile &prof) = 0;
@@ -162,6 +205,32 @@ public:
 
 		return os;
 	}
+
+	int cmp(prefixes const &rhs) const {
+		if ((uint) audit < (uint) rhs.audit)
+			return -1;
+		if ((uint) audit > (uint) rhs.audit)
+			return 1;
+		if ((uint) rule_mode < (uint) rhs.rule_mode)
+			return -1;
+		if ((uint) rule_mode > (uint) rhs.rule_mode)
+			return 1;
+		if (owner < rhs.owner)
+			return -1;
+		if (owner > rhs.owner)
+			return 1;
+		return 0;
+	}
+
+	bool operator<(prefixes const &rhs) const {
+		if ((uint) audit < (uint) rhs.audit)
+			return true;
+		if ((uint) rule_mode < (uint) rhs.rule_mode)
+			return true;
+		if (owner < rhs.owner)
+			return true;
+		return false;
+	}
 };
 
 class prefix_rule_t: public rule_t, public prefixes {
@@ -221,21 +290,32 @@ public:
 		return true;
 	}
 
-	virtual bool operator<(prefixes const &rhs) const {
-		if ((uint) audit < (uint) rhs.audit)
-			return true;
-		if ((uint) rule_mode < (uint) rhs.rule_mode)
-			return true;
-		if (owner < rhs.owner)
-			return true;
-		return false;
+	int cmp(prefixes const &rhs) const {
+		return prefixes::cmp(rhs);
 	}
-	virtual bool operator<(prefix_rule_t const &rhs) const {
+
+	virtual bool operator<(prefixes const &rhs) const {
+		const prefixes *ptr = this;
+		return *ptr < rhs;
+	}
+
+	virtual int cmp(rule_t const &rhs) const {
+		int res = rule_t::cmp(rhs);
+		if (res)
+			return res;
+		prefix_rule_t const &pr = rule_cast<prefix_rule_t const &>(rhs);
+		const prefixes *lhsptr = this, *rhsptr = &pr;
+		return lhsptr->cmp(*rhsptr);
+	}
+
+	virtual bool operator<(rule_t const &rhs) const {
 		if (rule_type < rhs.rule_type)
 			return true;
 		if (rhs.rule_type < rule_type)
 			return false;
-		return *this < (prefixes const &)rhs;
+		prefix_rule_t const &pr = rule_cast<prefix_rule_t const &>(rhs);
+		const prefixes *rhsptr = &pr;
+		return *this < *rhsptr;
 	}
 
 	virtual ostream &dump(ostream &os) {
@@ -253,6 +333,16 @@ public:
 
 	int aa_class(void) { return rule_type - RULE_TYPE_CLASS; }
 
+	/* inherit cmp */
+
+	/* we do not inherit operator< from so class_rules children
+	 * can in herit the generic one that redirects to cmp()
+	 * that does get overriden
+	 */
+	virtual bool operator<(rule_t const &rhs) const {
+		return cmp(rhs) < 0;
+	}
+
 	virtual ostream &dump(ostream &os) {
 		prefix_rule_t::dump(os);
 
@@ -266,6 +356,13 @@ public:
 class perms_rule_t: public class_rule_t {
 public:
 	perms_rule_t(int c): class_rule_t(c), perms(0) { };
+
+	virtual int cmp(rule_t const &rhs) const {
+		int res = class_rule_t::cmp(rhs);
+		if (res)
+			return res;
+		return perms - (rule_cast<perms_rule_t const &>(rhs)).perms;
+	}
 
 	/* defaut perms, override/mask off if none default used */
 	virtual ostream &dump(ostream &os) {

@@ -267,7 +267,7 @@ static int process_variables_in_entries(struct cod_entry *entry_list)
 static int process_variables_in_rules(Profile &prof)
 {
 	for (RuleList::iterator i = prof.rule_ents.begin(); i != prof.rule_ents.end(); i++) {
-		if ((*i)->skip_processing())
+		if ((*i)->skip())
 			continue;
 		int error = (*i)->expand_variables();
 		if (error)

@@ -249,7 +249,7 @@ public:
 	 * Requires the merged rules have customized methods
 	 * cmp(), is_mergeable() and merge()
 	 */
-	virtual bool merge_rules(void);
+	virtual int merge_rules(void);
 
 	void dump(void)
 	{
