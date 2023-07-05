@@ -62,6 +62,19 @@ public:
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
 
+	// inherit is_mergable() from af_rule
+	virtual int cmp(rule_t const &rhs) const
+	{
+		int res = af_rule::cmp(rhs);
+		if (res)
+			return res;
+		unix_rule const &trhs = (rule_cast<unix_rule const &>(rhs));
+		res = null_strcmp(addr, trhs.addr);
+		if (res)
+			return res;
+		return null_strcmp(peer_addr, trhs.peer_addr);
+	};
+
 protected:
 	virtual void warn_once(const char *name) override;
 };
