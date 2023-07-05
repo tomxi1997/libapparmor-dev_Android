@@ -632,6 +632,51 @@ int mnt_rule::expand_variables(void)
 	return 0;
 }
 
+static int cmp_vec_int(std::vector<unsigned int> const &lhs,
+		       std::vector<unsigned int> const &rhs)
+{
+	int res = lhs.size() - rhs.size();
+	if (res)
+		return res;
+
+	for (unsigned long i = 0; i < lhs.size(); i++) {
+		res = lhs[i] - rhs[i];
+		if (res)
+			return res;
+	}
+
+	return 0;
+}
+
+int mnt_rule::cmp(rule_t const &rhs) const {
+		// for now don't do merging of perms, only exact match
+		int res = perms_rule_t::cmp(rhs);
+		if (res != 0)
+			return res;
+		mnt_rule const &rhs_mnt = rule_cast<mnt_rule const &>(rhs);
+		res = null_strcmp(mnt_point, rhs_mnt.mnt_point);
+		if (res)
+			return res;
+		res = null_strcmp(device, rhs_mnt.device);
+		if (res)
+			return res;
+		res = null_strcmp(trans, rhs_mnt.trans);
+		if (res)
+			return res;
+
+		res = cmp_value_list(dev_type, rhs_mnt.dev_type);
+		if (res)
+			return res;
+		res = cmp_value_list(opts, rhs_mnt.opts);
+		if (res)
+			return res;
+
+		res = cmp_vec_int(flagsv, rhs_mnt.flagsv);
+		if (res)
+			return res;
+		return cmp_vec_int(opt_flagsv, rhs_mnt.opt_flagsv);
+	}
+
 static int build_mnt_flags(char *buffer, int size, unsigned int flags,
 			   unsigned int opt_flags)
 {
