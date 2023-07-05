@@ -104,7 +104,6 @@ SRC=access.c \
     fd_inheritance.c \
     fd_inheritor.c \
     fork.c \
-    io_uring.c \
     link.c \
     link_subset.c \
     mmap.c \
@@ -171,6 +170,17 @@ $(warning ${nl}\
 ************************************************************************${nl}\
 No dbus pkg-config skipping dbus_eavesdrop dbus_message dbus_services tests ...${nl}\
 Install libdbus-1-dev or equivalent package to build and run these tests${nl}\
+************************************************************************${nl})
+endif
+
+#only do io_uring if proper lib is installed
+ifneq (,$(shell pkg-config --exists liburing && echo TRUE))
+SRC+=io_uring.c
+else
+$(warning ${nl}\
+************************************************************************${nl}\
+No liburing pkg-config skipping io_uring tests ...${nl}\
+Install liburing-dev or equivalent package to build and run this test${nl}\
 ************************************************************************${nl})
 endif
 
@@ -273,6 +283,11 @@ TESTS=aa_exec \
 #only do dbus if proper libs are installl
 ifneq (,$(shell pkg-config --exists dbus-1 && echo TRUE))
 TESTS+=dbus_eavesdrop dbus_message dbus_service dbus_unrequested_reply
+endif
+
+#only do io_uring if proper lib is installed
+ifneq (,$(shell pkg-config --exists liburing && echo TRUE))
+TESTS+=io_uring
 endif
 
 TESTS+=$(CONDITIONAL_TESTS)
