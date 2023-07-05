@@ -76,6 +76,35 @@ public:
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof) = 0;
+
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const
+	{
+		int res = perms_rule_t::cmp(rhs);
+		if (res)
+			return res;
+		af_rule const &trhs = (rule_cast<af_rule const &>(rhs));
+		res = af - trhs.af;
+		if (res)
+			return res;
+		res = sock_type_n - trhs.sock_type_n;
+		if (res)
+			return res;
+		res = proto_n - trhs.proto_n;
+		if (res)
+			return res;
+		res = null_strcmp(sock_type, trhs.sock_type);
+		if (res)
+			return res;
+		res = null_strcmp(proto, trhs.proto);
+		if (res)
+			return res;
+		res = null_strcmp(label, trhs.label);
+		if (res)
+			return res;
+		return null_strcmp(peer_label, trhs.peer_label);
+	};
+
 };
 
 #endif /* __AA_AF_RULE_H */
