@@ -49,6 +49,16 @@ public:
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
 
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const
+	{
+		int res = perms_rule_t::cmp(rhs);
+		if (res)
+			return res;
+		return null_strcmp(label,
+			       (rule_cast<io_uring_rule const &>(rhs)).label);
+	};
+
 protected:
 	virtual void warn_once(const char *name) override;
 };
