@@ -62,6 +62,32 @@ public:
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
 
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const
+	{
+		int res = perms_rule_t::cmp(rhs);
+		if (res)
+			return res;
+		dbus_rule const &trhs = (rule_cast<dbus_rule const &>(rhs));
+		res = null_strcmp(bus, trhs.bus);
+		if (res)
+			return res;
+		res = null_strcmp(name, trhs.name);
+		if (res)
+			return res;
+		res = null_strcmp(peer_label, trhs.peer_label);
+		if (res)
+			return res;
+		res = null_strcmp(path, trhs.path);
+		if (res)
+			return res;
+		res = null_strcmp(interface, trhs.interface);
+		if (res)
+			return res;
+		return null_strcmp(member, trhs.member);
+	};
+
+
 protected:
 	virtual void warn_once(const char *name) override;
 };
