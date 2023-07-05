@@ -41,8 +41,6 @@ typedef struct {
 extern optflag_table_t dfadumpflag_table[];
 extern optflag_table_t dfaoptflag_table[];
 
-extern optflags parseopts;
-
 
 void print_flags(const char *prefix, optflag_table_t *table,
 		 optflags_t flags);

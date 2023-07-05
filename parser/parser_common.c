@@ -99,6 +99,16 @@ FILE *ofile = NULL;
 
 IncludeCache_t *g_includecache;
 
+optflags parseopts = {
+	.dfaflags = (optflags_t)(CONTROL_DFA_TREE_NORMAL | CONTROL_DFA_TREE_SIMPLE | CONTROL_DFA_MINIMIZE | CONTROL_DFA_DIFF_ENCODE),
+	.dfadump = 0,
+	.frontflags = (optflags_t)(CONTROL_RULE_MERGE),
+	.frontdump = 0,
+	.warn = DEFAULT_WARNINGS,
+	.Werror = 0
+};
+
+
 #ifdef FORCE_READ_IMPLIES_EXEC
 int read_implies_exec = 1;
 #else

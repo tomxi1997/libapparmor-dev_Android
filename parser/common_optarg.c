@@ -103,13 +103,6 @@ optflag_table_t dfaoptflag_table[] = {
 	{ 0, NULL, NULL, 0 },
 };
 
-optflags parseopts = {
-	.dfaflags = (optflags_t)(CONTROL_DFA_TREE_NORMAL | CONTROL_DFA_TREE_SIMPLE | CONTROL_DFA_MINIMIZE | CONTROL_DFA_DIFF_ENCODE),
-	.dfadump = 0,
-	.warn = DEFAULT_WARNINGS,
-	.Werror = 0
-};
-
 
 void print_flag_table(optflag_table_t *table)
 {

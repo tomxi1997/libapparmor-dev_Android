@@ -111,12 +111,16 @@ static int process_file_entries(Profile *prof)
 
 int profile_merge_rules(Profile *prof)
 {
+	if (!(parseopts.frontflags & CONTROL_RULE_MERGE))
+		return 0;
+
 	int res, tmp = process_file_entries(prof);
 	if (tmp < 0)
 		return -tmp;
 	res = prof->merge_rules();
 	if (res < 0)
 		return -res;
-	// TODO: output message eliminated rules res + tmp;
+	if (parseopts.frontdump & DUMP_RULE_MERGE)
+	        fprintf(stderr, "RULE MERGE: deleted %d file rules, %d rules\n", tmp, res);
 	return 0;
 }

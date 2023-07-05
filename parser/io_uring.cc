@@ -15,6 +15,7 @@
  *   along with this program; if not, contact or Canonical Ltd.
  */
 
+#include "common_optarg.h"
 #include "parser.h"
 #include "profile.h"
 #include "io_uring.h"

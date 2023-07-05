@@ -82,6 +82,9 @@ int abort_on_error = 0;			/* stop processing profiles if error */
 int skip_bad_cache_rebuild = 0;
 int mru_skip_cache = 1;
 
+bool O_rule_merge = true;
+bool D_rule_merge = false;
+
 /* for jobs_max and jobs
  * LONG_MAX : no limit
  * LONG_MIN  : auto  = detect system processing cores
@@ -271,6 +274,16 @@ optflag_table_t warnflag_table[] = {
 	{ 1, "dev", "turn on warnings that are useful for profile development", WARN_DEV },
 	{ 1, "pound-include", "warn when #include is used", WARN_INCLUDE },
 	{ 1, "all", "turn on all warnings", WARN_ALL},
+	{ 0, NULL, NULL, 0 },
+};
+
+optflag_table_t frontopts_table[] = {
+	{ 1, "rule-merge", "turn on rule merging", CONTROL_RULE_MERGE},
+	{ 0, NULL, NULL, 0 },
+};
+
+optflag_table_t frontdump_table[] = {
+	{ 1, "rule-merge", "dump information about rule merging", DUMP_RULE_MERGE},
 	{ 0, NULL, NULL, 0 },
 };
 
@@ -494,10 +507,13 @@ static int process_arg(int c, char *optarg)
 			   strcmp(optarg, "D") == 0) {
 			flagtable_help("--dump=", DUMP_HEADER, progname,
 				       dfadumpflag_table);
+			flagtable_help("--dump=", DUMP_HEADER, progname,
+				       frontopts_table);
 		} else if (strcmp(optarg, "Optimize") == 0 ||
 			   strcmp(optarg, "optimize") == 0 ||
 			   strcmp(optarg, "O") == 0) {
 			flagtable_help("-O ", "", progname, dfaoptflag_table);
+			flagtable_help("-O ", "", progname, frontopts_table);
 		} else if (strcmp(optarg, "warn") == 0) {
 			flagtable_help("--warn=", "", progname, warnflag_table);
 		} else if (strcmp(optarg, "Werror") == 0) {
@@ -569,12 +585,15 @@ static int process_arg(int c, char *optarg)
 			dump_vars = 1;
 		} else if (strcmp(optarg, "show") == 0) {
 			print_flags("dump", dfadumpflag_table, parseopts.dfadump);
+			print_flags("dump", frontdump_table, parseopts.frontdump);
 		} else if (strcmp(optarg, "variables") == 0) {
 			dump_vars = 1;
 		} else if (strcmp(optarg, "expanded-variables") == 0) {
 			dump_expanded_vars = 1;
 		} else if (!handle_flag_table(dfadumpflag_table, optarg,
-					      &parseopts.dfadump)) {
+					      &parseopts.dfadump) &&
+			   !handle_flag_table(frontdump_table, optarg,
+					      &parseopts.frontdump)) {
 			PERROR("%s: Invalid --Dump option %s\n",
 			       progname, optarg);
 			exit(1);
@@ -583,8 +602,11 @@ static int process_arg(int c, char *optarg)
 	case 'O':
 		if (strcmp(optarg, "show") == 0) {
 			print_flags("Optimize", dfaoptflag_table, parseopts.dfaflags);
+			print_flags("Optimize", frontopts_table, parseopts.frontflags);
 		} else if (!handle_flag_table(dfaoptflag_table, optarg,
-				       &parseopts.dfaflags)) {
+					      &parseopts.dfaflags) &&
+			!handle_flag_table(frontopts_table, optarg,
+					      &parseopts.frontflags)) {
 			PERROR("%s: Invalid --Optimize option %s\n",
 			       progname, optarg);
 			exit(1);
