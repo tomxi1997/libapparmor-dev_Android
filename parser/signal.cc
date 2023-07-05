@@ -230,6 +230,35 @@ int signal_rule::expand_variables(void)
 	return expand_entry_variables(&peer_label);
 }
 
+static int cmp_set_int(Signals const &lhs, Signals const &rhs)
+{
+	int res = lhs.size() - rhs.size();
+	if (res)
+		return res;
+
+	for (Signals::iterator i = lhs.begin(),
+			       j = rhs.begin();
+	     i != lhs.end(); i++, j++) {
+		res = *i - *j;
+		if (res)
+			return res;
+	}
+
+	return 0;
+}
+
+int signal_rule::cmp(rule_t const &rhs) const
+{
+	int res = perms_rule_t::cmp(rhs);
+	if (res)
+		return res;
+	signal_rule const &trhs = rule_cast<signal_rule const &>(rhs);
+	res = null_strcmp(peer_label, trhs.peer_label);
+	if (res)
+		return res;
+	return cmp_set_int(signals, trhs.signals);
+}
+
 void signal_rule::warn_once(const char *name)
 {
 	rule_t::warn_once(name, "signal rules not enforced");

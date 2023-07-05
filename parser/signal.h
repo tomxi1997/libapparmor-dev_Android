@@ -57,6 +57,9 @@ public:
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
 
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const;
+
 protected:
 	virtual void warn_once(const char *name) override;
 };
