@@ -82,9 +82,6 @@ extern int parser_token;
 		  WARN_UNEXPECTED | WARN_FORMAT | WARN_MISSING | \
 		  WARN_OVERRIDE | WARN_INCLUDE)
 
-extern dfaflags_t warnflags;
-extern dfaflags_t werrflags;
-
 
 typedef enum pattern_t pattern_t;
 
@@ -362,7 +359,6 @@ extern int conf_quiet;
 extern int names_only;
 extern int option;
 extern int current_lineno;
-extern dfaflags_t dfaflags;
 extern const char *progname;
 extern char *profilename;
 extern char *profile_ns;
@@ -374,7 +370,7 @@ extern IncludeCache_t *g_includecache;
 extern void pwarnf(bool werr, const char *fmt, ...) __attribute__((__format__(__printf__, 2, 3)));
 extern void common_warn_once(const char *name, const char *msg, const char **warned_name);
 
-#define pwarn(F, args...) do { if (warnflags & (F)) pwarnf((werrflags & (F)), ## args); } while (0)
+#define pwarn(F, args...) do { if (parseopts.warn & (F)) pwarnf((parseopts.Werror & (F)), ## args); } while (0)
 
 /* from parser_main (cannot be used in tst builds) */
 extern int force_complain;

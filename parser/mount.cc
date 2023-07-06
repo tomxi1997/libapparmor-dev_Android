@@ -798,7 +798,7 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 	 * else it has full perms
 	 */
 	if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, tmpperms, tmpaudit, 4,
-					     vec, dfaflags, false))
+					     vec, parseopts, false))
 		goto fail;
 	count++;
 
@@ -810,7 +810,7 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 		vec[4] = optsbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms,
 						     (audit == AUDIT_FORCE ? perms : 0),
-						     5, vec, dfaflags, false))
+						     5, vec, parseopts, false))
 			goto fail;
 		count++;
 	}
@@ -852,7 +852,7 @@ int mnt_rule::gen_policy_bind_mount(Profile &prof, int &count,
 	vec[3] = flagsbuf;
 	if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms, audit == AUDIT_FORCE ? perms : 0,
 					     4, vec,
-					     dfaflags, false))
+					     parseopts, false))
 		goto fail;
 	count++;
 
@@ -909,7 +909,7 @@ int mnt_rule::gen_policy_change_mount_type(Profile &prof, int &count,
 	vec[3] = flagsbuf;
 	if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms, audit == AUDIT_FORCE ? perms : 0,
 					     4, vec,
-					     dfaflags, false))
+					     parseopts, false))
 		goto fail;
 	count++;
 
@@ -952,7 +952,7 @@ int mnt_rule::gen_policy_move_mount(Profile &prof, int &count,
 	vec[3] = flagsbuf;
 	if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms, audit == AUDIT_FORCE ? perms : 0,
 					     4, vec,
-					     dfaflags, false))
+					     parseopts, false))
 		goto fail;
 	count++;
 
@@ -1003,7 +1003,7 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 	}
 	/* rule for match without required data || data MATCH_CONT */
 	if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, tmpperms, tmpaudit, 4,
-					     vec, dfaflags, false))
+					     vec, parseopts, false))
 		goto fail;
 	count++;
 
@@ -1015,7 +1015,7 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 		vec[4] = optsbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms,
 						     audit == AUDIT_FORCE ? perms : 0,
-						     5, vec, dfaflags, false))
+						     5, vec, parseopts, false))
 			goto fail;
 		count++;
 	}
@@ -1107,7 +1107,7 @@ int mnt_rule::gen_policy_re(Profile &prof)
 		vec[0] = mntbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms,
 					(audit == AUDIT_FORCE ? perms : 0), 1, vec,
-					dfaflags, false))
+					parseopts, false))
 			goto fail;
 		count++;
 	}
@@ -1122,7 +1122,7 @@ int mnt_rule::gen_policy_re(Profile &prof)
 		vec[1] = devbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms,
 					(audit == AUDIT_FORCE ? perms : 0), 2, vec,
-					dfaflags, false))
+					parseopts, false))
 			goto fail;
 		count++;
 	}

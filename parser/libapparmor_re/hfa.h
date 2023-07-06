@@ -305,7 +305,7 @@ class DFA {
 	State *add_new_state(NodeSet *nodes, State *other);
 	State *add_new_state(NodeSet *anodes, NodeSet *nnodes, State *other);
 	void update_state_transitions(State *state);
-	void process_work_queue(const char *header, dfaflags_t);
+	void process_work_queue(const char *header, optflags const &);
 	void dump_diff_chain(ostream &os, map<State *, Partition> &relmap,
 			     Partition &chain, State *state,
 			     unsigned int &count, unsigned int &total,
@@ -318,19 +318,19 @@ class DFA {
 	list<State *> work_queue;
 
 public:
-	DFA(Node *root, dfaflags_t flags, bool filedfa);
+	DFA(Node *root, optflags const &flags, bool filedfa);
 	virtual ~DFA();
 
 	State *match_len(State *state, const char *str, size_t len);
 	State *match_until(State *state, const char *str, const char term);
 	State *match(const char *str);
 
-	void remove_unreachable(dfaflags_t flags);
+	void remove_unreachable(optflags const &flags);
 	bool same_mappings(State *s1, State *s2);
-	void minimize(dfaflags_t flags);
+	void minimize(optflags const &flags);
 	int apply_and_clear_deny(void);
 
-	void diff_encode(dfaflags_t flags);
+	void diff_encode(optflags const &flags);
 	void undiff_encode(void);
 	void dump_diff_encode(ostream &os);
 
@@ -338,7 +338,7 @@ public:
 	void dump_dot_graph(ostream &os);
 	void dump_uniq_perms(const char *s);
 
-	map<transchar, transchar> equivalence_classes(dfaflags_t flags);
+	map<transchar, transchar> equivalence_classes(optflags const &flags);
 	void apply_equivalence_classes(map<transchar, transchar> &eq);
 
 	unsigned int diffcount;

@@ -134,7 +134,7 @@ int ptrace_rule::gen_policy_re(Profile &prof)
 	buf = buffer.str();
 	if (perms & AA_VALID_PTRACE_PERMS) {
 		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, perms, audit == AUDIT_FORCE ? perms : 0,
-						 dfaflags))
+						 parseopts))
 			goto fail;
 	}
 

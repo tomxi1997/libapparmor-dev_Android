@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 
+#include "../common_optarg.h"
 #include "apparmor_re.h"
 #include "expr-tree.h"
 
@@ -101,11 +102,11 @@ class aare_rules {
 	~aare_rules();
 
 	bool add_rule(const char *rule, int deny, uint32_t perms,
-		      uint32_t audit, dfaflags_t flags);
+		      uint32_t audit, optflags const &opts);
 	bool add_rule_vec(int deny, uint32_t perms, uint32_t audit, int count,
-			  const char **rulev, dfaflags_t flags, bool oob);
-	bool append_rule(const char *rule, bool oob, bool with_perm, dfaflags_t flags);
-	void *create_dfa(size_t *size, int *min_match_len, dfaflags_t flags,
+			  const char **rulev, optflags const &opts, bool oob);
+	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);
+	void *create_dfa(size_t *size, int *min_match_len, optflags const &opts,
 			 bool filedfa);
 };
 

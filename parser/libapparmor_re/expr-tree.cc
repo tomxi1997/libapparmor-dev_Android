@@ -575,12 +575,12 @@ static void count_tree_nodes(Node *t, struct node_counts *counts)
 // simplification passes. Simplification may exit sooner if no changes
 // are made.
 #define MAX_PASSES 1
-Node *simplify_tree(Node *t, dfaflags_t flags)
+Node *simplify_tree(Node *t, optflags const &opts)
 {
 	bool update = true;
 	int i;
 
-	if (flags & DFA_DUMP_TREE_STATS) {
+	if (opts.dfadump & DUMP_DFA_TREE_STATS) {
 		struct node_counts counts = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		count_tree_nodes(t, &counts);
 		fprintf(stderr,
@@ -598,25 +598,25 @@ Node *simplify_tree(Node *t, dfaflags_t flags)
 		//    the dfa having about 7 thousands states,
 		//    and it having about  1.25 million states
 		int dir = 1;
-		if (flags & DFA_CONTROL_TREE_LEFT)
+		if (opts.dfaflags & CONTROL_DFA_TREE_LEFT)
 			dir = 0;
 		for (int count = 0; count < 2; count++) {
 			bool modified;
 			do {
 				modified = false;
-				if (flags & DFA_CONTROL_TREE_NORMAL)
+				if (opts.dfaflags & CONTROL_DFA_TREE_NORMAL)
 					t->normalize(dir);
 				t = simplify_tree_base(t, dir, modified);
 				if (modified)
 					update = true;
 			} while (modified);
-			if (flags & DFA_CONTROL_TREE_LEFT)
+			if (opts.dfaflags & CONTROL_DFA_TREE_LEFT)
 				dir++;
 			else
 				dir--;
 		}
 	}
-	if (flags & DFA_DUMP_TREE_STATS) {
+	if (opts.dfadump & DUMP_DFA_TREE_STATS) {
 		struct node_counts counts = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		count_tree_nodes(t, &counts);
 		fprintf(stderr,

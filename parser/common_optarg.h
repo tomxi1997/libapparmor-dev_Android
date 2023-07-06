@@ -21,25 +21,33 @@
 #ifndef __AA_COMMON_OPTARG_H
 #define __AA_COMMON_OPTARG_H
 
+#include "common_flags.h"
 #include "libapparmor_re/apparmor_re.h"
+
 
 /*
  * flag: 1 - allow no- inversion
  * flag: 2 - flags specified should be masked off
  */
+#define OPT_FLAG_CONTROL_PREFIX_NO	1
+#define OPT_FLAG_CONTROL_MASK		2
 typedef struct {
 	int control;
 	const char *option;
 	const char *desc;
-	dfaflags_t flags;
+	optflags_t flags;
 } optflag_table_t;
 
-extern optflag_table_t dumpflag_table[];
-extern optflag_table_t optflag_table[];
+extern optflag_table_t dfadumpflag_table[];
+extern optflag_table_t dfaoptflag_table[];
 
-void print_flags(const char *prefix, optflag_table_t *table, dfaflags_t flags);
+extern optflags parseopts;
+
+
+void print_flags(const char *prefix, optflag_table_t *table,
+		 optflags_t flags);
 int handle_flag_table(optflag_table_t *table, const char *optarg,
-		      dfaflags_t *flags);
+		      optflags_t *flags);
 void flagtable_help(const char *name, const char *header, const char *command,
 		    optflag_table_t *table);
 

@@ -958,7 +958,7 @@ struct node_counts {
 extern EpsNode epsnode;
 
 int debug_tree(Node *t);
-Node *simplify_tree(Node *t, dfaflags_t flags);
+Node *simplify_tree(Node *t, optflags const &opts);
 void label_nodes(Node *root);
 unsigned long hash_NodeSet(NodeSet *ns);
 void flip_tree(Node *node);

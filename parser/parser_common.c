@@ -89,9 +89,6 @@ int names_only = 0;
 int current_lineno = 1;
 int option = OPTION_ADD;
 
-dfaflags_t dfaflags = (dfaflags_t)(DFA_CONTROL_TREE_NORMAL | DFA_CONTROL_TREE_SIMPLE | DFA_CONTROL_MINIMIZE | DFA_CONTROL_DIFF_ENCODE);
-dfaflags_t warnflags = DEFAULT_WARNINGS;
-dfaflags_t werrflags = 0;
 
 const char *progname = __FILE__;
 char *profile_ns = NULL;
@@ -140,8 +137,8 @@ void pwarnf(bool werr, const char *fmt, ...)
 /* do we want to warn once/profile or just once per compile?? */
 void common_warn_once(const char *name, const char *msg, const char **warned_name)
 {
-	if ((warnflags & WARN_RULE_NOT_ENFORCED) && *warned_name != name) {
-		if (werrflags & WARN_RULE_NOT_ENFORCED)
+	if ((parseopts.warn & WARN_RULE_NOT_ENFORCED) && *warned_name != name) {
+		if (parseopts.Werror & WARN_RULE_NOT_ENFORCED)
 			cerr << "Warning converted to Error";
 		else
 			cerr << "Warning";
@@ -154,6 +151,6 @@ void common_warn_once(const char *name, const char *msg, const char **warned_nam
 		*warned_name = name;
 	}
 
-	if (werrflags & WARN_RULE_NOT_ENFORCED)
+	if (parseopts.Werror & WARN_RULE_NOT_ENFORCED)
 		exit(1);
 }
