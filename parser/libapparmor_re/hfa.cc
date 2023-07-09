@@ -396,7 +396,7 @@ void DFA::process_work_queue(const char *header, optflags const &opts)
 	int i = 0;
 
 	while (!work_queue.empty()) {
-		if (i % 1000 == 0 && (opts.dfadump & DUMP_DFA_PROGRESS)) {
+		if (i % 1000 == 0 && (opts.dump & DUMP_DFA_PROGRESS)) {
 			cerr << "\033[2K" << header << ": queue "
 			     << work_queue.size()
 			     << "\tstates "
@@ -428,7 +428,7 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 	oob_range = 0;
 	ord_range = 8;
 
-	if (opts.dfadump & DUMP_DFA_PROGRESS)
+	if (opts.dump & DUMP_DFA_PROGRESS)
 		fprintf(stderr, "Creating dfa:\r");
 
 	for (depth_first_traversal i(root); i; i++) {
@@ -437,7 +437,7 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 		(*i)->compute_lastpos();
 	}
 
-	if (opts.dfadump & DUMP_DFA_PROGRESS)
+	if (opts.dump & DUMP_DFA_PROGRESS)
 		fprintf(stderr, "Creating dfa: followpos\r");
 	for (depth_first_traversal i(root); i; i++) {
 		(*i)->compute_followpos();
@@ -471,10 +471,10 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 		(*i)->followpos.clear();
 	}
 
-	if (opts.dfadump & DUMP_DFA_NODE_TO_DFA)
+	if (opts.dump & DUMP_DFA_NODE_TO_DFA)
 		dump_node_to_dfa();
 
-	if (opts.dfadump & (DUMP_DFA_STATS)) {
+	if (opts.dump & (DUMP_DFA_STATS)) {
 		cerr << "\033[2KCreated dfa: states "
 		     << states.size()
 		     << " proto { "
@@ -571,7 +571,7 @@ void DFA::remove_unreachable(optflags const &opts)
 			next = i;
 			next++;
 			if (reachable.find(*i) == reachable.end()) {
-				if (opts.dfadump & DUMP_DFA_UNREACHABLE) {
+				if (opts.dump & DUMP_DFA_UNREACHABLE) {
 					cerr << "unreachable: " << **i;
 					if (*i == start)
 						cerr << " <==";
@@ -586,7 +586,7 @@ void DFA::remove_unreachable(optflags const &opts)
 			}
 		}
 
-		if (count && (opts.dfadump & DUMP_DFA_STATS))
+		if (count && (opts.dump & DUMP_DFA_STATS))
 			cerr << "DFA: states " << states.size() << " removed "
 			     << count << " unreachable states\n";
 	}
@@ -680,7 +680,7 @@ void DFA::minimize(optflags const &opts)
 			p->second->push_back(*i);
 		}
 
-		if ((opts.dfadump & DUMP_DFA_PROGRESS) && (partitions.size() % 1000 == 0))
+		if ((opts.dump & DUMP_DFA_PROGRESS) && (partitions.size() % 1000 == 0))
 			cerr << "\033[2KMinimize dfa: partitions "
 			     << partitions.size() << "\tinit " << partitions.size()
 			     << " (accept " << accept_count << ")\r";
@@ -692,7 +692,7 @@ void DFA::minimize(optflags const &opts)
 	perm_map.clear();
 
 	int init_count = partitions.size();
-	if (opts.dfadump & DUMP_DFA_PROGRESS)
+	if (opts.dump & DUMP_DFA_PROGRESS)
 		cerr << "\033[2KMinimize dfa: partitions " << partitions.size()
 		     << "\tinit " << init_count << " (accept "
 		     << accept_count << ")\r";
@@ -734,7 +734,7 @@ void DFA::minimize(optflags const &opts)
 					(*m)->partition = new_part;
 				}
 			}
-			if ((opts.dfadump & DUMP_DFA_PROGRESS) && (partitions.size() % 100 == 0))
+			if ((opts.dump & DUMP_DFA_PROGRESS) && (partitions.size() % 100 == 0))
 				cerr << "\033[2KMinimize dfa: partitions "
 				     << partitions.size() << "\tinit "
 				     << init_count << " (accept "
@@ -743,7 +743,7 @@ void DFA::minimize(optflags const &opts)
 	} while (new_part_count);
 
 	if (partitions.size() == states.size()) {
-		if (opts.dfadump & DUMP_DFA_STATS)
+		if (opts.dump & DUMP_DFA_STATS)
 			cerr << "\033[2KDfa minimization no states removed: partitions "
 			     << partitions.size() << "\tinit " << init_count
 			     << " (accept " << accept_count << ")\n";
@@ -757,13 +757,13 @@ void DFA::minimize(optflags const &opts)
 	 * to states within the same partitions, however this can slow
 	 * down compressed dfa compression as there are more states,
 	 */
-	if (opts.dfadump & DUMP_DFA_MIN_PARTS)
+	if (opts.dump & DUMP_DFA_MIN_PARTS)
 		cerr << "Partitions after minimization\n";
 	for (list<Partition *>::iterator p = partitions.begin();
 	     p != partitions.end(); p++) {
 		/* representative state for this partition */
 		State *rep = *((*p)->begin());
-		if (opts.dfadump & DUMP_DFA_MIN_PARTS)
+		if (opts.dump & DUMP_DFA_MIN_PARTS)
 			cerr << *rep << " : ";
 
 		/* update representative state's transitions */
@@ -782,17 +782,17 @@ void DFA::minimize(optflags const &opts)
 		/* clear the state label for all non representative states,
 		 * and accumulate permissions */
 		for (Partition::iterator i = ++(*p)->begin(); i != (*p)->end(); i++) {
-			if (opts.dfadump & DUMP_DFA_MIN_PARTS)
+			if (opts.dump & DUMP_DFA_MIN_PARTS)
 				cerr << **i << ", ";
 			(*i)->label = -1;
 			rep->perms.add((*i)->perms, filedfa);
 		}
 		if (rep->perms.is_accept())
 			final_accept++;
-		if (opts.dfadump & DUMP_DFA_MIN_PARTS)
+		if (opts.dump & DUMP_DFA_MIN_PARTS)
 			cerr << "\n";
 	}
-	if (opts.dfadump & DUMP_DFA_STATS)
+	if (opts.dump & DUMP_DFA_STATS)
 		cerr << "\033[2KMinimized dfa: final partitions "
 		     << partitions.size() << " (accept " << final_accept
 		     << ")" << "\tinit " << init_count << " (accept "
@@ -965,7 +965,7 @@ void DFA::diff_encode(optflags const &opts)
 			}
 		}
 
-		if ((opts.dfadump & DUMP_DFA_DIFF_PROGRESS) && (i % 100 == 0))
+		if ((opts.dump & DUMP_DFA_DIFF_PROGRESS) && (i % 100 == 0))
 			cerr << "\033[2KDiff Encode: " << i << " of "
 			     << tail << ".  Diff states " << xcount
 			     << " Savings " << xweight << "\r";
@@ -992,7 +992,7 @@ void DFA::diff_encode(optflags const &opts)
 		}
 	}
 
-	if (opts.dfadump & DUMP_DFA_DIFF_STATS)
+	if (opts.dump & DUMP_DFA_DIFF_STATS)
 		cerr << "Diff encode  states: " << diffcount << " of "
                      << tail << " reached @ depth "  << depth << ". "
 		     <<  aweight << " trans removed\n";
@@ -1251,7 +1251,7 @@ map<transchar, transchar> DFA::equivalence_classes(optflags const &opts)
 		}
 	}
 
-	if (opts.dfadump & DUMP_DFA_EQUIV_STATS)
+	if (opts.dump & DUMP_DFA_EQUIV_STATS)
 		fprintf(stderr, "Equiv class reduces to %d classes\n",
 			next_class.c - 1);
 	return classes;

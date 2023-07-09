@@ -128,7 +128,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 
 	sptr = aare;
 
-	if (parseopts.dfadump & DUMP_DFA_RULE_EXPR)
+	if (parseopts.dump & DUMP_DFA_RULE_EXPR)
 		fprintf(stderr, "aare: %s   ->   ", aare);
 
 	if (anchor)
@@ -427,7 +427,7 @@ out:
 	if (ret == FALSE)
 		ptype = ePatternInvalid;
 
-	if (parseopts.dfadump & DUMP_DFA_RULE_EXPR)
+	if (parseopts.dump & DUMP_DFA_RULE_EXPR)
 		fprintf(stderr, "%s\n", pcre.c_str());
 
 	return ptype;

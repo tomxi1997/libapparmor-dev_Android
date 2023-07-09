@@ -83,9 +83,6 @@ extern int parser_token;
 		  WARN_OVERRIDE | WARN_INCLUDE)
 
 
-#define CONTROL_RULE_MERGE	0x1
-#define DUMP_RULE_MERGE		0x1
-
 typedef enum pattern_t pattern_t;
 
 

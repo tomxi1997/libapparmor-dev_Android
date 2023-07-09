@@ -277,15 +277,6 @@ optflag_table_t warnflag_table[] = {
 	{ 0, NULL, NULL, 0 },
 };
 
-optflag_table_t frontopts_table[] = {
-	{ 1, "rule-merge", "turn on rule merging", CONTROL_RULE_MERGE},
-	{ 0, NULL, NULL, 0 },
-};
-
-optflag_table_t frontdump_table[] = {
-	{ 1, "rule-merge", "dump information about rule merging", DUMP_RULE_MERGE},
-	{ 0, NULL, NULL, 0 },
-};
 
 /* Parse comma separated cachelocations. Commas can be escaped by \, */
 static int parse_cacheloc(const char *arg, const char **cacheloc, int max_size)
@@ -506,14 +497,11 @@ static int process_arg(int c, char *optarg)
 			   strcmp(optarg, "dump") == 0 ||
 			   strcmp(optarg, "D") == 0) {
 			flagtable_help("--dump=", DUMP_HEADER, progname,
-				       dfadumpflag_table);
-			flagtable_help("--dump=", DUMP_HEADER, progname,
-				       frontopts_table);
+				       dumpflag_table);
 		} else if (strcmp(optarg, "Optimize") == 0 ||
 			   strcmp(optarg, "optimize") == 0 ||
 			   strcmp(optarg, "O") == 0) {
 			flagtable_help("-O ", "", progname, dfaoptflag_table);
-			flagtable_help("-O ", "", progname, frontopts_table);
 		} else if (strcmp(optarg, "warn") == 0) {
 			flagtable_help("--warn=", "", progname, warnflag_table);
 		} else if (strcmp(optarg, "Werror") == 0) {
@@ -584,16 +572,13 @@ static int process_arg(int c, char *optarg)
 		if (!optarg) {
 			dump_vars = 1;
 		} else if (strcmp(optarg, "show") == 0) {
-			print_flags("dump", dfadumpflag_table, parseopts.dfadump);
-			print_flags("dump", frontdump_table, parseopts.frontdump);
+			print_flags("dump", dumpflag_table, parseopts.dump);
 		} else if (strcmp(optarg, "variables") == 0) {
 			dump_vars = 1;
 		} else if (strcmp(optarg, "expanded-variables") == 0) {
 			dump_expanded_vars = 1;
-		} else if (!handle_flag_table(dfadumpflag_table, optarg,
-					      &parseopts.dfadump) &&
-			   !handle_flag_table(frontdump_table, optarg,
-					      &parseopts.frontdump)) {
+		} else if (!handle_flag_table(dumpflag_table, optarg,
+					      &parseopts.dump)) {
 			PERROR("%s: Invalid --Dump option %s\n",
 			       progname, optarg);
 			exit(1);
@@ -601,12 +586,9 @@ static int process_arg(int c, char *optarg)
 		break;
 	case 'O':
 		if (strcmp(optarg, "show") == 0) {
-			print_flags("Optimize", dfaoptflag_table, parseopts.dfaflags);
-			print_flags("Optimize", frontopts_table, parseopts.frontflags);
+			print_flags("Optimize", dfaoptflag_table, parseopts.control);
 		} else if (!handle_flag_table(dfaoptflag_table, optarg,
-					      &parseopts.dfaflags) &&
-			!handle_flag_table(frontopts_table, optarg,
-					      &parseopts.frontflags)) {
+					      &parseopts.control)) {
 			PERROR("%s: Invalid --Optimize option %s\n",
 			       progname, optarg);
 			exit(1);
@@ -1552,7 +1534,7 @@ static bool get_kernel_features(struct aa_features **features)
 
 	if (!kernel_supports_diff_encode)
 		/* clear diff_encode because it is not supported */
-		parseopts.dfaflags &= ~CONTROL_DFA_DIFF_ENCODE;
+		parseopts.control &= ~CONTROL_DFA_DIFF_ENCODE;
 
 	return true;
 }

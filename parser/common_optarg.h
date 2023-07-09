@@ -38,7 +38,7 @@ typedef struct {
 	optflags_t flags;
 } optflag_table_t;
 
-extern optflag_table_t dfadumpflag_table[];
+extern optflag_table_t dumpflag_table[];
 extern optflag_table_t dfaoptflag_table[];
 
 

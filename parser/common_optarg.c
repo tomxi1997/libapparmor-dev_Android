@@ -27,7 +27,7 @@
 #include "common_optarg.h"
 #include "parser.h"
 
-optflag_table_t dfadumpflag_table[] = {
+optflag_table_t dumpflag_table[] = {
 	{ 1, "rule-exprs", "Dump rule to expr tree conversions",
 	  DUMP_DFA_RULE_EXPR },
 	{ 1, "expr-stats", "Dump stats on expr tree", DUMP_DFA_TREE_STATS },
@@ -70,6 +70,7 @@ optflag_table_t dfadumpflag_table[] = {
 	  DUMP_DFA_DIFF_STATS },
 	{ 1, "diff-progress", "Dump progress of differential encoding",
 	  DUMP_DFA_DIFF_PROGRESS | DUMP_DFA_DIFF_STATS },
+	{ 1, "rule-merge", "dump information about rule merging", DUMP_RULE_MERGE},
 	{ 0, NULL, NULL, 0 },
 };
 
@@ -100,6 +101,7 @@ optflag_table_t dfaoptflag_table[] = {
 	  CONTROL_DFA_TRANS_HIGH },
 	{ 1, "diff-encode", "Differentially encode transitions",
 	  CONTROL_DFA_DIFF_ENCODE },
+	{ 1, "rule-merge", "turn on rule merging", CONTROL_RULE_MERGE},
 	{ 0, NULL, NULL, 0 },
 };
 

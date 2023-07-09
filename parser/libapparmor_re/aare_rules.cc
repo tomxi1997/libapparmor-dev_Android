@@ -110,7 +110,7 @@ bool aare_rules::add_rule_vec(int deny, uint32_t perms, uint32_t audit,
 
 	accept = unique_perms.insert(deny, perms, audit, exact_match);
 
-	if (opts.dfadump & DUMP_DFA_RULE_EXPR) {
+	if (opts.dump & DUMP_DFA_RULE_EXPR) {
 		const char *separator;
 		if (oob)
 			separator = "\\-x01";
@@ -158,7 +158,7 @@ bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
 	if (regex_parse(&tree, rule))
 		return false;
 
-	if (opts.dfadump & DUMP_DFA_RULE_EXPR) {
+	if (opts.dump & DUMP_DFA_RULE_EXPR) {
 		cerr << "rule: ";
 		cerr << rule;
 		cerr << "  ->  ";
@@ -204,14 +204,14 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 	 * set nodes */
 	PermExprMap::iterator i = expr_map.begin();
 	if (i != expr_map.end()) {
-		if (opts.dfaflags & CONTROL_DFA_TREE_SIMPLE) {
+		if (opts.control & CONTROL_DFA_TREE_SIMPLE) {
 			Node *tmp = simplify_tree(i->second, opts);
 			root = new CatNode(tmp, i->first);
 		} else
 			root = new CatNode(i->second, i->first);
 		for (i++; i != expr_map.end(); i++) {
 			Node *tmp;
-			if (opts.dfaflags & CONTROL_DFA_TREE_SIMPLE) {
+			if (opts.control & CONTROL_DFA_TREE_SIMPLE) {
 				tmp = simplify_tree(i->second, opts);
 			} else
 				tmp = i->second;
@@ -226,13 +226,13 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 	 * this debug dump.
 	 */
 	label_nodes(root);
-	if (opts.dfadump & DUMP_DFA_TREE) {
+	if (opts.dump & DUMP_DFA_TREE) {
 		cerr << "\nDFA: Expression Tree\n";
 		root->dump(cerr);
 		cerr << "\n\n";
 	}
 
-	if (opts.dfaflags & CONTROL_DFA_TREE_SIMPLE) {
+	if (opts.control & CONTROL_DFA_TREE_SIMPLE) {
 		/* This is old total tree, simplification point
 		 * For now just do simplification up front. It gets most
 		 * of the benefit running on the smaller chains, and is
@@ -241,7 +241,7 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 		 */
 		//root = simplify_tree(root, opts);
 
-		if (opts.dfadump & DUMP_DFA_SIMPLE_TREE) {
+		if (opts.dump & DUMP_DFA_SIMPLE_TREE) {
 			cerr << "\nDFA: Simplified Expression Tree\n";
 			root->dump(cerr);
 			cerr << "\n\n";
@@ -251,18 +251,18 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 	stringstream stream;
 	try {
 		DFA dfa(root, opts, filedfa);
-		if (opts.dfadump & DUMP_DFA_UNIQ_PERMS)
+		if (opts.dump & DUMP_DFA_UNIQ_PERMS)
 			dfa.dump_uniq_perms("dfa");
 
-		if (opts.dfaflags & CONTROL_DFA_MINIMIZE) {
+		if (opts.control & CONTROL_DFA_MINIMIZE) {
 			dfa.minimize(opts);
 
-			if (opts.dfadump & DUMP_DFA_MIN_UNIQ_PERMS)
+			if (opts.dump & DUMP_DFA_MIN_UNIQ_PERMS)
 				dfa.dump_uniq_perms("minimized dfa");
 		}
 
-		if (opts.dfaflags & CONTROL_DFA_FILTER_DENY &&
-		    opts.dfaflags & CONTROL_DFA_MINIMIZE &&
+		if (opts.control & CONTROL_DFA_FILTER_DENY &&
+		    opts.control & CONTROL_DFA_MINIMIZE &&
 		    dfa.apply_and_clear_deny()) {
 			/* Do a second minimization pass as removal of deny
 			 * information has moved some states from accepting
@@ -273,40 +273,40 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 			 */
 			dfa.minimize(opts);
 
-			if (opts.dfadump & DUMP_DFA_MIN_UNIQ_PERMS)
+			if (opts.dump & DUMP_DFA_MIN_UNIQ_PERMS)
 				dfa.dump_uniq_perms("minimized dfa");
 		}
 
-		if (opts.dfaflags & CONTROL_DFA_REMOVE_UNREACHABLE)
+		if (opts.control & CONTROL_DFA_REMOVE_UNREACHABLE)
 			dfa.remove_unreachable(opts);
 
-		if (opts.dfadump & DUMP_DFA_STATES)
+		if (opts.dump & DUMP_DFA_STATES)
 			dfa.dump(cerr);
 
-		if (opts.dfadump & DUMP_DFA_GRAPH)
+		if (opts.dump & DUMP_DFA_GRAPH)
 			dfa.dump_dot_graph(cerr);
 
 		map<transchar, transchar> eq;
-		if (opts.dfaflags & CONTROL_DFA_EQUIV) {
+		if (opts.control & CONTROL_DFA_EQUIV) {
 			eq = dfa.equivalence_classes(opts);
 			dfa.apply_equivalence_classes(eq);
 
-			if (opts.dfadump & DUMP_DFA_EQUIV) {
+			if (opts.dump & DUMP_DFA_EQUIV) {
 				cerr << "\nDFA equivalence class\n";
 				dump_equivalence_classes(cerr, eq);
 			}
-		} else if (opts.dfadump & DUMP_DFA_EQUIV)
+		} else if (opts.dump & DUMP_DFA_EQUIV)
 			cerr << "\nDFA did not generate an equivalence class\n";
 
-		if (opts.dfaflags & CONTROL_DFA_DIFF_ENCODE) {
+		if (opts.control & CONTROL_DFA_DIFF_ENCODE) {
 			dfa.diff_encode(opts);
 
-			if (opts.dfadump & DUMP_DFA_DIFF_ENCODE)
+			if (opts.dump & DUMP_DFA_DIFF_ENCODE)
 				dfa.dump_diff_encode(cerr);
 		}
 
 		CHFA chfa(dfa, eq, opts);
-		if (opts.dfadump & DUMP_DFA_TRANS_TABLE)
+		if (opts.dump & DUMP_DFA_TRANS_TABLE)
 			chfa.dump(cerr);
 		chfa.flex_table(stream, "");
 	}

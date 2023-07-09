@@ -30,6 +30,8 @@
 #define CONTROL_DFA_REMOVE_UNREACHABLE	(1 << 7)
 #define CONTROL_DFA_TRANS_HIGH		(1 << 8)
 #define CONTROL_DFA_DIFF_ENCODE		(1 << 9)
+#define CONTROL_RULE_MERGE		(1 << 10)
+
 
 #define DUMP_DFA_DIFF_PROGRESS		(1 << 0)
 #define DUMP_DFA_DIFF_ENCODE		(1 << 1)
@@ -53,5 +55,6 @@
 #define DUMP_DFA_UNREACHABLE 		(1 << 19)
 #define DUMP_DFA_RULE_EXPR 		(1 << 20)
 #define DUMP_DFA_NODE_TO_DFA 		(1 << 21)
+#define DUMP_RULE_MERGE			(1 << 22)
 
 #endif /* APPARMOR_RE_H */

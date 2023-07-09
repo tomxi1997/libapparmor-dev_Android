@@ -22,10 +22,8 @@
 typedef int optflags_t;
 
 typedef struct optflags {
-	optflags_t dfaflags;
-	optflags_t dfadump;
-	optflags_t frontflags;
-	optflags_t frontdump;
+	optflags_t control;
+	optflags_t dump;
 	optflags_t warn;
 	optflags_t Werror;
 } optflags;
