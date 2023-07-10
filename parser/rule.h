@@ -364,6 +364,15 @@ public:
 		return perms - (rule_cast<perms_rule_t const &>(rhs)).perms;
 	}
 
+	virtual bool merge(rule_t &rhs)
+	{
+		int res = class_rule_t::merge(rhs);
+		if (!res)
+			return res;
+		perms |= (rule_cast<perms_rule_t const &>(rhs)).perms;
+		return true;
+	};
+
 	/* defaut perms, override/mask off if none default used */
 	virtual ostream &dump(ostream &os) {
 

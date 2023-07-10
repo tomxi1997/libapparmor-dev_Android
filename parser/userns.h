@@ -47,6 +47,7 @@ public:
 	{
 		return perms_rule_t::cmp(rhs);
 	};
+	/* merge perms not required atm since there's only one permission */
 
 protected:
 	virtual void warn_once(const char *name) override;
