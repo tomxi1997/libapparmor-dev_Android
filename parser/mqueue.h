@@ -107,6 +107,22 @@ public:
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
 
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const
+	{
+		int res = perms_rule_t::cmp(rhs);
+		if (res)
+			return res;
+		mqueue_rule const &trhs = rule_cast<mqueue_rule const &>(rhs);
+		res = qtype - trhs.qtype;
+		if (res)
+			return res;
+		res = null_strcmp(qname, trhs.qname);
+		if (res)
+			return res;
+		return null_strcmp(label, trhs.label);
+	};
+
 protected:
 	virtual void warn_once(const char *name) override;
 	void validate_qname(void);

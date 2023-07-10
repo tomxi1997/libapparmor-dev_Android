@@ -15,6 +15,7 @@
  *   along with this program; if not, contact or Canonical Ltd.
  */
 
+#include "common_optarg.h"
 #include "parser.h"
 #include "profile.h"
 #include "io_uring.h"
@@ -123,14 +124,14 @@ int io_uring_rule::gen_policy_re(Profile &prof)
 	if (perms & AA_VALID_IO_URING_PERMS) {
 		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, perms,
 						 audit == AUDIT_FORCE ? perms : 0,
-						 dfaflags))
+						 parseopts))
 			goto fail;
 
 		if (perms & AA_IO_URING_OVERRIDE_CREDS) {
 			buf = buffer.str(); /* update buf to have label */
 			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
 							 perms, audit == AUDIT_FORCE ? perms : 0,
-							 dfaflags))
+							 parseopts))
 				goto fail;
 		}
 

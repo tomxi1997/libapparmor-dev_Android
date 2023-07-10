@@ -82,6 +82,9 @@ int abort_on_error = 0;			/* stop processing profiles if error */
 int skip_bad_cache_rebuild = 0;
 int mru_skip_cache = 1;
 
+bool O_rule_merge = true;
+bool D_rule_merge = false;
+
 /* for jobs_max and jobs
  * LONG_MAX : no limit
  * LONG_MIN  : auto  = detect system processing cores
@@ -273,6 +276,7 @@ optflag_table_t warnflag_table[] = {
 	{ 1, "all", "turn on all warnings", WARN_ALL},
 	{ 0, NULL, NULL, 0 },
 };
+
 
 /* Parse comma separated cachelocations. Commas can be escaped by \, */
 static int parse_cacheloc(const char *arg, const char **cacheloc, int max_size)
@@ -497,7 +501,7 @@ static int process_arg(int c, char *optarg)
 		} else if (strcmp(optarg, "Optimize") == 0 ||
 			   strcmp(optarg, "optimize") == 0 ||
 			   strcmp(optarg, "O") == 0) {
-			flagtable_help("-O ", "", progname, optflag_table);
+			flagtable_help("-O ", "", progname, dfaoptflag_table);
 		} else if (strcmp(optarg, "warn") == 0) {
 			flagtable_help("--warn=", "", progname, warnflag_table);
 		} else if (strcmp(optarg, "Werror") == 0) {
@@ -568,13 +572,13 @@ static int process_arg(int c, char *optarg)
 		if (!optarg) {
 			dump_vars = 1;
 		} else if (strcmp(optarg, "show") == 0) {
-			print_flags("dump", dumpflag_table, dfaflags);
+			print_flags("dump", dumpflag_table, parseopts.dump);
 		} else if (strcmp(optarg, "variables") == 0) {
 			dump_vars = 1;
 		} else if (strcmp(optarg, "expanded-variables") == 0) {
 			dump_expanded_vars = 1;
 		} else if (!handle_flag_table(dumpflag_table, optarg,
-					      &dfaflags)) {
+					      &parseopts.dump)) {
 			PERROR("%s: Invalid --Dump option %s\n",
 			       progname, optarg);
 			exit(1);
@@ -582,9 +586,9 @@ static int process_arg(int c, char *optarg)
 		break;
 	case 'O':
 		if (strcmp(optarg, "show") == 0) {
-			print_flags("Optimize", optflag_table, dfaflags);
-		} else if (!handle_flag_table(optflag_table, optarg,
-				       &dfaflags)) {
+			print_flags("Optimize", dfaoptflag_table, parseopts.control);
+		} else if (!handle_flag_table(dfaoptflag_table, optarg,
+					      &parseopts.control)) {
 			PERROR("%s: Invalid --Optimize option %s\n",
 			       progname, optarg);
 			exit(1);
@@ -665,7 +669,7 @@ static int process_arg(int c, char *optarg)
 	case 'q':
 		conf_verbose = 0;
 		conf_quiet = 1;
-		warnflags = 0;
+		parseopts.warn = 0;
 		break;
 	case 'v':
 		conf_verbose = 1;
@@ -723,9 +727,9 @@ static int process_arg(int c, char *optarg)
 		break;
 	case ARG_WARN:
 		if (strcmp(optarg, "show") == 0) {
-			print_flags("warn", warnflag_table, warnflags);
+			print_flags("warn", warnflag_table, parseopts.warn);
 		} else if (!handle_flag_table(warnflag_table, optarg,
-				       &warnflags)) {
+				       &parseopts.warn)) {
 			PERROR("%s: Invalid --warn option %s\n",
 			       progname, optarg);
 			exit(1);
@@ -733,18 +737,18 @@ static int process_arg(int c, char *optarg)
 		break;
 	case ARG_WERROR:
 		if (!optarg) {
-			werrflags = -1;
+			parseopts.Werror = -1;
 		} else if (strcmp(optarg, "show") == 0) {
-			print_flags("Werror", warnflag_table, werrflags);
+			print_flags("Werror", warnflag_table, parseopts.Werror);
 		} else if (optarg && !handle_flag_table(warnflag_table, optarg,
-					      &werrflags)) {
+					      &parseopts.Werror)) {
 			PERROR("%s: Invalid --Werror option %s\n",
 			       progname, optarg);
 			exit(1);
 		}
 		break;
 	case ARG_DEBUG_CACHE:
-		warnflags |= WARN_DEBUG_CACHE;
+		parseopts.warn |= WARN_DEBUG_CACHE;
 		break;
 	case 'j':
 		jobs = process_jobs_arg("-j", optarg);
@@ -1530,7 +1534,7 @@ static bool get_kernel_features(struct aa_features **features)
 
 	if (!kernel_supports_diff_encode)
 		/* clear diff_encode because it is not supported */
-		dfaflags &= ~DFA_CONTROL_DIFF_ENCODE;
+		parseopts.control &= ~CONTROL_DFA_DIFF_ENCODE;
 
 	return true;
 }

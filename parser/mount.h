@@ -21,6 +21,7 @@
 
 #include <ostream>
 #include <vector>
+#include <algorithm>
 
 #include "parser.h"
 #include "rule.h"
@@ -172,6 +173,11 @@ public:
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
 	virtual void post_parse_profile(Profile &prof unused);
+
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const;
+
+	// for now use default merge/dedup
 
 protected:
 	virtual void warn_once(const char *name) override;

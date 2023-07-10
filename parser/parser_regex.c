@@ -28,7 +28,7 @@
 
 
 /* #define DEBUG */
-
+#include "common_optarg.h"
 #include "lib.h"
 #include "parser.h"
 #include "profile.h"
@@ -128,7 +128,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 
 	sptr = aare;
 
-	if (dfaflags & DFA_DUMP_RULE_EXPR)
+	if (parseopts.dump & DUMP_DFA_RULE_EXPR)
 		fprintf(stderr, "aare: %s   ->   ", aare);
 
 	if (anchor)
@@ -427,7 +427,7 @@ out:
 	if (ret == FALSE)
 		ptype = ePatternInvalid;
 
-	if (dfaflags & DFA_DUMP_RULE_EXPR)
+	if (parseopts.dump & DUMP_DFA_RULE_EXPR)
 		fprintf(stderr, "%s\n", pcre.c_str());
 
 	return ptype;
@@ -507,7 +507,7 @@ static int process_profile_name_xmatch(Profile *prof)
 		aare_rules *rules = new aare_rules();
 		if (!rules)
 			return FALSE;
-		if (!rules->add_rule(tbuf.c_str(), 0, AA_MAY_EXEC, 0, dfaflags)) {
+		if (!rules->add_rule(tbuf.c_str(), 0, AA_MAY_EXEC, 0, parseopts)) {
 			delete rules;
 			return FALSE;
 		}
@@ -520,7 +520,7 @@ static int process_profile_name_xmatch(Profile *prof)
 				ptype = convert_aaregex_to_pcre(alt->name, 0,
 								glob_default,
 								tbuf, &len);
-				if (!rules->add_rule(tbuf.c_str(), 0, AA_MAY_EXEC, 0, dfaflags)) {
+				if (!rules->add_rule(tbuf.c_str(), 0, AA_MAY_EXEC, 0, parseopts)) {
 					delete rules;
 					return FALSE;
 				}
@@ -562,14 +562,14 @@ static int process_profile_name_xmatch(Profile *prof)
 				convert_aaregex_to_pcre(xattr_value, 0,
 							glob_null, tbuf,
 							&len);
-				if (!rules->append_rule(tbuf.c_str(), true, true, dfaflags)) {
+				if (!rules->append_rule(tbuf.c_str(), true, true, parseopts)) {
 					delete rules;
 					return FALSE;
 				}
 			}
 		}
 build:
-		prof->xmatch = rules->create_dfa(&prof->xmatch_size, &prof->xmatch_len, dfaflags, true);
+		prof->xmatch = rules->create_dfa(&prof->xmatch_size, &prof->xmatch_len, parseopts, true);
 		delete rules;
 		if (!prof->xmatch)
 			return FALSE;
@@ -638,13 +638,13 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		    !dfarules->add_rule(tbuf.c_str(), entry->rule_mode == RULE_DENY,
 					entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE),
 					entry->audit == AUDIT_FORCE ? entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE) : 0,
-					dfaflags))
+					parseopts))
 			return FALSE;
 	} else if (!is_change_profile_perms(entry->perms)) {
 		if (!dfarules->add_rule(tbuf.c_str(),
 				entry->rule_mode == RULE_DENY, entry->perms,
 				entry->audit == AUDIT_FORCE ? entry->perms : 0,
-				dfaflags))
+				parseopts))
 			return FALSE;
 	}
 
@@ -667,7 +667,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 			perms |= LINK_TO_LINK_SUBSET(perms);
 			vec[1] = "/[^/].*";
 		}
-		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, perms, entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0, 2, vec, dfaflags, false))
+		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, perms, entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0, 2, vec, parseopts, false))
 			return FALSE;
 	}
 	if (is_change_profile_perms(entry->perms)) {
@@ -678,7 +678,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		int index = 1;
 		uint32_t onexec_perms = AA_ONEXEC;
 
-		if ((warnflags & WARN_RULE_DOWNGRADED) && entry->audit == AUDIT_FORCE && warn_change_profile) {
+		if ((parseopts.warn & WARN_RULE_DOWNGRADED) && entry->audit == AUDIT_FORCE && warn_change_profile) {
 			/* don't have profile name here, so until this code
 			 * gets refactored just throw out a generic warning
 			 */
@@ -720,12 +720,12 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		/* regular change_profile rule */
 		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY,
 					    AA_CHANGE_PROFILE | onexec_perms,
-					    0, index - 1, &vec[1], dfaflags, false))
+					    0, index - 1, &vec[1], parseopts, false))
 			return FALSE;
 
 		/* onexec rules - both rules are needed for onexec */
 		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, onexec_perms,
-					    0, 1, vec, dfaflags, false))
+					    0, 1, vec, parseopts, false))
 			return FALSE;
 
 		/**
@@ -734,7 +734,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		 */
 		onexec_perms |= (entry->perms & (AA_EXEC_BITS | ALL_AA_EXEC_UNSAFE));
 		if (!dfarules->add_rule_vec(entry->rule_mode == RULE_DENY, onexec_perms,
-					    0, index, vec, dfaflags, false))
+					    0, index, vec, parseopts, false))
 			return FALSE;
 	}
 	return TRUE;
@@ -770,7 +770,7 @@ int process_profile_regex(Profile *prof)
 	if (prof->dfa.rules->rule_count > 0) {
 		int xmatch_len = 0;
 		prof->dfa.dfa = prof->dfa.rules->create_dfa(&prof->dfa.size,
-							    &xmatch_len, dfaflags, true);
+							    &xmatch_len, parseopts, true);
 		delete prof->dfa.rules;
 		prof->dfa.rules = NULL;
 		if (!prof->dfa.dfa)
@@ -848,7 +848,7 @@ int clear_and_convert_entry(std::string& buffer, char *entry)
 int post_process_policydb_ents(Profile *prof)
 {
 	for (RuleList::iterator i = prof->rule_ents.begin(); i != prof->rule_ents.end(); i++) {
-		if ((*i)->flags & RULE_FLAG_DELETED)
+		if ((*i)->skip())
 			continue;
 		if ((*i)->gen_policy_re(*prof) == RULE_ERROR)
 			return FALSE;
@@ -875,7 +875,7 @@ static bool gen_net_rule(Profile *prof, u16 family, unsigned int type_mask,
 	buf = buffer.str();
 	if (!prof->policy.rules->add_rule(buf.c_str(), deny, map_perms(AA_VALID_NET_PERMS),
 					  audit ? map_perms(AA_VALID_NET_PERMS) : 0,
-					  dfaflags))
+					  parseopts))
 		return false;
 
 	return true;
@@ -969,44 +969,44 @@ int process_profile_policydb(Profile *prof)
 
 	/* note: this activates fs based unix domain sockets mediation on connect */
 	if (kernel_abi_version > 5 &&
-	    !prof->policy.rules->add_rule(mediates_file, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_file, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 	if (features_supports_mount &&
-	    !prof->policy.rules->add_rule(mediates_mount, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_mount, 0, AA_MAY_READ, 0, parseopts))
 			goto out;
 	if (features_supports_dbus &&
-	    !prof->policy.rules->add_rule(mediates_dbus, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_dbus, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 	if (features_supports_signal &&
-	    !prof->policy.rules->add_rule(mediates_signal, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_signal, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 	if (features_supports_ptrace &&
-	    !prof->policy.rules->add_rule(mediates_ptrace, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_ptrace, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 	if (features_supports_networkv8 &&
-	    !prof->policy.rules->add_rule(mediates_netv8, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_netv8, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 	if (features_supports_unix &&
-	    (!prof->policy.rules->add_rule(mediates_extended_net, 0, AA_MAY_READ, 0, dfaflags) ||
-	     !prof->policy.rules->add_rule(mediates_net_unix, 0, AA_MAY_READ, 0, dfaflags)))
+	    (!prof->policy.rules->add_rule(mediates_extended_net, 0, AA_MAY_READ, 0, parseopts) ||
+	     !prof->policy.rules->add_rule(mediates_net_unix, 0, AA_MAY_READ, 0, parseopts)))
 		goto out;
 	if (features_supports_userns &&
-	    !prof->policy.rules->add_rule(mediates_ns, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_ns, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 	if (features_supports_posix_mqueue &&
-	    !prof->policy.rules->add_rule(mediates_posix_mqueue, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_posix_mqueue, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 	if (features_supports_sysv_mqueue &&
-	    !prof->policy.rules->add_rule(mediates_sysv_mqueue, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_sysv_mqueue, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 	if (features_supports_io_uring &&
-	    !prof->policy.rules->add_rule(mediates_io_uring, 0, AA_MAY_READ, 0, dfaflags))
+	    !prof->policy.rules->add_rule(mediates_io_uring, 0, AA_MAY_READ, 0, parseopts))
 		goto out;
 
 	if (prof->policy.rules->rule_count > 0) {
 		int xmatch_len = 0;
 		prof->policy.dfa = prof->policy.rules->create_dfa(&prof->policy.size,
-								  &xmatch_len, dfaflags, false);
+								  &xmatch_len, parseopts, false);
 		delete prof->policy.rules;
 
 		prof->policy.rules = NULL;

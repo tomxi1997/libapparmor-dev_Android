@@ -49,9 +49,10 @@ void CHFA::init_free_list(vector<pair<size_t, size_t> > &free_list,
 /**
  * new Construct the transition table.
  */
-CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, dfaflags_t flags): eq(eq)
+CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
+	eq(eq)
 {
-	if (flags & DFA_DUMP_TRANS_PROGRESS)
+	if (opts.dump & DUMP_DFA_TRANS_PROGRESS)
 		fprintf(stderr, "Compressing HFA:\r");
 
 	chfaflags = 0;
@@ -82,7 +83,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, dfaflags_t flags): eq(eq)
 		if (*i == dfa.start || *i == dfa.nonmatching)
 			continue;
 		optimal += (*i)->trans.size();
-		if (flags & DFA_CONTROL_TRANS_HIGH) {
+		if (opts.control & CONTROL_DFA_TRANS_HIGH) {
 			size_t range = 0;
 			if ((*i)->trans.size())
 				range =
@@ -116,7 +117,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, dfaflags_t flags): eq(eq)
 
 	int count = 2;
 
-	if (!(flags & DFA_CONTROL_TRANS_HIGH)) {
+	if (!(opts.control & CONTROL_DFA_TRANS_HIGH)) {
 		for (Partition::iterator i = dfa.states.begin(); i != dfa.states.end(); i++) {
 			if (*i != dfa.nonmatching && *i != dfa.start) {
 				insert_state(free_list, *i, dfa);
@@ -124,7 +125,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, dfaflags_t flags): eq(eq)
 				accept2[num.size()] = PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny);
 				num.insert(make_pair(*i, num.size()));
 			}
-			if (flags & (DFA_DUMP_TRANS_PROGRESS)) {
+			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
 				count++;
 				if (count % 100 == 0)
 					fprintf(stderr, "\033[2KCompressing trans table: insert state: %d/%zd\r",
@@ -141,7 +142,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, dfaflags_t flags): eq(eq)
 				accept2[num.size()] = PACK_AUDIT_CTL(i->second->perms.audit, i->second->perms.quiet & i->second->perms.deny);
 				num.insert(make_pair(i->second, num.size()));
 			}
-			if (flags & (DFA_DUMP_TRANS_PROGRESS)) {
+			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
 				count++;
 				if (count % 100 == 0)
 					fprintf(stderr, "\033[2KCompressing trans table: insert state: %d/%zd\r",
@@ -150,7 +151,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, dfaflags_t flags): eq(eq)
 		}
 	}
 
-	if (flags & (DFA_DUMP_TRANS_STATS | DFA_DUMP_TRANS_PROGRESS)) {
+	if (opts.dump & (DUMP_DFA_TRANS_STATS | DUMP_DFA_TRANS_PROGRESS)) {
 		ssize_t size = 4 * next_check.size() + 6 * dfa.states.size();
 		fprintf(stderr, "\033[2KCompressed trans table: states %zd, next/check %zd, optimal next/check %zd avg/state %.2f, compression %zd/%zd = %.2f %%\n",
 			dfa.states.size(), next_check.size(), optimal,

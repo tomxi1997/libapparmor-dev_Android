@@ -52,6 +52,16 @@ public:
 		return true;
 	};
 
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const
+	{
+		int res = perms_rule_t::cmp(rhs);
+		if (res)
+			return res;
+		return null_strcmp(peer_label,
+			    (rule_cast<ptrace_rule const &>(rhs)).peer_label);
+	};
+
 protected:
 	virtual void warn_once(const char *name) override;
 };

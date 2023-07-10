@@ -72,7 +72,7 @@ static int process_file_entries(Profile *prof)
 	table = (struct cod_entry **) malloc(sizeof(struct cod_entry *) * (count + 1));
 	if (!table) {
 		PERROR(_("Couldn't merge entries. Out of Memory\n"));
-		return ENOMEM;
+		return -ENOMEM;
 	}
 
 	for (cur = prof->entries, n = 0; cur; cur = cur->next, n++)
@@ -84,6 +84,7 @@ static int process_file_entries(Profile *prof)
 	prof->entries = table[0];
 	free(table);
 
+	count = 0;
 	/* walk the sorted table merging similar entries */
 	for (cur = prof->entries, next = cur->next; next; next = cur->next) {
 		if (file_comp(&cur, &next) != 0) {
@@ -102,12 +103,24 @@ static int process_file_entries(Profile *prof)
 
 		next->next = NULL;
 		free_cod_entries(next);
+		count++;
 	}
 
-	return 0;
+	return count;
 }
 
 int profile_merge_rules(Profile *prof)
 {
-  return process_file_entries(prof);
+	if (!(parseopts.control & CONTROL_RULE_MERGE))
+		return 0;
+
+	int res, tmp = process_file_entries(prof);
+	if (tmp < 0)
+		return -tmp;
+	res = prof->merge_rules();
+	if (res < 0)
+		return -res;
+	if (parseopts.dump & DUMP_RULE_MERGE)
+	        fprintf(stderr, "RULE MERGE: deleted %d file rules, %d rules\n", tmp, res);
+	return 0;
 }

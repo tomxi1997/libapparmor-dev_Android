@@ -37,7 +37,7 @@ class CHFA {
 	typedef vector<pair<const State *, size_t> > DefaultBase;
 	typedef vector<pair<const State *, const State *> > NextCheck;
       public:
-	CHFA(DFA &dfa, map<transchar, transchar> &eq, dfaflags_t flags);
+	CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts);
 	void dump(ostream & os);
 	void flex_table(ostream &os, const char *name);
 	void init_free_list(vector<pair<size_t, size_t> > &free_list,
