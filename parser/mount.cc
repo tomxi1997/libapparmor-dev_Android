@@ -649,8 +649,8 @@ static int cmp_vec_int(std::vector<unsigned int> const &lhs,
 }
 
 int mnt_rule::cmp(rule_t const &rhs) const {
-		// for now don't do merging of perms, only exact match
-		int res = perms_rule_t::cmp(rhs);
+		/* use class_rule_t instead of perms_rule_t to merge perms */
+		int res = class_rule_t::cmp(rhs);
 		if (res != 0)
 			return res;
 		mnt_rule const &rhs_mnt = rule_cast<mnt_rule const &>(rhs);
