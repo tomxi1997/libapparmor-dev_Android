@@ -303,12 +303,12 @@ static void split_node_types(NodeSet *nodes, NodeSet **anodes, NodeSet **nnodes
 
 State *DFA::add_new_state(NodeSet *anodes, NodeSet *nnodes, State *other)
 {
-	hashedNodeVec *nnodev;
+	NodeVec *nnodev, *anodev;
 	nnodev = nnodes_cache.insert(nnodes);
-	anodes = anodes_cache.insert(anodes);
+	anodev = anodes_cache.insert(anodes);
 
 	ProtoState proto;
-	proto.init(nnodev, anodes);
+	proto.init(nnodev, anodev);
 	State *state = new State(node_map.size(), proto, other, filedfa);
 	pair<NodeMap::iterator,bool> x = node_map.insert(proto, state);
 	if (x.second == false) {
@@ -347,7 +347,7 @@ void DFA::update_state_transitions(State *state)
 	 * need to compute follow for the accept nodes in a protostate
 	 */
 	Cases cases;
-	for (hashedNodeVec::iterator i = state->proto.nnodes->begin(); i != state->proto.nnodes->end(); i++)
+	for (NodeVec::iterator i = state->proto.nnodes->begin(); i != state->proto.nnodes->end(); i++)
 		(*i)->follow(cases);
 
 	/* Now for each set of nodes in the computed transitions, make
@@ -1340,7 +1340,7 @@ static inline int diff_qualifiers(uint32_t perm1, uint32_t perm2)
  * have any exact matches, then they override the execute and safe
  * execute flags.
  */
-int accept_perms(NodeSet *state, perms_t &perms, bool filedfa)
+int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 {
 	int error = 0;
 	uint32_t exact_match_allow = 0;
@@ -1351,7 +1351,7 @@ int accept_perms(NodeSet *state, perms_t &perms, bool filedfa)
 	if (!state)
 		return error;
 
-	for (NodeSet::iterator i = state->begin(); i != state->end(); i++) {
+	for (NodeVec::iterator i = state->begin(); i != state->end(); i++) {
 		if (!(*i)->is_type(NODE_TYPE_MATCHFLAG))
 			continue;
 

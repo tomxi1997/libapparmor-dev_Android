@@ -100,7 +100,6 @@ bool aare_rules::add_rule_vec(int deny, uint32_t perms, uint32_t audit,
 		if ((*i)->is_type(NODE_TYPE_STAR) ||
 		    (*i)->is_type(NODE_TYPE_PLUS) ||
 		    (*i)->is_type(NODE_TYPE_ANYCHAR) ||
-		    (*i)->is_type(NODE_TYPE_CHARSET) ||
 		    (*i)->is_type(NODE_TYPE_NOTCHARSET))
 			exact_match = 0;
 	}

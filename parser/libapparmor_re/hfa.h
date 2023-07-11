@@ -133,20 +133,20 @@ public:
 	uint32_t allow, deny, audit, quiet, exact;
 };
 
-int accept_perms(NodeSet *state, perms_t &perms, bool filedfa);
+int accept_perms(NodeVec *state, perms_t &perms, bool filedfa);
 
 /*
  * ProtoState - NodeSet and ancillery information used to create a state
  */
 class ProtoState {
 public:
-	hashedNodeVec *nnodes;
-	NodeSet *anodes;
+	NodeVec *nnodes;
+	NodeVec *anodes;
 
 	/* init is used instead of a constructor because ProtoState is used
 	 * in a union
 	 */
-	void init(hashedNodeVec *n, NodeSet *a = NULL)
+	void init(NodeVec *n, NodeVec *a = NULL)
 	{
 		nnodes = n;
 		anodes = a;
@@ -312,7 +312,7 @@ class DFA {
 			     unsigned int &max);
 
 	/* temporary values used during computations */
-	NodeCache anodes_cache;
+	NodeVecCache anodes_cache;
 	NodeVecCache nnodes_cache;
 	NodeMap node_map;
 	list<State *> work_queue;
