@@ -353,9 +353,48 @@ public:
 
 };
 
+/* same as perms_rule_t except enable rule merging instead of just dedup
+ * original permission set is saved off
+ */
 class perms_rule_t: public class_rule_t {
 public:
-	perms_rule_t(int c): class_rule_t(c), perms(0) { };
+	perms_rule_t(int c): class_rule_t(c), perms(0), saved(0) { };
+
+	virtual int cmp(rule_t const &rhs) const {
+		/* don't compare perms so they can be merged */
+		return class_rule_t::cmp(rhs);
+	}
+
+	virtual bool merge(rule_t &rhs)
+	{
+		int res = class_rule_t::merge(rhs);
+		if (!res)
+			return res;
+		if (!saved)
+			saved = perms;
+		perms |= (rule_cast<perms_rule_t const &>(rhs)).perms;
+		return true;
+	};
+
+	/* defaut perms, override/mask off if none default used */
+	virtual ostream &dump(ostream &os) {
+		class_rule_t::dump(os);
+
+		if (saved)
+			os << "(0x" << hex << perms << "/orig " << saved << ") ";
+		else
+			os << "(0x" << hex << perms << ") ";
+
+		return os;
+	}
+
+	perms_t perms, saved;
+};
+
+// alternate perms rule class that only does dedup instead of perms merging
+class dedup_perms_rule_t: public class_rule_t {
+public:
+	dedup_perms_rule_t(int c): class_rule_t(c), perms(0) { };
 
 	virtual int cmp(rule_t const &rhs) const {
 		int res = class_rule_t::cmp(rhs);
@@ -364,24 +403,19 @@ public:
 		return perms - (rule_cast<perms_rule_t const &>(rhs)).perms;
 	}
 
-	virtual bool merge(rule_t &rhs)
-	{
-		int res = class_rule_t::merge(rhs);
-		if (!res)
-			return res;
-		perms |= (rule_cast<perms_rule_t const &>(rhs)).perms;
-		return true;
-	};
+	// inherit default merge which does dedup
 
 	/* defaut perms, override/mask off if none default used */
 	virtual ostream &dump(ostream &os) {
+		class_rule_t::dump(os);
 
+		os << "(0x" << hex << perms << ") ";
 		return os;
 	}
 
 	perms_t perms;
-
 };
+
 
 #endif /* __AA_RULE_H */
 

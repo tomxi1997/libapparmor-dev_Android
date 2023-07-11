@@ -110,8 +110,7 @@ public:
 	virtual bool is_mergeable(void) { return true; }
 	virtual int cmp(rule_t const &rhs) const
 	{
-		/* use class_rule_t instead of perms_rule_t to merge perms */
-		int res = class_rule_t::cmp(rhs);
+		int res = perms_rule_t::cmp(rhs);
 		if (res)
 			return res;
 		mqueue_rule const &trhs = rule_cast<mqueue_rule const &>(rhs);
