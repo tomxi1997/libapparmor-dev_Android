@@ -13,10 +13,13 @@
 #
 # ------------------------------------------------------------------
 
+import os
 import subprocess
 import sys
 import unittest
 from argparse import ArgumentParser
+from shutil import rmtree
+from tempfile import mkdtemp
 
 import testlib
 
@@ -27,6 +30,15 @@ class AAErrorTests(testlib.AATestTemplate):
     def setUp(self):
         self.maxDiff = None
         self.cmd_prefix = [config.parser, '--config-file=./parser.conf', '-S', '-I', 'errors']
+
+        self.tmpdir = os.path.realpath(mkdtemp(prefix='test-aa-parser-errors-'))
+        self.profile_dir = os.path.join(self.tmpdir, 'profile')
+        os.mkdir(self.profile_dir)
+
+
+    def tearDown(self):
+        if os.path.exists(self.tmpdir):
+            rmtree(self.tmpdir)
 
     def _run_test(self, profile, message='', is_error=True):
         cmd = self.cmd_prefix + [profile]
@@ -90,28 +102,65 @@ class AAErrorTests(testlib.AATestTemplate):
             is_error=False
         )
 
+    def test_non_existant_profile(self):
+        test_profile = os.path.join(self.profile_dir, "does-not-exist.sd")
+        self._run_test(
+            test_profile,
+            "File {} not found, skipping...\n".format(test_profile),
+        )
+
+    # We can run this test with multiple different arguments
+    def _test_non_existant_symlink_target(self):
+        """Helper Function to test the parser on a symlink with a non-existent target"""
+
+        test_profile = os.path.join(self.profile_dir, "non-existant-target.sd")
+        os.symlink('does-not-exist.sd', test_profile)
+        self._run_test(
+            test_profile,
+            "File {} not found, skipping...\n".format(test_profile),
+        )
+
+    def test_non_existant_symlink_target(self):
+        '''Basic symlink test that goes nowhere'''
+        self._test_non_existant_symlink_target()
+
+    def test_non_existant_symlink_target_j0(self):
+        '''Basic symlink test that goes nowhere with 0 jobs'''
+        self.cmd_prefix.append('-j0')
+        self._test_non_existant_symlink_target()
+
+    def test_non_existant_symlink_target_j1(self):
+        '''Basic symlink test that goes nowhere with 1 job arg'''
+        self.cmd_prefix.append('-j1')
+        self._test_non_existant_symlink_target()
+
+    def test_non_existant_symlink_target_j8(self):
+        '''Basic symlink test that goes nowhere with 8 job arg'''
+        self.cmd_prefix.append('-j8')
+        self._test_non_existant_symlink_target()
+
+    def test_non_existant_symlink_target_jauto(self):
+        '''Basic symlink test that goes nowhere with auto job arg'''
+        self.cmd_prefix.append('-jauto')
+        self._test_non_existant_symlink_target()
+
+    def test_non_existant_symlink_target_in_directory(self):
+        '''Symlink test passing a directory to the parser'''
+        test_profile = os.path.join(self.profile_dir, "non-existant-target.sd")
+        os.symlink('does-not-exist.sd', test_profile)
+        self._run_test(
+            self.profile_dir,
+            "There was an error while loading profiles from {}\n".format(self.profile_dir),
+        )
 
 def main():
     global config
     p = ArgumentParser()
     p.add_argument('-p', '--parser', default=testlib.DEFAULT_PARSER, action="store", dest='parser',
                    help="Specify path of apparmor parser to use [default = %(default)s]")
-    p.add_argument('-v', '--verbose', action="store_true", dest="verbose")
-    config = p.parse_args()
+    config, args = p.parse_known_args()
 
-    verbosity = 2 if config.verbose else 1
-
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(AAErrorTests))
-    try:
-        result = unittest.TextTestRunner(verbosity=verbosity).run(test_suite)
-    except Exception:
-        rc = 1
-    else:
-        rc = 0 if result.wasSuccessful() else 1
-
-    return rc
-
+    unittest.main(argv=sys.argv[:1] + args)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
