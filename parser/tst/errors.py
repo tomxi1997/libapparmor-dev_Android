@@ -158,22 +158,9 @@ def main():
     p = ArgumentParser()
     p.add_argument('-p', '--parser', default=testlib.DEFAULT_PARSER, action="store", dest='parser',
                    help="Specify path of apparmor parser to use [default = %(default)s]")
-    p.add_argument('-v', '--verbose', action="store_true", dest="verbose")
-    config = p.parse_args()
+    config, args = p.parse_known_args()
 
-    verbosity = 2 if config.verbose else 1
-
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.TestLoader().loadTestsFromTestCase(AAErrorTests))
-    try:
-        result = unittest.TextTestRunner(verbosity=verbosity).run(test_suite)
-    except Exception:
-        rc = 1
-    else:
-        rc = 0 if result.wasSuccessful() else 1
-
-    return rc
-
+    unittest.main(argv=sys.argv[:1] + args)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
