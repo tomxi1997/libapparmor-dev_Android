@@ -70,7 +70,7 @@ kernel_features()
 			# check if feature is in file
 			feature=$(basename "$features_dir/$f")
 			file=$(dirname "$features_dir/$f")
-			if ! grep -q $feature $file; then
+			if [ -f $file ] && ! grep -q $feature $file; then
 				echo "Required feature '$f' not available."
 				return 2;
 			fi
