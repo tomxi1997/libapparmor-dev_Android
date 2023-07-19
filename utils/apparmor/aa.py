@@ -1031,7 +1031,7 @@ def ask_exec(hashlog):
                         if target_profile and hashlog[aamode].get(target_profile):
                             hashlog[aamode][target_profile]['final_name'] = profile
 
-                    elif re.search('^CMD_(px|nx|pix|nix)', ans):
+                    elif ans.startswith('CMD_px') or ans.startswith('CMD_pix'):
                         if to_name:
                             exec_target = to_name
 
@@ -1087,6 +1087,8 @@ def ask_exec(hashlog):
                     elif ans.startswith('CMD_ux'):
                         continue
 
+                    else:
+                        raise AppArmorBug('Unhandled ans %s, please open a bugreport!' % ans)
 
 def order_globs(globs, original_path):
     """Returns the globs in sorted order, more specific behind"""
