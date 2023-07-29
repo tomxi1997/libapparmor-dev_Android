@@ -119,7 +119,7 @@ CHECK_PROFILES=$(filter-out ${IGNORE_FILES} ${SUBDIRS}, $(wildcard ${PROFILES_SO
 CHECK_ABSTRACTIONS=$(shell find ${ABSTRACTIONS_SOURCE} -type f -print)
 
 .PHONY: check
-check: check-parser check-logprof check-abstractions.d check-extras
+check: check-parser check-logprof check-abstractions.d check-tunables.d check-extras
 
 .PHONY: check-parser
 check-parser: test-dependencies local
@@ -150,6 +150,15 @@ check-abstractions.d:
 		test "$$file" = 'ubuntu-browsers' && continue ; \
 		test "$$file" = 'ubuntu-helpers' && continue ; \
 		grep -q "^  include if exists <abstractions/$${file}.d>$$" $$file || { echo "$$file does not contain 'include if exists <abstractions/$${file}.d>'"; exit 1; } ; \
+	done
+
+.PHONY: check-tunables.d
+check-tunables.d:
+	@echo "*** Checking if all tunables (with a few exceptions) contain include if exists <tunables/*.d>"
+	$(Q)cd apparmor.d/tunables && for file in * ; do \
+		test -d "$$file" &&  continue ;  \
+		test "$$file" = 'sys' && continue ; \
+		grep -q "^include if exists <tunables/$${file}.d>$$" $$file || { echo "$$file does not contain 'include if exists <tunables/$${file}.d>'"; exit 1; } ; \
 	done
 
 .PHONY: check-extras
