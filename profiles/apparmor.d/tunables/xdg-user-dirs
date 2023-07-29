@@ -20,5 +20,4 @@
 @{XDG_VIDEOS_DIR}="Videos"
 
 # Also, include files in tunables/xdg-user-dirs.d for site-specific adjustments
-# to the various XDG directories
-include <tunables/xdg-user-dirs.d>
+include if exists <tunables/xdg-user-dirs.d>

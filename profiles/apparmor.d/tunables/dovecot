@@ -18,3 +18,5 @@
 
 @{DOVECOT_MAILSTORE}=@{HOME}/Maildir/ @{HOME}/mail/ @{HOME}/Mail/ /var/vmail/ /var/mail/ /var/spool/mail/
 
+# Also, include files in tunables/dovecot.d for site-specific adjustments
+include if exists <tunables/dovecot.d>
