@@ -33,14 +33,20 @@ debug_logger = DebugLogger('UI')
 ARROWS = {'A': 'UP', 'B': 'DOWN', 'C': 'RIGHT', 'D': 'LEFT'}
 
 UI_mode = 'text'
+jsonlog = None
 
 
 def write_json(jsonout):
-    print(json.dumps(jsonout, sort_keys=False, separators=(',', ': ')))
+    jtxt = json.dumps(jsonout, sort_keys=False, separators=(',', ': '))
+
+    if jsonlog:
+        jsonlog.write('o ' + jtxt + '\n')
+
+    print(jtxt)
     sys.stdout.flush()
 
 
-def set_json_mode():
+def set_json_mode(cfg):
     """
     Currently this is only used by aa-genprof and aa-logprof, while e.g.
     aa-status generates its own JSON output.
@@ -50,8 +56,14 @@ def set_json_mode():
 
     Current known consumers of the JSON output:
     - YaST
+
+    The cfg parameter expects the parsed logprof.conf aka apparmor.aa.cfg.
     """
-    global UI_mode
+    global UI_mode, jsonlog
+
+    if int(cfg['settings'].get('json_log', False)):
+        jsonlog = NamedTemporaryFile('w', prefix='aa-jsonlog-', delete=False, encoding='utf-8')
+
     UI_mode = 'json'
     jsonout = {'dialog': 'apparmor-json-version', 'data': '2.12'}
     write_json(jsonout)
@@ -67,6 +79,10 @@ def set_text_mode():
 # for the dialog type
 def json_response(dialog_type):
     string = input('\n')
+
+    if jsonlog:
+        jsonlog.write('i ' + string + '\n')
+
     rh = json.loads(string.strip())
     if rh["dialog"] != dialog_type:
         raise AppArmorException('Expected response %s got %s.' % (dialog_type, string))
