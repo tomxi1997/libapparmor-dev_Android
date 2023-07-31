@@ -62,9 +62,10 @@ enum profile_mode {
 	MODE_COMPLAIN = 2,
 	MODE_KILL = 3,
 	MODE_UNCONFINED = 4,
-	MODE_CONFLICT = 5	/* greater than MODE_LAST */
+	MODE_PROMPT = 5,
+	MODE_CONFLICT = 6	/* greater than MODE_LAST */
 };
-#define MODE_LAST MODE_UNCONFINED
+#define MODE_LAST MODE_PROMPT
 
 static inline enum profile_mode operator++(enum profile_mode &mode)
 {

@@ -27,6 +27,7 @@ const char *profile_mode_table[] = {
 	"complain",
 	"kill",
 	"unconfined",
+	"prompt"
 };
 
 bool deref_profileptr_lt::operator()(Profile * const &lhs, Profile * const &rhs) const
