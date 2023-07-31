@@ -61,7 +61,7 @@ class AACliBootstrapTest(AATest):
         self.assertEqual(sys.stdout.getvalue(), 'Test string\n')
 
     def test_aa_ui_info_json(self):
-        aaui.set_json_mode()
+        aaui.set_json_mode({'settings': {}})
         sys.stdout.getvalue()
         aaui.UI_Info('Test string')
         self.assertEqual(
