@@ -22,7 +22,7 @@ include <tunables/global>
 #  /usr/lib/firefox-4.0b8/firefox
 # but not:
 #  /usr/lib/firefox-4.0b8/firefox.sh
-profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
+profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   include <abstractions/audio>
   include <abstractions/cups-client>
   include <abstractions/dbus-strict>
@@ -279,11 +279,17 @@ profile firefox @{MOZ_LIBDIR}/firefox{,*[^s][^h]} {
        interface=org.gtk.vfs.Mount
        member={CreateFileMonitor,Enumerate,QueryInfo}
        peer=(label=unconfined),
+  dbus (receive)
+       bus=session
+       path=/org/gtk/vfs/mounttracker
+       interface=org.gtk.vfs.MountTracker
+       member=Mounted
+       peer=(label=unconfined),
   dbus (send)
        bus=session
        path=/org/gtk/vfs/mounttracker
        interface=org.gtk.vfs.MountTracker
-       member={ListMountableInfo,ListMounts2,LookupMount,Mounted}
+       member={ListMountableInfo,ListMounts2,LookupMount}
        peer=(label=unconfined),
 
   # Allow access to xdg-desktop-portal and xdg-document-portal (LP: #1974449)
