@@ -104,7 +104,7 @@ int net_find_type_val(const char *type);
 const char *net_find_type_name(int type);
 const char *net_find_af_name(unsigned int af);
 
-class network_rule: public perms_rule_t {
+class network_rule: public dedup_perms_rule_t {
 public:
 	std::unordered_map<unsigned int, std::vector<struct aa_network_entry>> network_map;
 	std::unordered_map<unsigned int, perms_t> network_perms;
@@ -112,7 +112,7 @@ public:
 	/* empty constructor used only for the profile to access
 	 * static elements to maintain compatibility with
 	 * AA_CLASS_NET */
-	network_rule(): perms_rule_t(AA_CLASS_NETV8) { }
+	network_rule(): dedup_perms_rule_t(AA_CLASS_NETV8) { }
 	network_rule(const char *family, const char *type,
 		     const char *protocol);
 	network_rule(unsigned int family, unsigned int type);
@@ -150,7 +150,10 @@ public:
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);
-	// TODO: implement rule dedup cmp member function
+
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const;
+
 	/* array of type masks indexed by AF_FAMILY */
 	/* allow, audit, deny and quiet are used for compatibility with AA_CLASS_NET */
 	static unsigned int *allow;

@@ -309,7 +309,7 @@ void network_rule::set_netperm(unsigned int family, unsigned int type)
 
 network_rule::network_rule(const char *family, const char *type,
 			   const char *protocol):
-	perms_rule_t(AA_CLASS_NETV8)
+	dedup_perms_rule_t(AA_CLASS_NETV8)
 {
 	if (!family && !type && !protocol) {
 		size_t family_index;
@@ -337,7 +337,7 @@ network_rule::network_rule(const char *family, const char *type,
 }
 
 network_rule::network_rule(unsigned int family, unsigned int type):
-	perms_rule_t(AA_CLASS_NETV8)
+	dedup_perms_rule_t(AA_CLASS_NETV8)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
 	set_netperm(family, type);
@@ -421,7 +421,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 	buf = buffer.str();
 
 	if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(AA_VALID_NET_PERMS),
-					 perms_rule_t::audit == AUDIT_FORCE ? map_perms(AA_VALID_NET_PERMS) : 0,
+					 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(AA_VALID_NET_PERMS) : 0,
 					 parseopts))
 		return false;
 
@@ -520,3 +520,25 @@ void network_rule::update_compat_net(void)
 		}
 	}
 }
+
+static int cmp_network_map(std::unordered_map<unsigned int, perms_t> lhs,
+			   std::unordered_map<unsigned int, perms_t> rhs)
+{
+	int res;
+	size_t family_index;
+	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
+		res = lhs[family_index] - rhs[family_index];
+		if (res)
+			return res;
+	}
+	return 0;
+}
+
+int network_rule::cmp(rule_t const &rhs) const
+{
+	int res = dedup_perms_rule_t::cmp(rhs);
+	if (res)
+		return res;
+	network_rule const &nrhs = rule_cast<network_rule const &>(rhs);
+	return cmp_network_map(network_perms, nrhs.network_perms);
+};
