@@ -1080,22 +1080,22 @@ link_rule: TOK_LINK opt_subset_flag id_or_var TOK_ARROW id_or_var TOK_END_OF_RUL
 		$$ = entry;
 	};
 
-network_rule: TOK_NETWORK TOK_END_OF_RULE
+network_rule: TOK_NETWORK opt_conds TOK_END_OF_RULE
 	{
-		network_rule *entry = new network_rule(NULL, NULL, NULL);
+		network_rule *entry = new network_rule($2);
 		$$ = entry;
 	}
 
-network_rule: TOK_NETWORK TOK_ID TOK_END_OF_RULE
+network_rule: TOK_NETWORK TOK_ID opt_conds TOK_END_OF_RULE
 	{
-		network_rule *entry = new network_rule($2, NULL, NULL);
+		network_rule *entry = new network_rule($2, NULL, NULL, $3);
 		free($2);
 		$$ = entry;
 	}
 
-network_rule: TOK_NETWORK TOK_ID TOK_ID TOK_END_OF_RULE
+network_rule: TOK_NETWORK TOK_ID TOK_ID opt_conds TOK_END_OF_RULE
 	{
-		network_rule *entry = new network_rule($2, $3, NULL);
+		network_rule *entry = new network_rule($2, $3, NULL, $4);
 		free($2);
 		free($3);
 		$$ = entry;

@@ -298,6 +298,21 @@ const struct network_tuple *net_find_mapping(const struct network_tuple *map,
 	return NULL;
 }
 
+void network_rule::move_conditionals(struct cond_entry *conds)
+{
+	struct cond_entry *cond_ent;
+
+	list_for_each(conds, cond_ent) {
+		/* for now disallow keyword 'in' (list) */
+		if (!cond_ent->eq)
+			yyerror("keyword \"in\" is not allowed in network rules\n");
+
+		/* no valid conditionals atm */
+		yyerror("invalid network rule conditional \"%s\"\n",
+			cond_ent->name);
+	}
+}
+
 void network_rule::set_netperm(unsigned int family, unsigned int type)
 {
 	if (type > SOCK_PACKET) {
@@ -307,33 +322,41 @@ void network_rule::set_netperm(unsigned int family, unsigned int type)
 		network_perms[family] |= 1 << type;
 }
 
-network_rule::network_rule(const char *family, const char *type,
-			   const char *protocol):
+network_rule::network_rule(struct cond_entry *conds):
 	dedup_perms_rule_t(AA_CLASS_NETV8)
 {
-	if (!family && !type && !protocol) {
-		size_t family_index;
-		for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
-			network_map[family_index].push_back({ family_index, 0xFFFFFFFF, 0xFFFFFFFF });
-			set_netperm(family_index, 0xFFFFFFFF);
-		}
-	} else {
-		const struct network_tuple *mapping = NULL;
-		while ((mapping = net_find_mapping(mapping, family, type, protocol))) {
+	size_t family_index;
+	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
+		network_map[family_index].push_back({ family_index, 0xFFFFFFFF, 0xFFFFFFFF });
+		set_netperm(family_index, 0xFFFFFFFF);
+	}
+
+	move_conditionals(conds);
+	free_cond_list(conds);
+}
+
+network_rule::network_rule(const char *family, const char *type,
+			   const char *protocol, struct cond_entry *conds):
+	dedup_perms_rule_t(AA_CLASS_NETV8)
+{
+	const struct network_tuple *mapping = NULL;
+	while ((mapping = net_find_mapping(mapping, family, type, protocol))) {
+		network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
+		set_netperm(mapping->family, mapping->type);
+	}
+
+	if (type == NULL && network_map.empty()) {
+		while ((mapping = net_find_mapping(mapping, type, family, protocol))) {
 			network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
 			set_netperm(mapping->family, mapping->type);
 		}
-
-		if (type == NULL && network_map.empty()) {
-			while ((mapping = net_find_mapping(mapping, type, family, protocol))) {
-				network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
-				set_netperm(mapping->family, mapping->type);
-			}
-		}
-
-		if (network_map.empty())
-			yyerror(_("Invalid network entry."));
 	}
+
+	if (network_map.empty())
+		yyerror(_("Invalid network entry."));
+
+	move_conditionals(conds);
+	free_cond_list(conds);
 }
 
 network_rule::network_rule(unsigned int family, unsigned int type):
