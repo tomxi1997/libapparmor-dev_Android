@@ -84,7 +84,7 @@ static inline uint32_t map_mqueue_perms(uint32_t mask)
 		((mask & (AA_MQUEUE_GETATTR | AA_MQUEUE_SETATTR)) << (AA_OTHER_SHIFT - 8));
 }
 
-int parse_mqueue_perms(const char *str_perms, perms_t *perms, int fail);
+int parse_mqueue_perms(const char *str_perms, perm32_t *perms, int fail);
 
 class mqueue_rule: public perms_rule_t {
 	void move_conditionals(struct cond_entry *conds);
@@ -93,7 +93,7 @@ public:
 	char *qname;
 	char *label;
 
-	mqueue_rule(perms_t perms, struct cond_entry *conds, char *qname = NULL);
+	mqueue_rule(perm32_t perms, struct cond_entry *conds, char *qname = NULL);
 	virtual ~mqueue_rule()
 	{
 		free(qname);

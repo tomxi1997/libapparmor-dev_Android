@@ -26,7 +26,7 @@
 class userns_rule: public perms_rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
-	userns_rule(perms_t perms, struct cond_entry *conds);
+	userns_rule(perm32_t perms, struct cond_entry *conds);
 	virtual ~userns_rule()
 	{
 	};

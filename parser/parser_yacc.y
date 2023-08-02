@@ -63,10 +63,10 @@
 
 int parser_token = 0;
 
-struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt);
+struct cod_entry *do_file_rule(char *id, perm32_t perms, char *link_id, char *nt);
 mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 		      struct cond_entry *dst_conds, char *dst,
-		      perms_t perms);
+		      perm32_t perms);
 mnt_rule *do_pivot_rule(struct cond_entry *old, char *root,
 			char *transition);
 static void abi_features(char *filename, bool search);
@@ -212,7 +212,7 @@ static void abi_features(char *filename, bool search);
 	prefix_rule_t *prefix_entry;
 
 	flagvals flags;
-	perms_t fperms;
+	perm32_t fperms;
 	uint64_t cap;
 	unsigned int allowed_protocol;
 	char *set_var;
@@ -1562,7 +1562,7 @@ file_perms: TOK_MODE
 change_profile: TOK_CHANGE_PROFILE opt_exec_mode opt_id opt_named_transition TOK_END_OF_RULE
 	{
 		struct cod_entry *entry;
-		perms_t perms = AA_CHANGE_PROFILE;
+		perm32_t perms = AA_CHANGE_PROFILE;
 		int exec_mode = $2;
 		char *exec = $3;
 		char *target = $4;
@@ -1670,7 +1670,7 @@ void yyerror(const char *msg, ...)
 	exit(1);
 }
 
-struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt)
+struct cod_entry *do_file_rule(char *id, perm32_t perms, char *link_id, char *nt)
 {
 		struct cod_entry *entry;
 		PDEBUG("Matched: tok_id (%s) tok_perms (0x%x)\n", id, perms);
@@ -1711,7 +1711,7 @@ int verify_mnt_conds(struct cond_entry *conds, int src)
 
 mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 		      struct cond_entry *dst_conds, char *dst,
-		      perms_t perms)
+		      perm32_t perms)
 {
 	if (verify_mnt_conds(src_conds, MNT_SRC_OPT) != 0)
 		yyerror(_("bad mount rule"));

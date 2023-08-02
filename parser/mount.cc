@@ -478,7 +478,7 @@ static void process_one_option(struct cond_entry *&opts, unsigned int &flags,
 
 mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 		   struct cond_entry *dst_conds unused, char *mnt_point_p,
-		   perms_t perms_p):
+		   perm32_t perms_p):
 	perms_rule_t(AA_CLASS_MOUNT),
 	mnt_point(mnt_point_p), device(device_p), trans(NULL), opts(NULL),
 	flagsv(0), opt_flagsv(0)
@@ -784,7 +784,7 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 
 	vec[3] = flagsbuf;
 
-	perms_t tmpperms, tmpaudit;
+	perm32_t tmpperms, tmpaudit;
 	if (opts) {
 		tmpperms = AA_MATCH_CONT;
 		tmpaudit = 0;
@@ -993,7 +993,7 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 		goto fail;
 	vec[3] = flagsbuf;
 
-	perms_t tmpperms, tmpaudit;
+	perm32_t tmpperms, tmpaudit;
 	if (opts) {
 		tmpperms = AA_MATCH_CONT;
 		tmpaudit = 0;
@@ -1141,7 +1141,7 @@ fail:
 void mnt_rule::post_parse_profile(Profile &prof)
 {
 	if (trans) {
-		perms_t perms = 0;
+		perm32_t perms = 0;
 		int n = add_entry_to_x_table(&prof, trans);
 		if (!n) {
 			PERROR("Profile %s has too many specified profile transitions.\n", prof.name);

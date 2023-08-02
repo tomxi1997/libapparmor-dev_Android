@@ -22,6 +22,7 @@
 #include <list>
 #include <ostream>
 
+#include "perms.h"
 #include "policydb.h"
 
 using namespace std;
@@ -151,7 +152,6 @@ std::ostream &operator<<(std::ostream &os, rule_t &rule);
 typedef std::list<rule_t *> RuleList;
 
 /* Not classes so they can be used in the bison front end */
-typedef uint32_t perms_t;
 typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
 typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY, RULE_PROMPT } rule_mode_t;
 
@@ -407,7 +407,7 @@ public:
 		return os;
 	}
 
-	perms_t perms, saved;
+	perm32_t perms, saved;
 };
 
 // alternate perms rule class that only does dedup instead of perms merging
@@ -432,7 +432,7 @@ public:
 		return os;
 	}
 
-	perms_t perms;
+	perm32_t perms;
 };
 
 

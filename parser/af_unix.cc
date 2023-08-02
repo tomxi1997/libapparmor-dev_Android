@@ -33,7 +33,7 @@
 /* See unix(7) for autobind address definition */
 #define autobind_address_pattern "\\x00[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]";
 
-int parse_unix_perms(const char *str_perms, perms_t *perms, int fail)
+int parse_unix_perms(const char *str_perms, perm32_t *perms, int fail)
 {
 	return parse_X_perms("unix", AA_VALID_NET_PERMS, str_perms, perms, fail);
 }
@@ -113,7 +113,7 @@ unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode
 	downgrade = false;
 }
 
-unix_rule::unix_rule(perms_t perms_p, struct cond_entry *conds,
+unix_rule::unix_rule(perm32_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds):
 	af_rule(AF_UNIX), addr(NULL), peer_addr(NULL)
 {
@@ -191,7 +191,7 @@ static void writeu16(std::ostringstream &o, int v)
 #define CMD_OPT		4
 
 void unix_rule::downgrade_rule(Profile &prof) {
-	perms_t mask = (perms_t) -1;
+	perm32_t mask = (perm32_t) -1;
 
 	if (!prof.net.allow && !prof.net.alloc_net_table())
 		yyerror(_("Memory allocation error."));
@@ -318,7 +318,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 	std::ostringstream buffer;
 	std::string buf;
 
-	perms_t mask = perms;
+	perm32_t mask = perms;
 
 	/* always generate a downgraded rule. This doesn't change generated
 	 * policy size and allows the binary policy to be loaded against

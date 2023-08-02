@@ -122,7 +122,7 @@ struct cod_entry {
 	char *nt_name;
 	Profile *prof;		 	/* Special profile defined
 					 * just for this executable */
-	perms_t perms;			/* perms is 'or' of AA_* bits */
+	perm32_t perms;			/* perms is 'or' of AA_* bits */
 	audit_t audit;
 	rule_mode_t rule_mode;
 
@@ -450,12 +450,12 @@ extern char *processunquoted(const char *string, int len);
 extern int get_keyword_token(const char *keyword);
 extern int get_rlimit(const char *name);
 extern char *process_var(const char *var);
-extern perms_t parse_perms(const char *permstr);
-extern int parse_X_perms(const char *X, int valid, const char *str_perms, perms_t *perms, int fail);
+extern perm32_t parse_perms(const char *permstr);
+extern int parse_X_perms(const char *X, int valid, const char *str_perms, perm32_t *perms, int fail);
 bool label_contains_ns(const char *label);
 bool parse_label(bool *_stack, char **_ns, char **_name,
 		 const char *label, bool yyerr);
-extern struct cod_entry *new_entry(char *id, perms_t perms, char *link_id);
+extern struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id);
 
 /* returns -1 if value != true or false, otherwise 0 == false, 1 == true */
 extern int str_to_boolean(const char* str);

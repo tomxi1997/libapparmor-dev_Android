@@ -40,7 +40,7 @@ void userns_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds):
+userns_rule::userns_rule(perm32_t perms_p, struct cond_entry *conds):
 	perms_rule_t(AA_CLASS_NS)
 {
 	if (perms_p) {

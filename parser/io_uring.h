@@ -31,7 +31,7 @@ class io_uring_rule: public perms_rule_t {
 public:
 	char *label;
 
-	io_uring_rule(perms_t perms, struct cond_entry *conds, struct cond_entry *ring_conds);
+	io_uring_rule(perm32_t perms, struct cond_entry *conds, struct cond_entry *ring_conds);
 	virtual ~io_uring_rule()
 	{
 		free(label);

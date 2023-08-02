@@ -152,7 +152,7 @@ public:
 
 	mnt_rule(struct cond_entry *src_conds, char *device_p,
 		   struct cond_entry *dst_conds unused, char *mnt_point_p,
-		   perms_t perms_p);
+		   perm32_t perms_p);
 	virtual ~mnt_rule()
 	{
 		free_value_list(opts);

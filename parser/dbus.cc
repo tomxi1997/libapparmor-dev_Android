@@ -30,7 +30,7 @@
 #include "dbus.h"
 
 
-int parse_dbus_perms(const char *str_perms, perms_t *perms, int fail)
+int parse_dbus_perms(const char *str_perms, perm32_t *perms, int fail)
 {
 	return parse_X_perms("DBus", AA_VALID_DBUS_PERMS, str_perms, perms, fail);
 }
@@ -66,7 +66,7 @@ void dbus_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-dbus_rule::dbus_rule(perms_t perms_p, struct cond_entry *conds,
+dbus_rule::dbus_rule(perm32_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds):
 	perms_rule_t(AA_CLASS_DBUS), bus(NULL), name(NULL), peer_label(NULL), path(NULL), interface(NULL), member(NULL)
 {

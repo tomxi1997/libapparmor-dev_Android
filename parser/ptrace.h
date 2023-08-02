@@ -27,14 +27,14 @@
 #define AA_VALID_PTRACE_PERMS (AA_MAY_READ | AA_MAY_TRACE | AA_MAY_READBY | \
 			       AA_MAY_TRACEDBY)
 
-int parse_ptrace_perms(const char *str_perms, perms_t *perms, int fail);
+int parse_ptrace_perms(const char *str_perms, perm32_t *perms, int fail);
 
 class ptrace_rule: public perms_rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
 	char *peer_label;
 
-	ptrace_rule(perms_t perms, struct cond_entry *conds);
+	ptrace_rule(perm32_t perms, struct cond_entry *conds);
 	virtual ~ptrace_rule()
 	{
 		free(peer_label);

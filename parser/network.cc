@@ -29,7 +29,7 @@
 
 #define ALL_TYPES 0x43e
 
-int parse_net_perms(const char *str_mode, perms_t *mode, int fail)
+int parse_net_perms(const char *str_mode, perm32_t *mode, int fail)
 {
 	return parse_X_perms("net", AA_VALID_NET_PERMS, str_mode, mode, fail);
 }
@@ -401,7 +401,7 @@ void network_rule::set_netperm(unsigned int family, unsigned int type, unsigned 
 	network_perms[family].second |= protocol;
 }
 
-network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
+network_rule::network_rule(perm32_t perms_p, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
 	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
@@ -441,7 +441,7 @@ network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
 	}
 }
 
-network_rule::network_rule(perms_t perms_p, const char *family, const char *type,
+network_rule::network_rule(perm32_t perms_p, const char *family, const char *type,
 			   const char *protocol, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
 	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
@@ -494,7 +494,7 @@ network_rule::network_rule(perms_t perms_p, const char *family, const char *type
 	}
 }
 
-network_rule::network_rule(perms_t perms_p, unsigned int family, unsigned int type):
+network_rule::network_rule(perm32_t perms_p, unsigned int family, unsigned int type):
 	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
@@ -653,7 +653,7 @@ std::list<std::ostringstream> copy_streams_list(std::list<std::ostringstream> &s
 bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd)
 {
 	std::string buf;
-	perms_t cond_perms;
+	perm32_t cond_perms;
 	std::list<std::ostringstream> ip_streams;
 
 	for (auto &oss : streams) {

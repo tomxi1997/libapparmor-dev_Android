@@ -47,7 +47,7 @@ void io_uring_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-io_uring_rule::io_uring_rule(perms_t perms_p, struct cond_entry *conds, struct cond_entry *ring_conds):
+io_uring_rule::io_uring_rule(perm32_t perms_p, struct cond_entry *conds, struct cond_entry *ring_conds):
 	perms_rule_t(AA_CLASS_IO_URING), label(NULL)
 {
 	if (perms_p) {

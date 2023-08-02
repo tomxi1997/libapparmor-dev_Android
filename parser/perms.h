@@ -19,6 +19,7 @@
 #define __AA_PERM_H
 
 #include <stdint.h>
+#include <sys/apparmor.h>
 
 /* same as in immunix.h - make it so they can both be included or used alone */
 #ifndef AA_MAY_EXEC
@@ -42,11 +43,15 @@
 
 #define AA_MAY_CHMOD		0x1000		/* pair */
 #define AA_MAY_CHOWN		0x2000		/* pair */
+#endif
 #define AA_MAY_CHGRP		0x4000		/* pair */
+#ifndef AA_MAY_CREATE
 #define AA_MAY_LOCK		0x8000		/* LINK_SUBSET overlaid */
 
 #define AA_EXEC_MMAP		0x00010000
+#endif
 #define AA_MAY_MPROT		0x00020000	/* extend conditions */
+#ifndef AA_MAY_CREATE
 #define AA_MAY_LINK		0x00040000	/* pair */
 #endif
 #define AA_MAY_SNAPSHOT		0x00080000	/* pair */
@@ -80,20 +85,22 @@
 #define AA_X_INHERIT		0x40000000
 #define AA_X_UNCONFINED		0x80000000
 
+typedef uint32_t perm32_t;
+
 struct aa_perms {
-	uint32_t allow;
-	uint32_t deny;	/* explicit deny, or conflict if allow also set */
+	perm32_t allow;
+	perm32_t deny;	/* explicit deny, or conflict if allow also set */
 
-	uint32_t subtree;	/* allow perm on full subtree only when allow is set */
-	uint32_t cond;	/* set only when ~allow and ~deny */
+	perm32_t subtree;	/* allow perm on full subtree only when allow is set */
+	perm32_t cond;	/* set only when ~allow and ~deny */
 
-	uint32_t kill;	/* set only when ~allow | deny */
-	uint32_t complain;	/* accumulates only used when ~allow & ~deny */
-	uint32_t prompt;	/* accumulates only used when ~allow & ~deny */
+	perm32_t kill;	/* set only when ~allow | deny */
+	perm32_t complain;	/* accumulates only used when ~allow & ~deny */
+	perm32_t prompt;	/* accumulates only used when ~allow & ~deny */
 
-	uint32_t audit;	/* set only when allow is set */
-	uint32_t quiet;	/* set only when ~allow | deny */
-	uint32_t hide;	/* set only when  ~allow | deny */
+	perm32_t audit;	/* set only when allow is set */
+	perm32_t quiet;	/* set only when ~allow | deny */
+	perm32_t hide;	/* set only when  ~allow | deny */
 
 
 	uint32_t xindex;

@@ -566,12 +566,12 @@ void warn_uppercase(void)
 	}
 }
 
-static perms_t parse_sub_perms(const char *str_perms, const char *perms_desc unused)
+static perm32_t parse_sub_perms(const char *str_perms, const char *perms_desc unused)
 {
 
 #define IS_DIFF_QUAL(perms, q) (((perms) & AA_MAY_EXEC) && (((perms) & AA_EXEC_TYPE) != ((q) & AA_EXEC_TYPE)))
 
-	perms_t perms = 0;
+	perm32_t perms = 0;
 	const char *p;
 
 	PDEBUG("Parsing perms: %s\n", str_perms);
@@ -584,7 +584,7 @@ static perms_t parse_sub_perms(const char *str_perms, const char *perms_desc unu
 		char thisc = *p;
 		char next = *(p + 1);
 		char lower;
-		perms_t tperms = 0;
+		perm32_t tperms = 0;
 
 reeval:
 		switch (thisc) {
@@ -742,9 +742,9 @@ reeval:
 	return perms;
 }
 
-perms_t parse_perms(const char *str_perms)
+perm32_t parse_perms(const char *str_perms)
 {
-	perms_t tmp, perms = 0;
+	perm32_t tmp, perms = 0;
 	tmp = parse_sub_perms(str_perms, "");
 	perms = SHIFT_PERMS(tmp, AA_USER_SHIFT);
 	perms |= SHIFT_PERMS(tmp, AA_OTHER_SHIFT);
@@ -753,9 +753,9 @@ perms_t parse_perms(const char *str_perms)
 	return perms;
 }
 
-static int parse_X_sub_perms(const char *X, const char *str_perms, perms_t *result, int fail, const char *perms_desc unused)
+static int parse_X_sub_perms(const char *X, const char *str_perms, perm32_t *result, int fail, const char *perms_desc unused)
 {
-	perms_t perms = 0;
+	perm32_t perms = 0;
 	const char *p;
 
 	PDEBUG("Parsing %s perms: %s\n", X, str_perms);
@@ -813,7 +813,7 @@ reeval:
 	return 1;
 }
 
-int parse_X_perms(const char *X, int valid, const char *str_perms, perms_t *perms, int fail)
+int parse_X_perms(const char *X, int valid, const char *str_perms, perm32_t *perms, int fail)
 {
 	*perms = 0;
 	if (!parse_X_sub_perms(X, str_perms, perms, fail, ""))
@@ -976,7 +976,7 @@ alloc_fail:
 	return false;
 }
 
-struct cod_entry *new_entry(char *id, perms_t perms, char *link_id)
+struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id)
 {
 	struct cod_entry *entry = NULL;
 

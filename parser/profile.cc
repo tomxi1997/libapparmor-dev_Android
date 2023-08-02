@@ -269,11 +269,11 @@ static bool add_proc_access(Profile *prof, const char *rule)
 void post_process_file_entries(Profile *prof)
 {
 	struct cod_entry *entry;
-	perms_t cp_perms = 0;
+	perm32_t cp_perms = 0;
 
 	list_for_each(prof->entries, entry) {
 		if (entry->nt_name) {
-			perms_t perms = 0;
+			perm32_t perms = 0;
 			int n = add_named_transition(prof, entry);
 			if (!n) {
 				PERROR("Profile %s has too many specified profile transitions.\n", prof->name);

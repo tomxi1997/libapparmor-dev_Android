@@ -584,7 +584,7 @@ build:
 
 static int warn_change_profile = 1;
 
-static bool is_change_profile_perms(perms_t perms)
+static bool is_change_profile_perms(perm32_t perms)
 {
 	/**
 	 * A change_profile entry will have the AA_CHANGE_PROFILE bit set.
