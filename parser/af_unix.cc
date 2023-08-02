@@ -413,7 +413,7 @@ int unix_rule::gen_policy_re(Profile &prof)
 			tmp << "..";
 			buf = tmp.str();
 			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY,
-							 map_perms(AA_NET_OPT),
+							 map_perms(mask & AA_NET_OPT),
 							 map_perms(audit == AUDIT_FORCE ? AA_NET_OPT : 0),
 							 parseopts))
 				goto fail;
