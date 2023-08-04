@@ -162,6 +162,8 @@ typedef std::list<rule_t *> RuleList;
 /* Not classes so they can be used in the bison front end */
 typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
 typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY, RULE_PROMPT } rule_mode_t;
+typedef enum { OWNER_UNSPECIFIED, OWNER_SPECIFIED, OWNER_NOT } owner_t;
+
 
 /* NOTE: we can not have a constructor for class prefixes. This is
  * because it will break bison, and we would need to transition to
@@ -173,7 +175,7 @@ class prefixes {
 public:
 	audit_t audit;
 	rule_mode_t rule_mode;
-	int owner;
+	owner_t owner;
 
 	ostream &dump(ostream &os)
 	{
@@ -216,11 +218,21 @@ public:
 			break;
 		}
 
-		if (owner) {
+		switch (owner) {
+		case OWNER_SPECIFIED:
 			if (output)
 				os << " ";
 			os << "owner";
 			output = true;
+			break;
+		case OWNER_NOT:
+			if (output)
+				os << " ";
+			os << "!owner";
+			output = true;
+			break;
+		default:
+			break;
 		}
 
 		if (output)
@@ -238,9 +250,9 @@ public:
 			return -1;
 		if ((uint) rule_mode > (uint) rhs.rule_mode)
 			return 1;
-		if (owner < rhs.owner)
+		if ((uint) owner < (uint) rhs.owner)
 			return -1;
-		if (owner > rhs.owner)
+		if ((uint) owner > (uint) rhs.owner)
 			return 1;
 		return 0;
 	}
@@ -250,7 +262,7 @@ public:
 			return true;
 		if ((uint) rule_mode < (uint) rhs.rule_mode)
 			return true;
-		if (owner < rhs.owner)
+		if ((uint) owner < (uint) rhs.owner)
 			return true;
 		return false;
 	}
@@ -263,7 +275,7 @@ public:
 		/* Must construct prefix here see note on prefixes */
 		audit = AUDIT_UNSPECIFIED;
 		rule_mode = RULE_UNSPECIFIED;
-		owner = 0;
+		owner = OWNER_UNSPECIFIED;
 	};
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) = 0;
@@ -293,13 +305,15 @@ public:
 
 		/* owner !owner conflicts */
 		if (p.owner) {
-			if (owner && owner != p.owner) {
+			if (owner != OWNER_UNSPECIFIED &&
+			    owner != p.owner) {
 				error = "conflicting owner prefix";
 				return false;
 			}
 			owner = p.owner;
 		}
 
+		/* TODO: MOVE this ! */
 		/* does the prefix imply a modifier */
 		if (p.rule_mode == RULE_DENY && p.audit == AUDIT_FORCE) {
 			rule_mode = RULE_DENY;

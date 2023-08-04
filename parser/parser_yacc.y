@@ -222,6 +222,7 @@ static void abi_features(char *filename, bool search);
 	struct cond_entry *cond_entry;
 	struct cond_entry_list cond_entry_list;
 	int boolean;
+	owner_t owner;
 	struct prefixes prefix;
 	IncludeCache_t *includecache;
 	audit_t audit;
@@ -266,7 +267,7 @@ static void abi_features(char *filename, bool search);
 %type <id>	opt_id_or_var
 %type <boolean> opt_subset_flag
 %type <audit>	opt_audit_flag
-%type <boolean> opt_owner_flag
+%type <owner> opt_owner_flag
 %type <boolean> opt_profile_flag
 %type <boolean> opt_flags
 %type <rule_mode> opt_rule_mode
@@ -626,9 +627,9 @@ opt_subset_flag: { /* nothing */ $$ = false; }
 opt_audit_flag: { /* nothing */ $$ = AUDIT_UNSPECIFIED; }
 	| TOK_AUDIT { $$ = AUDIT_FORCE; };
 
-opt_owner_flag: { /* nothing */ $$ = 0; }
-	| TOK_OWNER { $$ = 1; };
-	| TOK_OTHER { $$ = 2; };
+opt_owner_flag: { /* nothing */ $$ = OWNER_UNSPECIFIED; }
+	| TOK_OWNER { $$ = OWNER_SPECIFIED; };
+	| TOK_OTHER { $$ = OWNER_NOT; };
 
 opt_rule_mode: { /* nothing */ $$ = RULE_UNSPECIFIED; }
 	| TOK_ALLOW { $$ = RULE_ALLOW; }
@@ -680,7 +681,7 @@ rules: rules opt_prefix block
 		       $2.audit == AUDIT_FORCE ? "audit " : "",
 		       $2.rule_mode == RULE_DENY ? "deny " : "",
 		       $2.rule_mode == RULE_PROMPT ? "prompt " : "",
-		       $2.owner ? "owner " : "");
+		       $2.owner == OWNER_SPECIFIED ? "owner " : "");
 		list_for_each_safe($3->entries, entry, tmp) {
 			const char *error;
 			entry->next = NULL;
@@ -746,8 +747,8 @@ rules:	rules opt_prefix change_profile
 		PDEBUG("rules change_profile: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on unix rules"));
+		if ($2.owner != OWNER_UNSPECIFIED)
+			yyerror(_("owner conditional not allowed on unix rules"));
 		if (($2.rule_mode == RULE_DENY) && $2.audit == AUDIT_FORCE) {
 			$3->rule_mode = RULE_DENY;
 		} else if ($2.rule_mode == RULE_DENY) {
@@ -762,8 +763,8 @@ rules:	rules opt_prefix change_profile
 
 rules:  rules opt_prefix capability
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on capability rules"));
+		if ($2.owner != OWNER_UNSPECIFIED)
+			yyerror(_("owner conditional not allowed on capability rules"));
 
 		if ($2.rule_mode == RULE_DENY && $2.audit == AUDIT_FORCE) {
 			$1->caps.deny |= $3;
@@ -1809,4 +1810,3 @@ static void abi_features(char *filename, bool search)
 	}
 
 };
-

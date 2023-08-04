@@ -51,7 +51,7 @@ public:
 		free(member);
 	};
 	virtual bool valid_prefix(const prefixes &p, const char *&error) {
-		if (p.owner) {
+		if (p.owner != OWNER_UNSPECIFIED) {
 			error = "owner prefix not allowed on dbus rules";
 			return false;
 		}
