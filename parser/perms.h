@@ -18,6 +18,12 @@
 #ifndef __AA_PERM_H
 #define __AA_PERM_H
 
+/* this represents permissions as used as part of the state machine in
+ * the kernel.
+ * It is possible this will get further mapped for compatibility with
+ * older versions
+ */
+
 #include <stdint.h>
 #include <sys/apparmor.h>
 
