@@ -44,8 +44,8 @@ aare_rules::~aare_rules(void)
 	expr_map.clear();
 }
 
-bool aare_rules::add_rule(const char *rule, rule_mode_t mode, uint32_t perms,
-			  uint32_t audit, optflags const &opts)
+bool aare_rules::add_rule(const char *rule, rule_mode_t mode, perm32_t perms,
+			  perm32_t audit, optflags const &opts)
 {
 	return add_rule_vec(mode, perms, audit, 1, &rule, opts, false);
 }
@@ -71,7 +71,7 @@ static Node *cat_with_oob_separator(Node *l, Node *r)
 	return new CatNode(new CatNode(l, new CharNode(transchar(-1, true))), r);
 }
 
-bool aare_rules::add_rule_vec(rule_mode_t mode, uint32_t perms, uint32_t audit,
+bool aare_rules::add_rule_vec(rule_mode_t mode, perm32_t perms, perm32_t audit,
 			      int count, const char **rulev, optflags const &opts,
 			      bool oob)
 {

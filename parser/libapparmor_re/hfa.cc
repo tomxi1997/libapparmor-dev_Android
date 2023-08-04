@@ -1376,7 +1376,7 @@ map<ImportantNode *, AcceptNodes> dominance(DFA & dfa)
 }
 #endif
 
-static inline int diff_qualifiers(uint32_t perm1, uint32_t perm2)
+static inline int diff_qualifiers(perm32_t perm1, perm32_t perm2)
 {
 	return ((perm1 & AA_EXEC_TYPE) && (perm2 & AA_EXEC_TYPE) &&
 		(perm1 & AA_EXEC_TYPE) != (perm2 & AA_EXEC_TYPE));
@@ -1390,9 +1390,9 @@ static inline int diff_qualifiers(uint32_t perm1, uint32_t perm2)
 int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 {
 	int error = 0;
-	uint32_t exact_match_allow = 0;
-	uint32_t exact_match_prompt = 0;
-	uint32_t exact_audit = 0;
+	perm32_t exact_match_allow = 0;
+	perm32_t exact_match_prompt = 0;
+	perm32_t exact_audit = 0;
 
 	perms.clear();
 
@@ -1407,20 +1407,20 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 		if (match->is_type(NODE_TYPE_EXACTMATCHFLAG)) {
 			/* exact match only ever happens with x */
 			if (filedfa && !is_merged_x_consistent(exact_match_allow,
-						    match->flag))
+						    match->perms))
 				error = 1;;
-			exact_match_allow |= match->flag;
+			exact_match_allow |= match->perms;
 			exact_audit |= match->audit;
 		} else if (match->is_type(NODE_TYPE_DENYMATCHFLAG)) {
-			perms.deny |= match->flag;
+			perms.deny |= match->perms;
 			perms.quiet |= match->audit;
 		} else if (dynamic_cast<PromptMatchFlag *>(match)) {
-			perms.prompt |= match->flag;
+			perms.prompt |= match->perms;
 			perms.audit |= match->audit;
 		} else {
-			if (filedfa && !is_merged_x_consistent(perms.allow, match->flag))
+			if (filedfa && !is_merged_x_consistent(perms.allow, match->perms))
 				error = 1;
-			perms.allow |= match->flag;
+			perms.allow |= match->perms;
 			perms.audit |= match->audit;
 		}
 	}

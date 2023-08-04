@@ -109,9 +109,9 @@ class aare_rules {
 	aare_rules(int reverse): root(NULL), unique_perms(), expr_map(), reverse(reverse), rule_count(0) { };
 	~aare_rules();
 
-	bool add_rule(const char *rule, rule_mode_t mode, uint32_t perms,
-		      uint32_t audit, optflags const &opts);
-	bool add_rule_vec(rule_mode_t mode, uint32_t perms, uint32_t audit,
+	bool add_rule(const char *rule, rule_mode_t mode, perm32_t perms,
+		      perm32_t audit, optflags const &opts);
+	bool add_rule_vec(rule_mode_t mode, perm32_t perms, perm32_t audit,
 			  int count, const char **rulev, optflags const &opts,
 			  bool oob);
 	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);

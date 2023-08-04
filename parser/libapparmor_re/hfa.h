@@ -142,7 +142,7 @@ public:
 		return quiet < rhs.quiet;
 	}
 
-	uint32_t allow, deny, prompt, audit, quiet, exact;
+	perm32_t allow, deny, prompt, audit, quiet, exact;
 };
 
 int accept_perms(NodeVec *state, perms_t &perms, bool filedfa);
@@ -260,8 +260,8 @@ public:
 	void flatten_relative(State *, int upper_bound);
 
 	int apply_and_clear_deny(void) { return perms.apply_and_clear_deny(); }
-	void map_perms_to_accept(uint32_t &accept1, uint32_t &accept2,
-				 uint32_t &accept3, bool prompt)
+	void map_perms_to_accept(perm32_t &accept1, perm32_t &accept2,
+				 perm32_t &accept3, bool prompt)
 	{
 		accept1 = perms.allow;
 		if (prompt && prompt_compat_mode == PROMPT_COMPAT_DEV)
