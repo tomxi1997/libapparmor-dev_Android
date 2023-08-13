@@ -29,6 +29,7 @@ parser.add_argument('-f', '--file', type=str, help=_('path to logfile'))
 parser.add_argument('-m', '--mark', type=str, help=_('mark in the log to start processing after'))
 parser.add_argument('-j', '--json', action='store_true', help=_('Input and Output in JSON'))
 parser.add_argument('--configdir', type=str, help=argparse.SUPPRESS)
+parser.add_argument('--no-check-mountpoint', action='store_true', help=argparse.SUPPRESS)
 args = parser.parse_args()
 
 logmark = args.mark or ''
@@ -41,7 +42,7 @@ if args.json:
 apparmor.set_logfile(args.file)
 
 aa_mountpoint = apparmor.check_for_apparmor()
-if not aa_mountpoint:
+if not aa_mountpoint and not args.no_check_mountpoint:
     raise AppArmorException(_('It seems AppArmor was not started. Please enable AppArmor and try again.'))
 
 apparmor.loadincludes()
