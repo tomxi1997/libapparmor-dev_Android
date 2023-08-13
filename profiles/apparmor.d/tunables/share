@@ -13,3 +13,6 @@
 # XDG_DATA_DIRS or XDG_DATA_HOME, and are the parent directory
 # for the same subdirectories as @{system_share_dirs}
 @{user_share_dirs} = @{HOME}/.local{,/share/@{flatpak_exports_root}}/share
+
+# Also, include files in tunables/share.d for site-specific adjustments
+include if exists <tunables/share.d>

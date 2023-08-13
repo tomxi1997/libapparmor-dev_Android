@@ -12,6 +12,5 @@
 # install prefixes.
 @{multiarch}=*-linux-gnu*
 
-# Also, include files in tunables/multiarch.d for site and packaging
-# specific adjustments to @{multiarch}.
-include <tunables/multiarch.d>
+# Also, include files in tunables/multiarch.d for site-specific adjustments
+include if exists <tunables/multiarch.d>
