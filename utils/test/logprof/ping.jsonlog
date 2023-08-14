@@ -1,0 +1,13 @@
+o {"dialog": "apparmor-json-version","data": "2.12"}
+o {"dialog": "info","data": "Updating AppArmor profiles in /etc/apparmor.d."}
+o {"dialog": "info","data": "Reading log entries from /var/log/audit/audit.log."}
+o {"dialog": "info","data": "Complain-mode changes:"}
+o {"dialog": "info","data": "Enforce-mode changes:"}
+o {"dialog": "promptuser","title": null,"headers": {"Profile": "ping","Path": "/proc/21622/cmdline","New Mode": "owner r","Severity": 6},"explanation": null,"options": ["owner /proc/*/cmdline r,","owner /proc/21622/cmdline r,"],"menu_items": ["(A)llow","[(D)eny]","(I)gnore","(G)lob","Glob with (E)xtension","(N)ew","Audi(t)","(O)wner permissions off","Abo(r)t","(F)inish"],"default_key": "d"}
+i {"dialog":"promptuser","selected":0,"response_key":"o"}
+o {"dialog": "promptuser","title": null,"headers": {"Profile": "ping","Path": "/proc/21622/cmdline","New Mode": "r","Severity": 6},"explanation": null,"options": ["/proc/*/cmdline r,","/proc/21622/cmdline r,"],"menu_items": ["(A)llow","[(D)eny]","(I)gnore","(G)lob","Glob with (E)xtension","(N)ew","Audi(t)","(O)wner permissions on","Abo(r)t","(F)inish"],"default_key": "d"}
+i {"dialog":"promptuser","selected":1,"response_key":"a"}
+o {"dialog": "info","data": "Adding /proc/21622/cmdline r, to profile."}
+o {"dialog": "promptuser","title": "Changed Local Profiles","headers": {},"explanation": "The following local profiles were changed. Would you like to save them?","options": ["ping"],"menu_items": ["(S)ave Changes","Save Selec(t)ed Profile","[(V)iew Changes]","View Changes b/w (C)lean profiles","Abo(r)t"],"default_key": "v"}
+i {"dialog":"promptuser","selected":0,"response_key":"t"}
+o {"dialog": "info","data": "Writing updated profile for ping."}
