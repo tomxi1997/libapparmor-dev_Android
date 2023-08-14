@@ -575,7 +575,7 @@ valuelist:	valuelist TOK_VALUE
 	}
 
 flags:	{ /* nothing */
-	flagvals fv = { 0, MODE_UNSPECIFIED, 0, 0 };
+	flagvals fv = { 0, MODE_UNSPECIFIED, 0, 0, NULL };
 
 		$$ = fv;
 	};
@@ -627,7 +627,7 @@ flagvals:	flagval
 
 flagval:	TOK_VALUE
 	{
-		flagvals fv = { 0, MODE_UNSPECIFIED, 0, 0 };
+		flagvals fv = { 0, MODE_UNSPECIFIED, 0, 0, NULL };
 		enum profile_mode mode;
 
 		if (strcmp($1, "debug") == 0) {
@@ -653,6 +653,9 @@ flagval:	TOK_VALUE
 			fv.path |= PATH_CHROOT_NSATTACH;
 		} else if (strcmp($1, "chroot_no_attach") == 0) {
 			fv.path |= PATH_CHROOT_NO_ATTACH;
+		} else if (strncmp($1, "attach_disconnected.path=", 25) == 0) {
+			/* TODO: make this a proper parse */
+			fv.disconnected_path = strdup($1 + 25);
 		} else {
 			yyerror(_("Invalid profile flag: %s."), $1);
 		}

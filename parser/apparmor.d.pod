@@ -113,7 +113,9 @@ B<XATTR VALUE FILEGLOB> = I<FILEGLOB>
 
 B<PROFILE FLAG CONDS> =  [ 'flags=' ] '(' comma or white space separated list of I<PROFILE FLAGS> ')'
 
-B<PROFILE FLAGS> = I<PROFILE MODE> | I<AUDIT_MODE> | 'mediate_deleted' | 'attach_disconnected' | 'chroot_relative' | 'debug'
+B<PROFILE FLAGS> = I<PROFILE MODE> | I<AUDIT_MODE> | 'mediate_deleted'
+| 'attach_disconnected' | 'attach_disconneced.path' |'chroot_relative'
+| 'debug'
 
 B<PROFILE MODE> = 'enforce' | 'complain' | 'kill' | 'unconfined' | 'prompt'
 
@@ -490,6 +492,10 @@ disconnected objects to the task's namespace and mediate them as
 though they are part of the namespace. WARNING this mode is unsafe and
 can result in aliasing and access to objects that should not be
 allowed. Its intent is a debug and policy development tool.
+
+=item B<attach_disconnected.path> If attach_disconnected is in use
+attach disconnected object to the supplied path instead of the root of
+the namespace.
 
 =item B<chroot_relative> This forces file names to be relative to a
 chroot and behave as if the chroot is a mount namespace.

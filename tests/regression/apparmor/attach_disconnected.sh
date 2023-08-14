@@ -102,9 +102,17 @@ create_dir="$new_root:w $put_old:w"
 # Ensure everything works as expected when unconfined
 do_test "attach_disconnected" pass $file $att_dis_client $socket $loop_device $new_root $put_old
 
+# TODO: adding attach_disconnected.path to a replaced unconfined
+
 genprofile $file_perm unix:create $socket:rw $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket:rw $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected
 
 do_test "attach_disconnected" pass $file $att_dis_client $socket $loop_device $new_root $put_old
+
+genprofile $file_perm unix:create $socket:rw $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket:rw $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected flag:attach_disconnected.path=/foo/
+
+do_test "attach_disconnected.path rule at /" fail $file $att_dis_client $socket $loop_device $new_root $put_old
+
+do_test "attach_disconnected.path" pass "/foo/$file" $att_dis_client $socket $loop_device $new_root $put_old
 
 genprofile $file_perm unix:create $socket:rw $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket:rw $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:no_attach_disconnected
 

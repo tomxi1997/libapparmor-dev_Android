@@ -121,6 +121,7 @@ public:
 	enum profile_mode mode;
 	int audit;
 	int path;
+	char *disconnected_path;
 
 	ostream &dump(ostream &os)
 	{
@@ -132,6 +133,8 @@ public:
 		if (flags & FLAG_HAT)
 			os << ", Hat";
 
+		if (disconnected_path)
+			os << ", attach_disconnected.path=" << disconnected_path;
 		os << "\n";
 
 		return os;
@@ -222,7 +225,7 @@ public:
 
 		parent = NULL;
 
-		flags = { 0, MODE_UNSPECIFIED, 0, 0 };
+		flags = { 0, MODE_UNSPECIFIED, 0, 0, NULL };
 		rlimits = {0, {}};
 
 		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
