@@ -114,6 +114,7 @@ static inline enum profile_mode str_to_mode(const char *str)
 #define FLAG_HAT 1
 #define FLAG_DEBUG1 2
 #define FLAG_DEBUG2 4
+#define FLAG_INTERRUPTIBLE 8
 
 class flagvals {
 public:
@@ -319,6 +320,10 @@ public:
 
 	void post_parse_profile(void);
 	void add_implied_rules(void);
+
+protected:
+	const char *warned_name = NULL;
+	virtual void warn_once(const char *name, const char *msg);
 };
 
 

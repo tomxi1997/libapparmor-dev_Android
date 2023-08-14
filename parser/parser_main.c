@@ -951,6 +951,9 @@ void set_supported_features()
 	features_supports_io_uring = features_intersect(kernel_features,
 							policy_features,
 							"io_uring");
+	features_supports_flag_interruptible = features_intersect(kernel_features,
+						policy_features,
+						"policy/profile/interruptible");
 }
 
 static bool do_print_cache_dir(aa_features *features, int dirfd, const char *path)

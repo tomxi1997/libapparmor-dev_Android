@@ -1,0 +1,10 @@
+#
+#=DESCRIPTION ensure flag does not conflict with other mdes, and flags
+#=EXRESULT PASS
+# vim:syntax=subdomain
+# Last Modified: Sun Apr 17 19:44:44 2005
+#
+/does/not/exist flags=(enforce, interruptible) {
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}

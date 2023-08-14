@@ -82,6 +82,7 @@ int features_supports_userns = 0;	/* kernel supports user namespace */
 int features_supports_posix_mqueue = 0;	/* kernel supports mqueue rules */
 int features_supports_sysv_mqueue = 0;	/* kernel supports mqueue rules */
 int features_supports_io_uring = 0;	/* kernel supports io_uring rules */
+int features_supports_flag_interruptible = 0;
 int kernel_supports_oob = 0;		/* out of band transitions */
 int conf_verbose = 0;
 int conf_quiet = 0;

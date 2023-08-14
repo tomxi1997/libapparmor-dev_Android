@@ -657,6 +657,8 @@ flagval:	TOK_VALUE
 			/* TODO: make this a proper parse */
 			fv.path |= PATH_ATTACH;
 			fv.disconnected_path = strdup($1 + 25);
+		} else if (strcmp($1, "interruptible") == 0) {
+				fv.flags |= FLAG_INTERRUPTIBLE;
 		} else {
 			yyerror(_("Invalid profile flag: %s."), $1);
 		}
