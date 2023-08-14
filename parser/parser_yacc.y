@@ -655,6 +655,7 @@ flagval:	TOK_VALUE
 			fv.path |= PATH_CHROOT_NO_ATTACH;
 		} else if (strncmp($1, "attach_disconnected.path=", 25) == 0) {
 			/* TODO: make this a proper parse */
+			fv.path |= PATH_ATTACH;
 			fv.disconnected_path = strdup($1 + 25);
 		} else {
 			yyerror(_("Invalid profile flag: %s."), $1);
