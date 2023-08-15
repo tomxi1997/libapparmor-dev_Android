@@ -191,8 +191,8 @@ class ReadLog:
             return
 
         elif e['class'] and e['class'] == 'namespace':
-            if e['denied_mask'].startswith('userns'):
-                self.hashlog[aamode][full_profile]['userns'][e['denied_mask'].removeprefix('userns_')] = True
+            if e['denied_mask'].startswith('userns_'):
+                self.hashlog[aamode][full_profile]['userns'][ e['denied_mask'][7:] ] = True  # [7:] removes the 'userns_' prefix
             return
 
         elif e['class'] and e['class'].endswith('mqueue'):
