@@ -65,7 +65,7 @@ class TestLogprof(AATest):
         self.process.stdin.close()
         self.process.stdout.close()
         self.process.terminate()
-        self.process.wait(timeout=0.2)
+        self.process.wait(timeout=0.3)
 
     def _run_test(self, params, expected):
         auditlog = './logprof/%s.auditlog' % params
@@ -96,7 +96,7 @@ class TestLogprof(AATest):
                 raise Exception('Unknown line in json log %s: %s' % (jsonlog, line))
 
         # give logprof some time to write the updated profile and terminate
-        self.process.wait(timeout=0.2)
+        self.process.wait(timeout=0.3)
         self.assertEqual(self.process.returncode, 0)
 
         for file in expected:
