@@ -575,8 +575,9 @@ valuelist:	valuelist TOK_VALUE
 	}
 
 flags:	{ /* nothing */
-	flagvals fv = { 0, MODE_UNSPECIFIED, 0, 0, NULL };
+		flagvals fv;
 
+		fv.init();
 		$$ = fv;
 	};
 
@@ -596,27 +597,7 @@ flags:	opt_flags TOK_OPENPAREN flagvals TOK_CLOSEPAREN
 
 flagvals:	flagvals flagval
 	{
-		if (merge_profile_mode($1.mode, $2.mode) == MODE_CONFLICT)
-			yyerror(_("Profile flag '%s' conflicts with '%s'"),
-				profile_mode_table[$1.mode],
-				profile_mode_table[$2.mode]);
-		$1.mode = merge_profile_mode($1.mode, $2.mode);
-		$1.audit = $1.audit || $2.audit;
-		$1.path = $1.path | $2.path;
-		if (($1.path & (PATH_CHROOT_REL | PATH_NS_REL)) ==
-		    (PATH_CHROOT_REL | PATH_NS_REL))
-			yyerror(_("Profile flag chroot_relative conflicts with namespace_relative"));
-
-		if (($1.path & (PATH_MEDIATE_DELETED | PATH_DELEGATE_DELETED)) ==
-		    (PATH_MEDIATE_DELETED | PATH_DELEGATE_DELETED))
-			yyerror(_("Profile flag mediate_deleted conflicts with delegate_deleted"));
-		if (($1.path & (PATH_ATTACH | PATH_NO_ATTACH)) ==
-		    (PATH_ATTACH | PATH_NO_ATTACH))
-			yyerror(_("Profile flag attach_disconnected conflicts with no_attach_disconnected"));
-		if (($1.path & (PATH_CHROOT_NSATTACH | PATH_CHROOT_NO_ATTACH)) ==
-		    (PATH_CHROOT_NSATTACH | PATH_CHROOT_NO_ATTACH))
-			yyerror(_("Profile flag chroot_attach conflicts with chroot_no_attach"));
-
+		$1.merge($2);
 		$$ = $1;
 	};
 
@@ -627,41 +608,9 @@ flagvals:	flagval
 
 flagval:	TOK_VALUE
 	{
-		flagvals fv = { 0, MODE_UNSPECIFIED, 0, 0, NULL };
-		enum profile_mode mode;
+		flagvals fv;
 
-		if (strcmp($1, "debug") == 0) {
-			/* DEBUG2 is left for internal compiler use atm */
-			fv.flags |= FLAG_DEBUG1;
-		} else if ((mode = str_to_mode($1))) {
-			fv.mode = mode;
-		} else if (strcmp($1, "audit") == 0) {
-			fv.audit = 1;
-		} else if (strcmp($1, "chroot_relative") == 0) {
-			fv.path |= PATH_CHROOT_REL;
-		} else if (strcmp($1, "namespace_relative") == 0) {
-			fv.path |= PATH_NS_REL;
-		} else if (strcmp($1, "mediate_deleted") == 0) {
-			fv.path |= PATH_MEDIATE_DELETED;
-		} else if (strcmp($1, "delegate_deleted") == 0) {
-			fv.path |= PATH_DELEGATE_DELETED;
-		} else if (strcmp($1, "attach_disconnected") == 0) {
-			fv.path |= PATH_ATTACH;
-		} else if (strcmp($1, "no_attach_disconnected") == 0) {
-			fv.path |= PATH_NO_ATTACH;
-		} else if (strcmp($1, "chroot_attach") == 0) {
-			fv.path |= PATH_CHROOT_NSATTACH;
-		} else if (strcmp($1, "chroot_no_attach") == 0) {
-			fv.path |= PATH_CHROOT_NO_ATTACH;
-		} else if (strncmp($1, "attach_disconnected.path=", 25) == 0) {
-			/* TODO: make this a proper parse */
-			fv.path |= PATH_ATTACH;
-			fv.disconnected_path = strdup($1 + 25);
-		} else if (strcmp($1, "interruptible") == 0) {
-				fv.flags |= FLAG_INTERRUPTIBLE;
-		} else {
-			yyerror(_("Invalid profile flag: %s."), $1);
-		}
+		fv.init($1);
 		free($1);
 		$$ = fv;
 	};
