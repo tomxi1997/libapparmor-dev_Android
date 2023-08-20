@@ -1641,6 +1641,8 @@ def collapse_log(hashlog, ignore_null_profiles=True):
         log_dict[aamode] = {}
 
         for full_profile in hashlog[aamode].keys():
+            final_name = hashlog[aamode][full_profile]['final_name']
+
             if hashlog[aamode][full_profile]['final_name'] == '':
                 continue  # user chose "deny" or "unconfined" for this target, therefore ignore log events
 
@@ -1658,9 +1660,9 @@ def collapse_log(hashlog, ignore_null_profiles=True):
             if aa.get(profile) and aa[profile].get(hat):
                 hat_exists = True
 
-            if not log_dict[aamode].get(full_profile):
+            if not log_dict[aamode].get(final_name):
                 # with execs in ix mode, we already have ProfileStorage initialized and should keep the content it already has
-                log_dict[aamode][full_profile] = ProfileStorage(profile, hat, 'collapse_log()')
+                log_dict[aamode][final_name] = ProfileStorage(profile, hat, 'collapse_log()')
 
             for path in hashlog[aamode][full_profile]['path'].keys():
                 for owner in hashlog[aamode][full_profile]['path'][path]:
@@ -1673,18 +1675,18 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                     file_event = FileRule(path, mode, None, FileRule.ALL, owner=owner, log_event=True)
 
                     if not hat_exists or not is_known_rule(aa[profile][hat], 'file', file_event):
-                        log_dict[aamode][full_profile]['file'].add(file_event)
+                        log_dict[aamode][final_name]['file'].add(file_event)
                         # TODO: check for existing rules with this path, and merge them into one rule
 
             for cap in hashlog[aamode][full_profile]['capability'].keys():
                 cap_event = CapabilityRule(cap, log_event=True)
                 if not hat_exists or not is_known_rule(aa[profile][hat], 'capability', cap_event):
-                    log_dict[aamode][full_profile]['capability'].add(cap_event)
+                    log_dict[aamode][final_name]['capability'].add(cap_event)
 
             for cp in hashlog[aamode][full_profile]['change_profile'].keys():
                 cp_event = ChangeProfileRule(None, ChangeProfileRule.ALL, cp, log_event=True)
                 if not hat_exists or not is_known_rule(aa[profile][hat], 'change_profile', cp_event):
-                    log_dict[aamode][full_profile]['change_profile'].add(cp_event)
+                    log_dict[aamode][final_name]['change_profile'].add(cp_event)
 
             dbus = hashlog[aamode][full_profile]['dbus']
             for access in                               dbus:                                      # noqa: E271
@@ -1707,21 +1709,21 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                                             raise AppArmorBug('unexpected dbus access: {}'.format(access))
 
                                         if not hat_exists or not is_known_rule(aa[profile][hat], 'dbus', dbus_event):
-                                            log_dict[aamode][full_profile]['dbus'].add(dbus_event)
+                                            log_dict[aamode][final_name]['dbus'].add(dbus_event)
 
             nd = hashlog[aamode][full_profile]['network']
             for family in nd.keys():
                 for sock_type in nd[family].keys():
                     net_event = NetworkRule(family, sock_type, log_event=True)
                     if not hat_exists or not is_known_rule(aa[profile][hat], 'network', net_event):
-                        log_dict[aamode][full_profile]['network'].add(net_event)
+                        log_dict[aamode][final_name]['network'].add(net_event)
 
             ptrace = hashlog[aamode][full_profile]['ptrace']
             for peer in ptrace.keys():
                 for access in ptrace[peer].keys():
                     ptrace_event = PtraceRule(access, peer, log_event=True)
                     if not hat_exists or not is_known_rule(aa[profile][hat], 'ptrace', ptrace_event):
-                        log_dict[aamode][full_profile]['ptrace'].add(ptrace_event)
+                        log_dict[aamode][final_name]['ptrace'].add(ptrace_event)
 
             sig = hashlog[aamode][full_profile]['signal']
             for peer in sig.keys():
@@ -1729,13 +1731,13 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                     for signal in sig[peer][access].keys():
                         signal_event = SignalRule(access, signal, peer, log_event=True)
                         if not hat_exists or not is_known_rule(aa[profile][hat], 'signal', signal_event):
-                            log_dict[aamode][full_profile]['signal'].add(signal_event)
+                            log_dict[aamode][final_name]['signal'].add(signal_event)
 
             userns = hashlog[aamode][full_profile]['userns']
             for access in userns.keys():
                 userns_event = UserNamespaceRule(access)
                 if not hat_exists or not is_known_rule(aa[profile][hat], 'userns', userns_event):
-                    log_dict[aamode][full_profile]['userns'].add(userns_event)
+                    log_dict[aamode][final_name]['userns'].add(userns_event)
 
             mqueue = hashlog[aamode][full_profile]['mqueue']
             for access in mqueue.keys():
@@ -1743,7 +1745,7 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                     for mqueue_name in mqueue[access][mqueue_type]:
                         mqueue_event = MessageQueueRule(access, mqueue_type, MessageQueueRule.ALL, mqueue_name, log_event=True)
                         if not hat_exists or not is_known_rule(aa[profile][hat], 'mqueue', mqueue_event):
-                            log_dict[aamode][full_profile]['mqueue'].add(mqueue_event)
+                            log_dict[aamode][final_name]['mqueue'].add(mqueue_event)
 
             io_uring = hashlog[aamode][full_profile]['io_uring']
             for access in io_uring.keys():
@@ -1752,7 +1754,7 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                         label = IOUringRule.ALL
                     io_uring_event = IOUringRule(access, label, log_event=True)
                     if not hat_exists or not is_known_rule(aa[profile][hat], 'io_uring', io_uring_event):
-                        log_dict[aamode][full_profile]['io_uring'].add(io_uring_event)
+                        log_dict[aamode][final_name]['io_uring'].add(io_uring_event)
 
     return log_dict
 
