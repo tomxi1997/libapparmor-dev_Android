@@ -20,7 +20,7 @@
 # Makefile for LSM-based AppArmor profiles
 
 NAME=apparmor-profiles
-all: local docs
+all: docs
 COMMONDIR=../common/
 
 include $(COMMONDIR)/Make.rules
@@ -86,7 +86,7 @@ local:
 	done
 
 .PHONY: install
-install: local
+install:
 	install -m 755 -d ${PROFILES_DEST}
 	install -m 755 -d ${PROFILES_DEST}/disable
 	for dir in ${SUBDIRS} ; do \
@@ -122,7 +122,7 @@ CHECK_ABSTRACTIONS=$(shell find ${ABSTRACTIONS_SOURCE} -type f -print)
 check: check-parser check-logprof check-abstractions.d check-tunables.d check-extras
 
 .PHONY: check-parser
-check-parser: test-dependencies local
+check-parser: test-dependencies
 	@echo "*** Checking profiles from ${PROFILES_SOURCE} and ${EXTRAS_SOURCE} against apparmor_parser"
 	$(Q)for profile in ${CHECK_PROFILES} ; do \
 	        [ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
@@ -138,7 +138,7 @@ check-parser: test-dependencies local
 	done
 
 .PHONY: check-logprof
-check-logprof: test-dependencies local
+check-logprof: test-dependencies
 	@echo "*** Checking profiles from ${PROFILES_SOURCE} against logprof"
 	$(Q)${LOGPROF} -d ${PROFILES_SOURCE} -f /dev/null || exit 1
 
