@@ -225,6 +225,17 @@ public:
 		    (PATH_CHROOT_NSATTACH | PATH_CHROOT_NO_ATTACH))
 			yyerror(_("Profile flag chroot_attach conflicts with chroot_no_attach"));
 
+		if (rhs.disconnected_path) {
+			if (disconnected_path) {
+				if (strcmp(disconnected_path, rhs.disconnected_path) != 0) {
+					yyerror(_("Profile flag attach_disconnected set to conflicting values: '%s' and '%s'"), disconnected_path, rhs.disconnected_path);
+				}
+				// same ignore rhs.disconnect_path
+			} else {
+				disconnected_path = rhs.disconnected_path;
+			}
+		}
+
 		/* if we move to dupping disconnected_path will need to have
 		 * an assignment and copy constructor and a destructor
 		 */
