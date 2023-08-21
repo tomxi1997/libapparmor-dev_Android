@@ -355,6 +355,11 @@ void Profile::post_parse_profile(void)
 			flags.flags &= ~FLAG_INTERRUPTIBLE;
 		}
 	}
+	if (flags.signal) {
+		if (!features_supports_flag_signal) {
+			warn_once(name, "kill.signal not supported. Ignoring");
+		}
+	}
 	post_process_file_entries(this);
 	post_process_rule_entries(this);
 }

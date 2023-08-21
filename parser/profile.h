@@ -23,6 +23,7 @@
 #include "rule.h"
 #include "libapparmor_re/aare_rules.h"
 #include "network.h"
+#include "signal.h"
 
 class Profile;
 
@@ -124,6 +125,7 @@ public:
 	int audit;
 	int path;
 	char *disconnected_path;
+	int signal;
 
 	// stupid not constructor constructors
 	void init(void)
@@ -133,6 +135,7 @@ public:
 		audit = 0;
 		path = 0;
 		disconnected_path = NULL;
+		signal = 0;
 	}
 	void init(const char *str)
 	{
@@ -166,6 +169,11 @@ public:
 			/* TODO: make this a proper parse */
 			path |= PATH_ATTACH;
 			disconnected_path = strdup(str + 25);
+		} else if (strncmp(str, "kill.signal=", 12) == 0) {
+			/* TODO: make this a proper parse */
+			signal = find_signal_mapping(str + 12);
+			if (signal == -1)
+				yyerror("unknown signal specified for kill.signal=\'%s\'\n", str + 12);
 		} else if (strcmp(str, "interruptible") == 0) {
 				flags |= FLAG_INTERRUPTIBLE;
 		} else {
@@ -185,6 +193,8 @@ public:
 
 		if (disconnected_path)
 			os << ", attach_disconnected.path=" << disconnected_path;
+		if (signal)
+			os << ", kill.signal=" << signal;
 		os << "\n";
 
 		return os;
@@ -233,6 +243,16 @@ public:
 				// same ignore rhs.disconnect_path
 			} else {
 				disconnected_path = rhs.disconnected_path;
+			}
+		}
+		if (rhs.signal) {
+			if (signal) {
+				if (signal != rhs.signal) {
+					yyerror(_("Profile flag kill.signal set to conflicting values: '%d' and '%d'"), signal, rhs.signal);
+				}
+				// same so do nothing
+			} else {
+				signal = rhs.signal;
 			}
 		}
 

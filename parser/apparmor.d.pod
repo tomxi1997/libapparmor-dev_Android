@@ -115,7 +115,7 @@ B<PROFILE FLAG CONDS> =  [ 'flags=' ] '(' comma or white space separated list of
 
 B<PROFILE FLAGS> = I<PROFILE MODE> | I<AUDIT_MODE> | 'mediate_deleted'
 | 'attach_disconnected' | 'attach_disconneced.path='I<ABS PATH> | 'chroot_relative'
-| 'debug' | 'interruptible'
+| 'debug' | 'interruptible' | 'kill.signal='I<SIGNAL>
 
 B<PROFILE MODE> = 'enforce' | 'complain' | 'kill' | 'unconfined' | 'prompt'
 
@@ -507,6 +507,9 @@ dependent, and it should never appear in policy except when trying
 to debug kernel or policy problems.
 
 =item B<interruptible> Enables interrupts for prompt upcall to userspace.
+
+=item B<kill.signal>=I<SIGNALS> This changes the signal that will be
+sent by AppArmor when in kill mode or a kill rule has been violated.
 
 =back
 
