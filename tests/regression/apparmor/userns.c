@@ -58,6 +58,7 @@ int userns_setns(char *client, char *pipename)
 {
 	int userns, exit_status, ret;
 	char *parentpipe = NULL, *childpipe = NULL;
+	int parentpipefd;
 
 	if (get_pipes(pipename, &parentpipe, &childpipe) == -1) {
 		fprintf(stderr, "FAIL - failed to allocate pipes\n");
@@ -81,7 +82,14 @@ int userns_setns(char *client, char *pipename)
 		goto out;
 	}
 
-	if (read_from_pipe(parentpipe) == -1) { // wait for child to unshare
+	parentpipefd = open_read_pipe(parentpipe);
+	if (parentpipefd == -1) {
+		fprintf(stderr, "FAIL - couldn't open parent pipe\n");
+		ret = EXIT_FAILURE;
+		goto out;
+	}
+
+	if (read_from_pipe(parentpipefd) == -1) { // wait for child to unshare
 		fprintf(stderr, "FAIL - parent could not read from pipe\n");
 		ret = EXIT_FAILURE;
 		goto out;

@@ -15,16 +15,26 @@ int get_pipes(const char *pipename, char **parentpipe, char **childpipe)
 	return 0;
 }
 
-int read_from_pipe(char *pipename)
+int open_read_pipe(char *pipename)
 {
-	int fd, ret;
+	int fd;
+	fd = open(pipename, O_RDONLY | O_NONBLOCK);
+	if (fd == -1) {
+		perror("FAIL - open read pipe");
+		return EXIT_FAILURE;
+	}
+	return fd;
+}
+
+int read_from_pipe(int fd)
+{
+	int ret;
 	char buf;
 	fd_set set;
 	struct timeval timeout;
 
-	fd = open(pipename, O_RDONLY | O_NONBLOCK);
 	if (fd == -1) {
-		perror("FAIL - open read pipe");
+		fprintf(stderr, "FAIL - invalid read fd\n");
 		return EXIT_FAILURE;
 	}
 
@@ -59,7 +69,7 @@ int write_to_pipe(char *pipename)
 
 	fd = open(pipename, O_WRONLY | O_NONBLOCK);
 	if (fd == -1) {
-		perror("FAIL - open write pipe");
+		fprintf(stderr, "FAIL - open write pipe %s - %m\n", pipename);
 		return EXIT_FAILURE;
 	}
 	close(fd);
