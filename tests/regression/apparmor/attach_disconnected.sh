@@ -96,7 +96,8 @@ do_test()
 
 # Needed for clone(CLONE_NEWNS) and pivot_root()
 cap=capability:sys_admin
-file_perm="$file:rw /put_old/$file:rw"
+file_perm="$file:rw $put_old/$file:rw"
+socket_perm="$socket:rw $put_old/$socket:rw"
 create_dir="$new_root:w $put_old:w"
 
 # Ensure everything works as expected when unconfined
@@ -104,22 +105,22 @@ do_test "attach_disconnected" pass $file $att_dis_client $socket $loop_device $n
 
 # TODO: adding attach_disconnected.path to a replaced unconfined
 
-genprofile $file_perm unix:create $socket:rw $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket:rw $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected
+genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket_perm $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected
 
 do_test "attach_disconnected" pass $file $att_dis_client $socket $loop_device $new_root $put_old
 
-genprofile $file_perm unix:create $socket:rw $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket:rw $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected flag:attach_disconnected.path=/foo/
+genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket_perm $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected flag:attach_disconnected.path=/foo/
 
 do_test "attach_disconnected.path rule at /" fail $file $att_dis_client $socket $loop_device $new_root $put_old
 
 do_test "attach_disconnected.path" pass "/foo/$file" $att_dis_client $socket $loop_device $new_root $put_old
 
-genprofile $file_perm unix:create $socket:rw $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket:rw $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:no_attach_disconnected
+genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket_perm $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:no_attach_disconnected
 
 do_test "no_attach_disconnected" fail $file $att_dis_client $socket $loop_device $new_root $put_old
 
 # Ensure default is no_attach_disconnected - no flags set
-genprofile $file_perm unix:create $socket:rw $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket:rw $create_dir $cap "pivot_root:ALL" "mount:ALL"
+genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket_perm $create_dir $cap "pivot_root:ALL" "mount:ALL"
 
 do_test "no_attach_disconnected" fail $file $att_dis_client $socket $loop_device $new_root $put_old
 
