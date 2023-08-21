@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
 	int ret;
 	char *pipename = "/tmp/userns_pipe";
 	char *parentpipe = NULL, *childpipe = NULL;
+	int childpipefd;
 
 	if (argc > 1)
 		pipename = argv[1];
@@ -26,6 +27,13 @@ int main(int argc, char *argv[])
 	if (mkfifo(childpipe, 0666) == -1)
 		perror("FAIL - setns child mkfifo");
 
+	childpipefd = open_read_pipe(childpipe);
+	if (childpipefd == -1) {
+		fprintf(stderr, "FAIL - couldn't open child pipe\n");
+		ret = EXIT_FAILURE;
+		goto out;
+	}
+
 	if (unshare(CLONE_NEWUSER) == -1) {
 		perror("FAIL - unshare");
 		ret = EXIT_FAILURE;
@@ -37,7 +45,7 @@ int main(int argc, char *argv[])
 		ret = EXIT_FAILURE;
 		goto out;
 	}
-	if (read_from_pipe(childpipe) == -1) { // wait for parent tell child can finish
+	if (read_from_pipe(childpipefd) == -1) { // wait for parent tell child can finish
 		fprintf(stderr, "FAIL - child could not read from pipe\n");
 		ret = EXIT_FAILURE;
 		goto out;
