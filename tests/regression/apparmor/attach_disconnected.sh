@@ -109,11 +109,11 @@ genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_
 
 do_test "attach_disconnected" pass $file $att_dis_client $socket $loop_device $new_root $put_old
 
-genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket_perm $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected flag:attach_disconnected.path=/foo/
+genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket_perm $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected.path=/foo/
 
 do_test "attach_disconnected.path rule at /" fail $file $att_dis_client $socket $loop_device $new_root $put_old
 
-genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket_perm $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected flag:attach_disconnected.path=$put_old
+genprofile $file_perm unix:create $socket_perm $att_dis_client:px -- image=$att_dis_client $file_perm unix:create $socket_perm $create_dir $cap "pivot_root:ALL" "mount:ALL" flag:attach_disconnected.path=$put_old
 
 do_test "attach_disconnected.path" pass $file $att_dis_client $socket $loop_device $new_root $put_old
 
