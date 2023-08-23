@@ -181,6 +181,9 @@ $ make check	# depends on the parser having been built first
 $ make install
 ```
 
+Note that the empty local/* profile sniplets no longer get created by default.
+If you want them, run `make local` before running `make check`.
+
 [Note that for the parser, binutils, and utils, if you only wish to build/use
  some of the locale languages, you can override the default by passing
  the LANGS arguments to make; e.g. make all install "LANGS=en_US fr".]

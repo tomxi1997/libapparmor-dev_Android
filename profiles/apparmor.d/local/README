@@ -13,9 +13,12 @@
 #
 # For example, if the shipped /etc/apparmor.d/usr.sbin.smbd profile has:
 #   include <local/usr.sbin.smbd>
+# or
+#   include if exists <local/usr.sbin.smbd>
 #
-# then an administrator can adjust /etc/apparmor.d/local/usr.sbin.smbd to
-# contain any additional paths to be allowed, such as:
+# then an administrator can adjust /etc/apparmor.d/local/usr.sbin.smbd
+# (create the file if it doesn't exist yet) to contain any additional paths
+# to be allowed, such as:
 #
 #   /var/exports/** lrwk,
 #
