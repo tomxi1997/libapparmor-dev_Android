@@ -886,7 +886,10 @@ static std::string generate_regex_range(bignum start, bignum end)
 	for (auto &i: regex_range) {
 		bignum sstart = i.first;
 		bignum send = i.second;
-
+		if (sstart.base == 16) {
+			for (j = (size_t) sstart.size(); j < 32; j++)
+				result << '0';
+		}
 		for (j = sstart.size() - 1; j >= 0; j--) {
 			result << std::nouppercase;
 			if (sstart[j] == send[j]) {

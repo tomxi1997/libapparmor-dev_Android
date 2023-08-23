@@ -59,11 +59,11 @@ public:
 		size_t i;
 		bool flag = true;
 		for (i = 0; i < 16; i++) {
-			if ((val[i] & 0xF0) >> 4 != 0)
+			if (flag && (val[i] & 0xF0) >> 4 != 0)
 				flag = false;
 			if (!flag)
 				data.push_back((val[i] & 0xF0) >> 4);
-			if ((val[i] & 0x0F) != 0)
+			if (flag && (val[i] & 0x0F) != 0)
 				flag = false;
 			if (!flag)
 				data.push_back(val[i] & 0x0F);
