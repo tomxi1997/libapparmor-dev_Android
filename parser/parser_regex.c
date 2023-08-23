@@ -888,8 +888,13 @@ static std::string generate_regex_range(bignum start, bignum end)
 		bignum send = i.second;
 
 		for (j = sstart.size() - 1; j >= 0; j--) {
+			result << std::nouppercase;
 			if (sstart[j] == send[j]) {
+				if (sstart[j] >= 10)
+					result << '[';
 				result << std::hex << sstart[j];
+				if (sstart[j] >= 10)
+					result << std::uppercase << std::hex << sstart[j] << ']';
 			} else {
 				if (sstart[j] < 10 && send[j] >= 10) {
 					result << '[';
@@ -903,12 +908,22 @@ static std::string generate_regex_range(bignum start, bignum end)
 						result << '-';
 					}
 					result << std::hex << send[j];
+					if (send[j] > 10) {
+						result << 'A';
+						result << '-';
+					}
+					result << std::uppercase << std::hex << send[j];
 					result << ']';
 				} else {
 					result << '[';
 					result << std::hex << sstart[j];
 					result << '-';
 					result << std::hex << send[j];
+					if (sstart[j] >= 10) {
+						result << std::uppercase << std::hex << sstart[j];
+						result << '-';
+						result << std::uppercase << std::hex << send[j];
+					}
 					result << ']';
 				}
 			}
