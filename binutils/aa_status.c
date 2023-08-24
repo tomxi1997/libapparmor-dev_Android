@@ -129,13 +129,13 @@ const char *process_statuses[] = {"enforce", "complain", "prompt", "kill", "unco
 
 #define dprintf(...)                                                           \
 do {									       \
-	if (verbose)							       \
+	if (verbose && !opt_json)					       \
 		printf(__VA_ARGS__);					       \
 } while (0)
 
 #define dfprintf(...)                                                          \
 do {									       \
-	if (verbose)							       \
+	if (verbose && !opt_json)					       \
 		fprintf(__VA_ARGS__);					       \
 } while (0)
 
