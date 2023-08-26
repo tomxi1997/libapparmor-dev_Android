@@ -347,6 +347,19 @@ static int profile_add_hat_rules(Profile *prof)
 
 void Profile::post_parse_profile(void)
 {
+	/* semantic check stuff that can't be done in parse, like flags */
+	if (flags.flags & FLAG_INTERRUPTIBLE) {
+		if (!features_supports_flag_interruptible) {
+			warn_once(name, "flag interruptible not supported. Ignoring");
+			/* TODO: don't clear in parse data, only at encode */
+			flags.flags &= ~FLAG_INTERRUPTIBLE;
+		}
+	}
+	if (flags.signal) {
+		if (!features_supports_flag_signal) {
+			warn_once(name, "kill.signal not supported. Ignoring");
+		}
+	}
 	post_process_file_entries(this);
 	post_process_rule_entries(this);
 }
@@ -362,4 +375,10 @@ void Profile::add_implied_rules(void)
 		//return error;
 	}
 
+}
+
+/* do we want to warn once/profile or just once per compile?? */
+void Profile::warn_once(const char *name, const char *msg)
+{
+	common_warn_once(name, msg, &warned_name);
 }

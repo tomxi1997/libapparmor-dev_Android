@@ -31,6 +31,7 @@
 
 typedef set<int> Signals;
 
+int find_signal_mapping(const char *sig);
 int parse_signal_perms(const char *str_perms, perms_t *perms, int fail);
 
 class signal_rule: public perms_rule_t {

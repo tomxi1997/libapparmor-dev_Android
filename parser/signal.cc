@@ -121,7 +121,7 @@ int parse_signal_perms(const char *str_perms, perms_t *perms, int fail)
 	return parse_X_perms("signal", AA_VALID_SIGNAL_PERMS, str_perms, perms, fail);
 }
 
-static int find_signal_mapping(const char *sig)
+int find_signal_mapping(const char *sig)
 {
 	if (strncmp("rtmin+", sig, 6) == 0) {
 		char *end;

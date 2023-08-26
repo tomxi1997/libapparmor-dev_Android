@@ -426,6 +426,10 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 				"disconnected");
 	}
 
+	if (profile->flags.signal && features_supports_flag_signal) {
+		sd_write_name(buf, "kill");
+		sd_write_uint32(buf, profile->flags.signal);
+	}
 	sd_write_struct(buf, "flags");
 	/* used to be flags.debug, but that's no longer supported */
 	sd_write_uint32(buf, profile->flags.flags);

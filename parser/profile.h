@@ -23,6 +23,7 @@
 #include "rule.h"
 #include "libapparmor_re/aare_rules.h"
 #include "network.h"
+#include "signal.h"
 
 class Profile;
 
@@ -114,7 +115,9 @@ static inline enum profile_mode str_to_mode(const char *str)
 #define FLAG_HAT 1
 #define FLAG_DEBUG1 2
 #define FLAG_DEBUG2 4
+#define FLAG_INTERRUPTIBLE 8
 
+/* sigh, used in parse union so needs trivial constructors. */
 class flagvals {
 public:
 	int flags;
@@ -122,6 +125,61 @@ public:
 	int audit;
 	int path;
 	char *disconnected_path;
+	int signal;
+
+	// stupid not constructor constructors
+	void init(void)
+	{
+		flags = 0;
+		mode = MODE_UNSPECIFIED;
+		audit = 0;
+		path = 0;
+		disconnected_path = NULL;
+		signal = 0;
+	}
+	void init(const char *str)
+	{
+		init();
+		enum profile_mode pmode = str_to_mode(str);
+
+		if (strcmp(str, "debug") == 0) {
+			/* DEBUG2 is left for internal compiler use atm */
+			flags |= FLAG_DEBUG1;
+		} else if (pmode) {
+			mode = pmode;
+		} else if (strcmp(str, "audit") == 0) {
+			audit = 1;
+		} else if (strcmp(str, "chroot_relative") == 0) {
+			path |= PATH_CHROOT_REL;
+		} else if (strcmp(str, "namespace_relative") == 0) {
+			path |= PATH_NS_REL;
+		} else if (strcmp(str, "mediate_deleted") == 0) {
+			path |= PATH_MEDIATE_DELETED;
+		} else if (strcmp(str, "delegate_deleted") == 0) {
+			path |= PATH_DELEGATE_DELETED;
+		} else if (strcmp(str, "attach_disconnected") == 0) {
+			path |= PATH_ATTACH;
+		} else if (strcmp(str, "no_attach_disconnected") == 0) {
+			path |= PATH_NO_ATTACH;
+		} else if (strcmp(str, "chroot_attach") == 0) {
+			path |= PATH_CHROOT_NSATTACH;
+		} else if (strcmp(str, "chroot_no_attach") == 0) {
+			path |= PATH_CHROOT_NO_ATTACH;
+		} else if (strncmp(str, "attach_disconnected.path=", 25) == 0) {
+			/* TODO: make this a proper parse */
+			path |= PATH_ATTACH;
+			disconnected_path = strdup(str + 25);
+		} else if (strncmp(str, "kill.signal=", 12) == 0) {
+			/* TODO: make this a proper parse */
+			signal = find_signal_mapping(str + 12);
+			if (signal == -1)
+				yyerror("unknown signal specified for kill.signal=\'%s\'\n", str + 12);
+		} else if (strcmp(str, "interruptible") == 0) {
+				flags |= FLAG_INTERRUPTIBLE;
+		} else {
+			yyerror(_("Invalid profile flag: %s."), str);
+		}
+	}
 
 	ostream &dump(ostream &os)
 	{
@@ -135,6 +193,8 @@ public:
 
 		if (disconnected_path)
 			os << ", attach_disconnected.path=" << disconnected_path;
+		if (signal)
+			os << ", kill.signal=" << signal;
 		os << "\n";
 
 		return os;
@@ -148,6 +208,58 @@ public:
 #endif
 	}
 
+	/* warning for now disconnected_path is just passed on (not copied),
+	 * or leaked on error. It is not freed here, It is freed when the
+	 * profile destroys it self.
+	 */
+	void merge(const flagvals &rhs)
+	{
+		if (merge_profile_mode(mode, rhs.mode) == MODE_CONFLICT)
+			yyerror(_("Profile flag '%s' conflicts with '%s'"),
+				profile_mode_table[mode],
+				profile_mode_table[rhs.mode]);
+		mode = merge_profile_mode(mode, rhs.mode);
+		audit = audit || rhs.audit;
+		path = path | rhs.path;
+		if ((path & (PATH_CHROOT_REL | PATH_NS_REL)) ==
+		    (PATH_CHROOT_REL | PATH_NS_REL))
+			yyerror(_("Profile flag chroot_relative conflicts with namespace_relative"));
+
+		if ((path & (PATH_MEDIATE_DELETED | PATH_DELEGATE_DELETED)) ==
+		    (PATH_MEDIATE_DELETED | PATH_DELEGATE_DELETED))
+			yyerror(_("Profile flag mediate_deleted conflicts with delegate_deleted"));
+		if ((path & (PATH_ATTACH | PATH_NO_ATTACH)) ==
+		    (PATH_ATTACH | PATH_NO_ATTACH))
+			yyerror(_("Profile flag attach_disconnected conflicts with no_attach_disconnected"));
+		if ((path & (PATH_CHROOT_NSATTACH | PATH_CHROOT_NO_ATTACH)) ==
+		    (PATH_CHROOT_NSATTACH | PATH_CHROOT_NO_ATTACH))
+			yyerror(_("Profile flag chroot_attach conflicts with chroot_no_attach"));
+
+		if (rhs.disconnected_path) {
+			if (disconnected_path) {
+				if (strcmp(disconnected_path, rhs.disconnected_path) != 0) {
+					yyerror(_("Profile flag attach_disconnected set to conflicting values: '%s' and '%s'"), disconnected_path, rhs.disconnected_path);
+				}
+				// same ignore rhs.disconnect_path
+			} else {
+				disconnected_path = rhs.disconnected_path;
+			}
+		}
+		if (rhs.signal) {
+			if (signal) {
+				if (signal != rhs.signal) {
+					yyerror(_("Profile flag kill.signal set to conflicting values: '%d' and '%d'"), signal, rhs.signal);
+				}
+				// same so do nothing
+			} else {
+				signal = rhs.signal;
+			}
+		}
+
+		/* if we move to dupping disconnected_path will need to have
+		 * an assignment and copy constructor and a destructor
+		 */
+	}
 };
 
 struct capabilities {
@@ -225,7 +337,7 @@ public:
 
 		parent = NULL;
 
-		flags = { 0, MODE_UNSPECIFIED, 0, 0, NULL };
+		flags.init();
 		rlimits = {0, {}};
 
 		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
@@ -319,6 +431,10 @@ public:
 
 	void post_parse_profile(void);
 	void add_implied_rules(void);
+
+protected:
+	const char *warned_name = NULL;
+	virtual void warn_once(const char *name, const char *msg);
 };
 
 
