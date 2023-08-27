@@ -125,7 +125,7 @@ B<RULES> = [ ( I<LINE RULES> | I<COMMA RULES> ',' | I<BLOCK RULES> )
 
 B<LINE RULES> = ( I<COMMENT> | I<INCLUDE> ) [ '\r' ] '\n'
 
-B<COMMA RULES> = ( I<CAPABILITY RULE> | I<NETWORK RULE> | I<MOUNT RULE> | I<PIVOT ROOT RULE> | I<UNIX RULE> | I<FILE RULE> | I<LINK RULE> | I<CHANGE_PROFILE RULE> | I<RLIMIT RULE> | I<DBUS RULE> | I<MQUEUE RULE> )
+B<COMMA RULES> = ( I<CAPABILITY RULE> | I<NETWORK RULE> | I<MOUNT RULE> | I<PIVOT ROOT RULE> | I<UNIX RULE> | I<FILE RULE> | I<LINK RULE> | I<CHANGE_PROFILE RULE> | I<RLIMIT RULE> | I<DBUS RULE> | I<MQUEUE RULE> | I<IO_URING RULE> | I<USERNS RULE>)
 
 B<BLOCK RULES> = ( I<SUBPROFILE> | I<HAT> | I<QUALIFIER BLOCK> )
 
@@ -191,6 +191,16 @@ B<MQUEUE TYPE> = 'type' '=' ( 'posix' | 'sysv' )
 B<MQUEUE LABEL> = 'label' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
 
 B<MQUEUE NAME> = I<AARE>
+
+B<USERNS RULE> = [ I<QUALIFIERS> ] 'userns' [ I<USERNS ACCESS PERMISSIONS> ]
+
+B<USERNS ACCESS PERMISSIONS> = ( 'create' )
+
+B<IO_URING RULE> = [ I<QUALIFIERS> ] 'io_uring' [ I<IO_URING ACCESS PERMISSIONS> [ I<IO_URING LABEL> ]
+
+B<IO_URING ACCESS PERMISSIONS> = ( 'sqpoll' | 'override_creds' )
+
+B<IO_URING LABEL> = 'label' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
 
 B<PIVOT ROOT RULE> = [ I<QUALIFIERS> ] pivot_root [ oldroot=I<OLD PUT FILEGLOB> ] [ I<NEW ROOT FILEGLOB> ] [ '-E<gt>' I<PROFILE NAME> ]
 
@@ -1137,6 +1147,89 @@ Example AppArmor Message Queue rules:
 
     # Allow create permission for a SYSV queue of label foo
     mqueue create label=foo 123,
+
+=head2 User Namespace Rules
+
+User namespaces are part of many sandboxing and containerization
+solutions.  They provide a way for a non-system root process to be
+root within the container. Unfortunately this opens up attack surface
+in the kernel and has been part of several exploit chains. As such
+AppArmor can be used to restrict the creation of user namespaces to
+select processes.
+
+User namespace permission are implied when a rule does not explicitly
+state an access list. The rule becomes more restrictive as further
+information is specified.
+
+Note: user namespace creation may be restricted so that it is not
+available to unprivieged unconfined processes. If this is the case any
+process trying to create user namespaces will require a profile that
+allows the necessary permissions.
+
+=over 4
+
+=item B<create>
+
+Allow creation of user namespaces.
+
+=back
+
+Example userns rules:
+
+=over 4
+
+  # Allow all userns perms
+  userns,
+
+  # Allow creation of a userns
+  userns create,
+
+=back
+
+=head2 IO_URing Rules
+
+AppArmor supports mediation of the new Linux high speed IO interface.
+There is limited mediation at this time to just a few permissions at
+the moment.
+
+IO Uring permission are implied when a rule does not explicitly state
+an access list. The rule becomes more restrictive as further
+information is specified.
+
+Note: io_uring access may be restricted so that it is not available to
+unprivileged unconfined processes. If this is the case any process
+trying to use io_uring will require a profile that allows the
+necessary io_uring permissions.
+
+=over 4
+
+=item B<sqpoll>
+
+All the task confined by the profile to spawn a io_uring polling
+thread.
+
+=item B<override_creds>
+
+Grants the task confined by the profile to override (change) its
+credentials to the specified label, when executing an io_uring
+operation.
+
+=back
+
+Example IO_URING rules:
+
+=over 4
+
+  # Allow io_uring operations
+  io_ring,
+
+  # Allow creation of a polling thread
+  io_uring sqpoll,
+
+  # Allow task to override credentials during io_uring operation
+  io_uring override_creds label=new_creds,
+
+=back
 
 =head2 Pivot Root Rules
 
