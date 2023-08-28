@@ -220,9 +220,9 @@ B<SIGNAL ACCESS> = ( 'r' | 'w' | 'rw' | 'read' | 'write' | 'send' | 'receive' )
 
 B<SIGNAL SET> = 'set' '=' '(' I<SIGNAL LIST> ')'
 
-B<SIGNAL LIST> = Comma or space separated list of I<SIGNALS>
+B<SIGNAL LIST> = Comma or space separated list of I<SIGNAL>s
 
-B<SIGNALS> = ( 'hup' | 'int' | 'quit' | 'ill' | 'trap' | 'abrt' | 'bus' | 'fpe' | 'kill' | 'usr1' | 'segv' | 'usr2' | 'pipe' | 'alrm' | 'term' | 'stkflt' | 'chld' | 'cont' | 'stop' | 'stp' | 'ttin' | 'ttou' | 'urg' | 'xcpu' | 'xfsz' | 'vtalrm' | 'prof' | 'winch' | 'io' | 'pwr' | 'sys' | 'emt' | 'exists' | 'rtmin+0' ... 'rtmin+32' )
+B<SIGNAL> = ( 'hup' | 'int' | 'quit' | 'ill' | 'trap' | 'abrt' | 'bus' | 'fpe' | 'kill' | 'usr1' | 'segv' | 'usr2' | 'pipe' | 'alrm' | 'term' | 'stkflt' | 'chld' | 'cont' | 'stop' | 'stp' | 'ttin' | 'ttou' | 'urg' | 'xcpu' | 'xfsz' | 'vtalrm' | 'prof' | 'winch' | 'io' | 'pwr' | 'sys' | 'emt' | 'exists' | 'rtmin+0' ... 'rtmin+32' )
 
 B<SIGNAL PEER> = 'peer' '=' I<AARE>
 
@@ -508,7 +508,7 @@ to debug kernel or policy problems.
 
 =item B<interruptible> Enables interrupts for prompt upcall to userspace.
 
-=item B<kill.signal>=I<SIGNALS> This changes the signal that will be
+=item B<kill.signal>=I<SIGNAL> This changes the signal that will be
 sent by AppArmor when in kill mode or a kill rule has been violated.
 
 =back
