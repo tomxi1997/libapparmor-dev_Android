@@ -115,6 +115,7 @@ static void free_processes(struct process *processes, size_t n) {
 #define SHOW_PROCESSES 2
 
 static int verbose = 1;
+static bool quiet = false;
 int opt_show = SHOW_PROFILES | SHOW_PROCESSES;
 bool opt_json = false;
 bool opt_pretty = false;
@@ -127,7 +128,13 @@ const char *opt_exe = ".*";
 const char *profile_statuses[] = {"enforce", "complain", "prompt", "kill", "unconfined"};
 const char *process_statuses[] = {"enforce", "complain", "prompt", "kill", "unconfined", "mixed"};
 
-#define dprintf(...)                                                           \
+#define eprintf(...)                                                    \
+do {									\
+	if (!quiet)							\
+	  fprintf(stderr, __VA_ARGS__);					\
+} while (0)
+
+#define dprintf(...)							\
 do {									       \
 	if (verbose && !opt_json)					       \
 		printf(__VA_ARGS__);					       \
@@ -149,14 +156,14 @@ static int open_profiles(FILE **fp)
 
 	ret = stat("/sys/module/apparmor", &st);
 	if (ret != 0) {
-		dfprintf(stderr, "apparmor not present.\n");
+		eprintf("apparmor not present.\n");
 		return AA_EXIT_DISABLED;
 	}
 	dprintf("apparmor module is loaded.\n");
 
 	ret = aa_find_mountpoint(&apparmorfs);
 	if (ret == -1) {
-		dfprintf(stderr, "apparmor filesystem is not mounted.\n");
+		eprintf("apparmor filesystem is not mounted.\n");
 		return AA_EXIT_NO_CONTROL;
 	}
 
@@ -169,9 +176,9 @@ static int open_profiles(FILE **fp)
 	*fp = fopen(apparmor_profiles, "r");
 	if (*fp == NULL) {
 		if (errno == EACCES) {
-			dfprintf(stderr, "You do not have enough privilege to read the profile set.\n");
+			eprintf("You do not have enough privilege to read the profile set.\n");
 		} else {
-			dfprintf(stderr, "Could not open %s: %s", apparmor_profiles, strerror(errno));
+			eprintf("Could not open %s: %s", apparmor_profiles, strerror(errno));
 		}
 		return AA_EXIT_NO_PERM;
 	}
@@ -201,7 +208,7 @@ static int get_profiles(FILE *fp, struct profile **profiles, size_t *n) {
 		char *tmpname = aa_splitcon(line, &status);
 
 		if (!tmpname) {
-			dfprintf(stderr, "Error: failed profile name split of '%s'.\n", line);
+			eprintf("Error: failed profile name split of '%s'.\n", line);
 			// skip this entry and keep processing
 			// else would be AA_EXIT_INTERNAL_ERROR;
 			continue;
@@ -344,7 +351,7 @@ static int get_processes(struct profile *profiles,
 			continue;
 		} else if (rc == -1 ||
 			   asprintf(&exe, "/proc/%s/exe", entry->d_name) == -1) {
-			fprintf(stderr, "ERROR: Failed to allocate memory\n");
+			eprintf("ERROR: Failed to allocate memory\n");
 			ret = AA_EXIT_INTERNAL_ERROR;
 			goto exit;
 		} else if (mode) {
@@ -367,7 +374,7 @@ static int get_processes(struct profile *profiles,
 			// ensure enough space for NUL terminator
 			real_exe = calloc(PATH_MAX + 1, sizeof(char));
 			if (real_exe == NULL) {
-				fprintf(stderr, "ERROR: Failed to allocate memory\n");
+				eprintf("ERROR: Failed to allocate memory\n");
 				ret = AA_EXIT_INTERNAL_ERROR;
 				goto exit;
 			}
@@ -575,7 +582,7 @@ static int detailed_profiles(FILE *outf, filters_t *filters, bool json,
 		 */
 		subfilters.mode = &mode_filter;
 		if (regcomp(&mode_filter, profile_statuses[i], REG_NOSUB) != 0) {
-			dfprintf(stderr, "Error: failed to compile sub filter '%s'\n",
+			eprintf("Error: failed to compile sub filter '%s'\n",
 				 profile_statuses[i]);
 			return AA_EXIT_INTERNAL_ERROR;
 		}
@@ -641,7 +648,7 @@ static int detailed_processes(FILE *outf, filters_t *filters, bool json,
 		 */
 		subfilters.mode = &mode_filter;
 		if (regcomp(&mode_filter, process_statuses[i], REG_NOSUB) != 0) {
-			dfprintf(stderr, "Error: failed to compile sub filter '%s'\n",
+			eprintf("Error: failed to compile sub filter '%s'\n",
 				 profile_statuses[i]);
 			return AA_EXIT_INTERNAL_ERROR;
 		}
@@ -765,6 +772,7 @@ static int print_usage(const char *command, bool error)
 	 "  --json          displays multiple data points in machine-readable JSON format\n"
 	 "  --pretty-json   same data as --json, formatted for human consumption as well\n"
 	 "  --verbose       (default) displays data points about loaded policy set\n"
+	 "  --quiet         don't output error messages\n"
 	 "  -h [(legacy|filter)]    this message, or info on the specified option\n"
 	 " --help[=(legacy|filter)] this message, or info on the specified option\n",
 	 command);
@@ -792,6 +800,7 @@ static int print_usage(const char *command, bool error)
 #define ARG_EXE		143
 #define ARG_PROMPT	144
 #define ARG_VERBOSE 'v'
+#define ARG_QUIET 'q'
 #define ARG_HELP 'h'
 
 static int parse_args(int argc, char **argv)
@@ -809,6 +818,7 @@ static int parse_args(int argc, char **argv)
 		{"json", no_argument, 0, ARG_JSON},
 		{"pretty-json", no_argument, 0, ARG_PRETTY},
 		{"verbose", no_argument, 0, ARG_VERBOSE},
+		{"quiet", no_argument, 0, ARG_QUIET},
 		{"help", 2, 0, ARG_HELP},
 		{"count", no_argument, 0, ARG_COUNT},
 		{"show", 1, 0, ARG_SHOW},
@@ -830,6 +840,9 @@ static int parse_args(int argc, char **argv)
 			/* default opt_mode */
 			/* default opt_show */
 			break;
+		case ARG_QUIET:
+			quiet = true;
+			break;
 		case ARG_HELP:
 			if (!optarg) {
 				print_usage(argv[0], false);
@@ -838,7 +851,7 @@ static int parse_args(int argc, char **argv)
 			} else if (strcmp(optarg, "filters") == 0) {
 				usage_filters();
 			} else {
-				dfprintf(stderr, "Error: Invalid --help option '%s'.\n", optarg);
+				eprintf("Error: Invalid --help option '%s'.\n", optarg);
 				print_usage(argv[0], true);
 				break;
 			}
@@ -906,7 +919,7 @@ static int parse_args(int argc, char **argv)
 			} else if (strcmp(optarg, "processes") == 0) {
 				opt_show = SHOW_PROCESSES;
 			} else {
-				dfprintf(stderr, "Error: Invalid --show option '%s'.\n", optarg);
+				eprintf("Error: Invalid --show option '%s'.\n", optarg);
 				print_usage(argv[0], true);
 				break;
 			}
@@ -928,7 +941,7 @@ static int parse_args(int argc, char **argv)
 			break;
 			
 		default:
-			dfprintf(stderr, "Error: Invalid command.\n");
+			eprintf("Error: Invalid command.\n");
 			print_usage(argv[0], true);
 			break;
 		}
@@ -953,7 +966,7 @@ int main(int argc, char **argv)
 	if (argc > 1) {
 		int pos = parse_args(argc, argv);
 		if (pos < argc) {
-			dfprintf(stderr, "Error: Unknown options.\n");
+			eprintf("Error: Unknown options.\n");
 			print_usage(progname, true);
 		}
 	} else {
@@ -965,24 +978,24 @@ int main(int argc, char **argv)
 
 	init_filters(&filters, &filter_set);
 	if (regcomp(filters.mode, opt_mode, REG_NOSUB) != 0) {
-		dfprintf(stderr, "Error: failed to compile mode filter '%s'\n",
+		eprintf("Error: failed to compile mode filter '%s'\n",
 			 opt_mode);
 		return AA_EXIT_INTERNAL_ERROR;
 	}
 	if (regcomp(filters.profile, opt_profiles, REG_NOSUB) != 0) {
-		dfprintf(stderr, "Error: failed to compile profiles filter '%s'\n",
+		eprintf("Error: failed to compile profiles filter '%s'\n",
 			 opt_profiles);
 		ret = AA_EXIT_INTERNAL_ERROR;
 		goto out;
 	}
 	if (regcomp(filters.pid, opt_pid, REG_NOSUB) != 0) {
-		dfprintf(stderr, "Error: failed to compile ps filter '%s'\n",
+		eprintf("Error: failed to compile ps filter '%s'\n",
 			 opt_pid);
 		ret = AA_EXIT_INTERNAL_ERROR;
 		goto out;
 	}
 	if (regcomp(filters.exe, opt_exe, REG_NOSUB) != 0) {
-		dfprintf(stderr, "Error: failed to compile exe filter '%s'\n",
+		eprintf("Error: failed to compile exe filter '%s'\n",
 			 opt_exe);
 		ret = AA_EXIT_INTERNAL_ERROR;
 		goto out;
@@ -997,7 +1010,7 @@ int main(int argc, char **argv)
 		outf_save = outf;
 		outf = open_memstream(&buffer, &buffer_size);
 		if (!outf) {
-			dfprintf(stderr, "Failed to open memstream: %m\n");
+			eprintf("Failed to open memstream: %m\n");
 			return AA_EXIT_INTERNAL_ERROR;
 		}
 	}
@@ -1008,7 +1021,7 @@ int main(int argc, char **argv)
 	 */
 	ret = get_profiles(fp, &profiles, &nprofiles);
 	if (ret != 0) {
-		dfprintf(stderr, "Failed to get profiles: %d....\n", ret);
+		eprintf("Failed to get profiles: %d....\n", ret);
 		goto out;
 	}
 
@@ -1032,7 +1045,7 @@ int main(int argc, char **argv)
 
 		ret = get_processes(profiles, nprofiles, &processes, &nprocesses);
 		if (ret != 0) {
-			dfprintf(stderr, "Failed to get processes: %d....\n", ret);
+			eprintf("Failed to get processes: %d....\n", ret);
 		} else if (opt_count) {
 			ret = simple_filtered_process_count(outf, &filters,
 							processes, nprocesses);
@@ -1058,14 +1071,14 @@ int main(int argc, char **argv)
 		outf = outf_save;
 		json = cJSON_Parse(buffer);
 		if (!json) {
-			dfprintf(stderr, "Failed to parse json output");
+			eprintf("Failed to parse json output");
 			ret = AA_EXIT_INTERNAL_ERROR;
 			goto out;
 		}
 
 		pretty = cJSON_Print(json);
 		if (!pretty) {
-			dfprintf(stderr, "Failed to print pretty json");
+			eprintf("Failed to print pretty json");
 			ret = AA_EXIT_INTERNAL_ERROR;
 			goto out;
 		}
