@@ -187,13 +187,14 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 	#include "userns.h"
 	#include "mqueue.h"
 	#include "io_uring.h"
+	#include "network.h"
 }
 
 %union {
 	char *id;
 	char *flag_id;
 	char *mode;
-	struct aa_network_entry *network_entry;
+	network_rule *network_entry;
 	Profile *prof;
 	struct cod_net_entry *net_entry;
 	struct cod_entry *user_entry;
@@ -693,51 +694,23 @@ rules: rules opt_prefix block
 
 rules: rules opt_prefix network_rule
 	{
-		struct aa_network_entry *entry, *tmp;
+		const char *error;
+		if (!$3->add_prefix($2, error))
+			yyerror(error);
+		/* class members need to be updated after prefix is added */
+		$3->update_compat_net();
 
-		PDEBUG("Matched: network rule\n");
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed"));
-		if (!$3)
-			yyerror(_("Assert: `network_rule' return invalid protocol."));
-		if (!$1->alloc_net_table())
-			yyerror(_("Memory allocation error."));
-		list_for_each_safe($3, entry, tmp) {
-
-			/* map to extended mediation, let rule backend do
-			 * downgrade if needed
-			 */
-			if (entry->family == AF_UNIX) {
-				unix_rule *rule = new unix_rule(entry->type, $2.audit, $2.rule_mode);
+		auto nm_af_unix = $3->network_map.find(AF_UNIX);
+		if (nm_af_unix != $3->network_map.end()) {
+			for (auto& entry : nm_af_unix->second) {
+				unix_rule *rule = new unix_rule(entry.type,
+								$2.audit, $2.rule_mode);
 				if (!rule)
 					yyerror(_("Memory allocation error."));
 				$1->rule_ents.push_back(rule);
 			}
-			if (entry->type > SOCK_PACKET) {
-				/* setting mask instead of a bit */
-				if ($2.rule_mode == RULE_DENY) {
-					$1->net.deny[entry->family] |= entry->type;
-					if ($2.audit != AUDIT_FORCE)
-						$1->net.quiet[entry->family] |= entry->type;
-				} else {
-					$1->net.allow[entry->family] |= entry->type;
-					if ($2.audit == AUDIT_FORCE)
-						$1->net.audit[entry->family] |= entry->type;
-				}
-			} else {
-				if ($2.rule_mode == RULE_DENY) {
-					$1->net.deny[entry->family] |= 1 << entry->type;
-					if ($2.audit != AUDIT_FORCE)
-						$1->net.quiet[entry->family] |= 1 << entry->type;
-				} else {
-					$1->net.allow[entry->family] |= 1 << entry->type;
-					if ($2.audit == AUDIT_FORCE)
-						$1->net.audit[entry->family] |= 1 << entry->type;
-				}
-			}
-			free(entry);
 		}
-
+		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
 
@@ -1107,40 +1080,22 @@ link_rule: TOK_LINK opt_subset_flag id_or_var TOK_ARROW id_or_var TOK_END_OF_RUL
 		$$ = entry;
 	};
 
-network_rule: TOK_NETWORK TOK_END_OF_RULE
+network_rule: TOK_NETWORK opt_conds TOK_END_OF_RULE
 	{
-		size_t family;
-		struct aa_network_entry *new_entry, *entry = NULL;
-		for (family = AF_UNSPEC; family < get_af_max(); family++) {
-			new_entry = new_network_ent(family, 0xffffffff,
-						    0xffffffff);
-			if (!new_entry)
-				yyerror(_("Memory allocation error."));
-			new_entry->next = entry;
-			entry = new_entry;
-		}
+		network_rule *entry = new network_rule($2);
 		$$ = entry;
 	}
 
-network_rule: TOK_NETWORK TOK_ID TOK_END_OF_RULE
+network_rule: TOK_NETWORK TOK_ID opt_conds TOK_END_OF_RULE
 	{
-		struct aa_network_entry *entry;
-		entry = network_entry($2, NULL, NULL);
-		if (!entry)
-			/* test for short circuiting of family */
-			entry = network_entry(NULL, $2, NULL);
-		if (!entry)
-			yyerror(_("Invalid network entry."));
+		network_rule *entry = new network_rule($2, NULL, NULL, $3);
 		free($2);
 		$$ = entry;
 	}
 
-network_rule: TOK_NETWORK TOK_ID TOK_ID TOK_END_OF_RULE
+network_rule: TOK_NETWORK TOK_ID TOK_ID opt_conds TOK_END_OF_RULE
 	{
-		struct aa_network_entry *entry;
-		entry = network_entry($2, $3, NULL);
-		if (!entry)
-			yyerror(_("Invalid network entry."));
+		network_rule *entry = new network_rule($2, $3, NULL, $4);
 		free($2);
 		free($3);
 		$$ = entry;

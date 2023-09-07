@@ -36,6 +36,7 @@ class unix_rule: public af_rule {
 public:
 	char *addr;
 	char *peer_addr;
+	bool downgrade = true;
 
 	unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode_p);
 	unix_rule(perms_t perms, struct cond_entry *conds,

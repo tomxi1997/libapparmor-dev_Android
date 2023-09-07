@@ -108,6 +108,9 @@ unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode
 	perms = AA_VALID_NET_PERMS;
 	audit = audit_p;
 	rule_mode = rule_mode_p;
+	/* if this constructor is used, then there's already a
+	 * downgraded network_rule in profile */
+	downgrade = false;
 }
 
 unix_rule::unix_rule(perms_t perms_p, struct cond_entry *conds,
@@ -190,7 +193,7 @@ static void writeu16(std::ostringstream &o, int v)
 void unix_rule::downgrade_rule(Profile &prof) {
 	perms_t mask = (perms_t) -1;
 
-	if (!prof.net.allow && !prof.alloc_net_table())
+	if (!prof.net.allow && !prof.net.alloc_net_table())
 		yyerror(_("Memory allocation error."));
 	if (sock_type_n != -1)
 		mask = 1 << sock_type_n;
@@ -198,6 +201,11 @@ void unix_rule::downgrade_rule(Profile &prof) {
 		prof.net.allow[AF_UNIX] |= mask;
 		if (audit == AUDIT_FORCE)
 			prof.net.audit[AF_UNIX] |= mask;
+		const char *error;
+		network_rule *netv8 = new network_rule(AF_UNIX, sock_type_n);
+		if(!netv8->add_prefix({audit, rule_mode, owner}, error))
+			yyerror(error);
+		prof.rule_ents.push_back(netv8);
 	} else {
 		/* deny rules have to be dropped because the downgrade makes
 		 * the rule less specific meaning it will make the profile more
@@ -317,7 +325,8 @@ int unix_rule::gen_policy_re(Profile &prof)
 	 * older kernels and be enforced to the best of the old network
 	 * rules ability
 	 */
-	downgrade_rule(prof);
+	if (downgrade)
+		downgrade_rule(prof);
 	if (!features_supports_unix) {
 		if (features_supports_network || features_supports_networkv8) {
 			/* only warn if we are building against a kernel

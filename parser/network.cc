@@ -16,10 +16,6 @@
  *   Ltd.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <sys/apparmor.h>
-
 #include <iomanip>
 #include <string>
 #include <sstream>
@@ -28,9 +24,9 @@
 #include "lib.h"
 #include "parser.h"
 #include "profile.h"
-#include "parser_yacc.h"
 #include "network.h"
 
+#define ALL_TYPES 0x43e
 
 int parse_net_perms(const char *str_mode, perms_t *mode, int fail)
 {
@@ -119,7 +115,7 @@ static struct network_tuple network_mappings[] = {
 /* FIXME: af_names.h is missing AF_LLC, AF_TIPC */
 	/* mapped types */
 	{"inet",	AF_INET,	"raw",		SOCK_RAW,
-	 "tcp",	        1 << RAW_TCP},
+	 "tcp",		1 << RAW_TCP},
 	{"inet",	AF_INET,	"raw",		SOCK_RAW,
 	 "udp",		1 << RAW_UDP},
 	{"inet",	AF_INET,	"raw",		SOCK_RAW,
@@ -239,21 +235,21 @@ size_t get_af_max() {
 
 	return af_max;
 }
-struct aa_network_entry *new_network_ent(unsigned int family,
-					 unsigned int type,
-					 unsigned int protocol)
-{
-	struct aa_network_entry *new_entry;
-	new_entry = (struct aa_network_entry *) calloc(1, sizeof(struct aa_network_entry));
-	if (new_entry) {
-		new_entry->family = family;
-		new_entry->type = type;
-		new_entry->protocol = protocol;
-		new_entry->next = NULL;
-	}
-	return new_entry;
-}
 
+const char *net_find_af_name(unsigned int af)
+{
+	size_t i;
+
+	if (af < 0 || af > get_af_max())
+		return NULL;
+
+	for (i = 0; i < sizeof(network_mappings) / sizeof(*network_mappings); i++) {
+		if (network_mappings[i].family == af)
+			return network_mappings[i].family_name;
+	}
+
+	return NULL;
+}
 
 const struct network_tuple *net_find_mapping(const struct network_tuple *map,
 					     const char *family,
@@ -302,95 +298,270 @@ const struct network_tuple *net_find_mapping(const struct network_tuple *map,
 	return NULL;
 }
 
-struct aa_network_entry *network_entry(const char *family, const char *type,
-				       const char *protocol)
+void network_rule::move_conditionals(struct cond_entry *conds)
 {
-	struct aa_network_entry *new_entry, *entry = NULL;
-	const struct network_tuple *mapping = NULL;
+	struct cond_entry *cond_ent;
 
-	while ((mapping = net_find_mapping(mapping, family, type, protocol))) {
-		new_entry = new_network_ent(mapping->family, mapping->type,
-					    mapping->protocol);
-		if (!new_entry)
-			yyerror(_("Memory allocation error."));
-		new_entry->next = entry;
-		entry = new_entry;
+	list_for_each(conds, cond_ent) {
+		/* for now disallow keyword 'in' (list) */
+		if (!cond_ent->eq)
+			yyerror("keyword \"in\" is not allowed in network rules\n");
+
+		/* no valid conditionals atm */
+		yyerror("invalid network rule conditional \"%s\"\n",
+			cond_ent->name);
 	}
-
-	return entry;
-};
-
-#define ALL_TYPES 0x43e
-
-const char *net_find_af_name(unsigned int af)
-{
-	size_t i;
-
-	if (af < 0 || af > get_af_max())
-		return NULL;
-
-	for (i = 0; i < sizeof(network_mappings) / sizeof(*network_mappings); i++) {
-		if (network_mappings[i].family == af)
-			return network_mappings[i].family_name;
-	}
-
-	return NULL;
 }
 
-void __debug_network(unsigned int *array, const char *name)
+void network_rule::set_netperm(unsigned int family, unsigned int type)
 {
+	if (type > SOCK_PACKET) {
+		/* setting mask instead of a bit */
+		network_perms[family] |= type;
+	} else
+		network_perms[family] |= 1 << type;
+}
+
+network_rule::network_rule(struct cond_entry *conds):
+	dedup_perms_rule_t(AA_CLASS_NETV8)
+{
+	size_t family_index;
+	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
+		network_map[family_index].push_back({ family_index, 0xFFFFFFFF, 0xFFFFFFFF });
+		set_netperm(family_index, 0xFFFFFFFF);
+	}
+
+	move_conditionals(conds);
+	free_cond_list(conds);
+}
+
+network_rule::network_rule(const char *family, const char *type,
+			   const char *protocol, struct cond_entry *conds):
+	dedup_perms_rule_t(AA_CLASS_NETV8)
+{
+	const struct network_tuple *mapping = NULL;
+	while ((mapping = net_find_mapping(mapping, family, type, protocol))) {
+		network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
+		set_netperm(mapping->family, mapping->type);
+	}
+
+	if (type == NULL && network_map.empty()) {
+		while ((mapping = net_find_mapping(mapping, type, family, protocol))) {
+			network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
+			set_netperm(mapping->family, mapping->type);
+		}
+	}
+
+	if (network_map.empty())
+		yyerror(_("Invalid network entry."));
+
+	move_conditionals(conds);
+	free_cond_list(conds);
+}
+
+network_rule::network_rule(unsigned int family, unsigned int type):
+	dedup_perms_rule_t(AA_CLASS_NETV8)
+{
+	network_map[family].push_back({ family, type, 0xFFFFFFFF });
+	set_netperm(family, type);
+}
+
+ostream &network_rule::dump(ostream &os)
+{
+	class_rule_t::dump(os);
+
 	unsigned int count = sizeof(sock_types)/sizeof(sock_types[0]);
 	unsigned int mask = ~((1 << count) -1);
-	unsigned int i, j;
-	int none = 1;
-	size_t af_max = get_af_max();
-
-	for (i = AF_UNSPEC; i < af_max; i++)
-		if (array[i]) {
-			none = 0;
-			break;
-		}
-
-	if (none)
-		return;
-
-	printf("%s: ", name);
+	unsigned int j;
 
 	/* This can only be set by an unqualified network rule */
-	if (array[AF_UNSPEC]) {
-		printf("<all>\n");
-		return;
+	if (network_map.find(AF_UNSPEC) != network_map.end()) {
+		os << ",\n";
+		return os;
 	}
 
-	for (i = 0; i < af_max; i++) {
-		if (array[i]) {
-			const char *fam = net_find_af_name(i);
-			if (fam)
-				printf("%s ", fam);
-			else
-				printf("#%u ", i);
+	for (const auto& perm : network_perms) {
+		unsigned int family = perm.first;
+		unsigned int type = perm.second;
 
-			/* All types/protocols */
-			if (array[i] == 0xffffffff || array[i] == ALL_TYPES)
-				continue;
+		const char *family_name = net_find_af_name(family);
+		if (family_name)
+			os << " " << family_name;
+		else
+			os << " #" << family;
 
-			printf("{ ");
+		/* All types/protocols */
+		if (type == 0xffffffff || type == ALL_TYPES)
+			continue;
 
-			for (j = 0; j < count; j++) {
-				const char *type;
-				if (array[i] & (1 << j)) {
-					type = sock_types[j].name;
-					if (type)
-						printf("%s ", type);
-					else
-						printf("#%u ", j);
+		printf(" {");
+
+		for (j = 0; j < count; j++) {
+			const char *type_name;
+			if (type & (1 << j)) {
+				type_name = sock_types[j].name;
+				if (type_name)
+					os << " " << type_name;
+				else
+					os << " #" << j;
+			}
+		}
+		if (type & mask)
+			os << " #" << std::hex << (type & mask);
+
+		printf(" }");
+	}
+
+	os << ",\n";
+
+	return os;
+}
+
+
+int network_rule::expand_variables(void)
+{
+	return 0;
+}
+
+void network_rule::warn_once(const char *name)
+{
+	rule_t::warn_once(name, "network rules not enforced");
+}
+
+bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mask) {
+	std::ostringstream buffer;
+	std::string buf;
+
+	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_NETV8;
+	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((family & 0xff00) >> 8);
+	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (family & 0xff);
+	if (type_mask > 0xffff) {
+		buffer << "..";
+	} else {
+		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((type_mask & 0xff00) >> 8);
+		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
+	}
+	buf = buffer.str();
+
+	if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(AA_VALID_NET_PERMS),
+					 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(AA_VALID_NET_PERMS) : 0,
+					 parseopts))
+		return false;
+
+	return true;
+}
+
+int network_rule::gen_policy_re(Profile &prof)
+{
+	std::ostringstream buffer;
+	std::string buf;
+
+	if (!features_supports_networkv8) {
+		warn_once(prof.name);
+		return RULE_NOT_SUPPORTED;
+	}
+
+	for (const auto& perm : network_perms) {
+		unsigned int family = perm.first;
+		unsigned int type = perm.second;
+
+		if (type > 0xffff) {
+			if (!gen_net_rule(prof, family, type))
+				goto fail;
+		} else {
+			int t;
+			/* generate rules for types that are set */
+			for (t = 0; t < 16; t++) {
+				if (type & (1 << t)) {
+					if (!gen_net_rule(prof, family, t))
+						goto fail;
 				}
 			}
-			if (array[i] & mask)
-				printf("#%x ", array[i] & mask);
+		}
 
-			printf("} ");
+	}
+	return RULE_OK;
+
+fail:
+	return RULE_ERROR;
+
+}
+
+/* initialize static members */
+unsigned int *network_rule::allow = NULL;
+unsigned int *network_rule::audit = NULL;
+unsigned int *network_rule::deny = NULL;
+unsigned int *network_rule::quiet = NULL;
+
+bool network_rule::alloc_net_table()
+{
+	if (allow)
+		return true;
+	allow = (unsigned int *) calloc(get_af_max(), sizeof(unsigned int));
+	audit = (unsigned int *) calloc(get_af_max(), sizeof(unsigned int));
+	deny = (unsigned int *) calloc(get_af_max(), sizeof(unsigned int));
+	quiet = (unsigned int *) calloc(get_af_max(), sizeof(unsigned int));
+	if (!allow || !audit || !deny || !quiet)
+		return false;
+
+	return true;
+}
+
+/* update is required because at the point of the creation of the
+ * network_rule object, we don't have owner, rule_mode, or audit
+ * set.
+ */
+void network_rule::update_compat_net(void)
+{
+	if (!alloc_net_table())
+		yyerror(_("Memory allocation error."));
+
+	for (auto& nm: network_map) {
+		for (auto& entry : nm.second) {
+			if (entry.type > SOCK_PACKET) {
+				/* setting mask instead of a bit */
+				if (rule_mode == RULE_DENY) {
+					deny[entry.family] |= entry.type;
+					if (dedup_perms_rule_t::audit != AUDIT_FORCE)
+						quiet[entry.family] |= entry.type;
+				} else {
+					allow[entry.family] |= entry.type;
+					if (dedup_perms_rule_t::audit == AUDIT_FORCE)
+						audit[entry.family] |= entry.type;
+				}
+			} else {
+				if (rule_mode == RULE_DENY) {
+					deny[entry.family] |= 1 << entry.type;
+					if (dedup_perms_rule_t::audit != AUDIT_FORCE)
+						quiet[entry.family] |= 1 << entry.type;
+				} else {
+					allow[entry.family] |= 1 << entry.type;
+					if (dedup_perms_rule_t::audit == AUDIT_FORCE)
+						audit[entry.family] |= 1 << entry.type;
+				}
+			}
 		}
 	}
-	printf("\n");
 }
+
+static int cmp_network_map(std::unordered_map<unsigned int, perms_t> lhs,
+			   std::unordered_map<unsigned int, perms_t> rhs)
+{
+	int res;
+	size_t family_index;
+	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
+		res = lhs[family_index] - rhs[family_index];
+		if (res)
+			return res;
+	}
+	return 0;
+}
+
+int network_rule::cmp(rule_t const &rhs) const
+{
+	int res = dedup_perms_rule_t::cmp(rhs);
+	if (res)
+		return res;
+	network_rule const &nrhs = rule_cast<network_rule const &>(rhs);
+	return cmp_network_map(network_perms, nrhs.network_perms);
+};

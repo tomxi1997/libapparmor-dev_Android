@@ -845,6 +845,116 @@ int clear_and_convert_entry(std::string& buffer, char *entry)
 	return convert_entry(buffer, entry);
 }
 
+static std::vector<std::pair<bignum, bignum>> regex_range_generator(bignum start, bignum end)
+{
+	std::vector<std::pair<bignum, bignum>> forward;
+	std::vector<std::pair<bignum, bignum>> reverse;
+	bignum next, prev;
+
+	while (start <= end) {
+		next = bignum::upper_bound_regex(start);
+		if (next > end)
+			break;
+
+		forward.emplace_back(start, next);
+		start = next + 1;
+	}
+
+	while (!end.negative && end >= start) {
+		prev = bignum::lower_bound_regex(end);
+		if (prev < start || prev.negative)
+			break;
+
+		reverse.emplace_back(prev, end);
+		end = prev - 1;
+	}
+
+	if (!end.negative && start <= end) {
+		forward.emplace_back(start, end);
+	}
+
+	forward.insert(forward.end(), reverse.rbegin(), reverse.rend());
+	return forward;
+}
+
+static std::string generate_regex_range(bignum start, bignum end)
+{
+	std::ostringstream result;
+	std::vector<std::pair<bignum, bignum>> regex_range;
+	int j;
+	regex_range = regex_range_generator(start, end);
+	for (auto &i: regex_range) {
+		bignum sstart = i.first;
+		bignum send = i.second;
+		if (sstart.base == 16) {
+			for (j = (size_t) sstart.size(); j < 32; j++)
+				result << '0';
+		}
+		for (j = sstart.size() - 1; j >= 0; j--) {
+			result << std::nouppercase;
+			if (sstart[j] == send[j]) {
+				if (sstart[j] >= 10)
+					result << '[';
+				result << std::hex << sstart[j];
+				if (sstart[j] >= 10)
+					result << std::uppercase << std::hex << sstart[j] << ']';
+			} else {
+				if (sstart[j] < 10 && send[j] >= 10) {
+					result << '[';
+					result << std::hex << sstart[j];
+					if (sstart[j] < 9) {
+						result << '-';
+						result << '9';
+					}
+					if (send[j] > 10) {
+						result << 'a';
+						result << '-';
+					}
+					result << std::hex << send[j];
+					if (send[j] > 10) {
+						result << 'A';
+						result << '-';
+					}
+					result << std::uppercase << std::hex << send[j];
+					result << ']';
+				} else {
+					result << '[';
+					result << std::hex << sstart[j];
+					result << '-';
+					result << std::hex << send[j];
+					if (sstart[j] >= 10) {
+						result << std::uppercase << std::hex << sstart[j];
+						result << '-';
+						result << std::uppercase << std::hex << send[j];
+					}
+					result << ']';
+				}
+			}
+		}
+		if (&i != &regex_range.back())
+			result << ",";
+	}
+	return result.str();
+}
+
+int convert_range(std::string& buffer, bignum start, bignum end)
+{
+	pattern_t ptype;
+	int pos;
+
+	std::string regex_range = generate_regex_range(start, end);
+
+	if (!regex_range.empty()) {
+		ptype = convert_aaregex_to_pcre(regex_range.c_str(), 0, glob_default, buffer, &pos);
+		if (ptype == ePatternInvalid)
+			return FALSE;
+	} else {
+		buffer.append(default_match_pattern);
+	}
+
+	return TRUE;
+}
+
 int post_process_policydb_ents(Profile *prof)
 {
 	for (RuleList::iterator i = prof->rule_ents.begin(); i != prof->rule_ents.end(); i++) {
@@ -855,80 +965,6 @@ int post_process_policydb_ents(Profile *prof)
 	}
 
 	return TRUE;
-}
-
-
-static bool gen_net_rule(Profile *prof, u16 family, unsigned int type_mask,
-			 bool audit, bool deny) {
-	std::ostringstream buffer;
-	std::string buf;
-
-	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_NETV8;
-	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((family & 0xff00) >> 8);
-	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (family & 0xff);
-	if (type_mask > 0xffff) {
-		buffer << "..";
-	} else {
-		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((type_mask & 0xff00) >> 8);
-		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
-	}
-	buf = buffer.str();
-	if (!prof->policy.rules->add_rule(buf.c_str(), deny, map_perms(AA_VALID_NET_PERMS),
-					  audit ? map_perms(AA_VALID_NET_PERMS) : 0,
-					  parseopts))
-		return false;
-
-	return true;
-}
-
-static bool gen_af_rules(Profile *prof, u16 family, unsigned int type_mask,
-			  unsigned int audit_mask, bool deny)
-{
-	if (type_mask > 0xffff && audit_mask > 0xffff) {
-		/* instead of generating multiple rules wild card type */
-		return gen_net_rule(prof, family, type_mask, audit_mask, deny);
-	} else {
-		int t;
-		/* generate rules for types that are set */
-		for (t = 0; t < 16; t++) {
-			if (type_mask & (1 << t)) {
-				if (!gen_net_rule(prof, family, t,
-						  audit_mask & (1 << t),
-						  deny))
-					return false;
-			}
-		}
-	}
-
-	return true;
-}
-
-bool post_process_policydb_net(Profile *prof)
-{
-	u16 af;
-
-	/* no network rules defined so we don't have generate them */
-	if (!prof->net.allow)
-		return true;
-
-	/* generate rules if the af has something set */
-	for (af = AF_UNSPEC; af < get_af_max(); af++) {
-		if (prof->net.allow[af] ||
-		    prof->net.deny[af] ||
-		    prof->net.audit[af] ||
-		    prof->net.quiet[af]) {
-			if (!gen_af_rules(prof, af, prof->net.allow[af],
-					  prof->net.audit[af],
-					  false))
-				return false;
-			if (!gen_af_rules(prof, af, prof->net.deny[af],
-					  prof->net.quiet[af],
-					  true))
-				return false;
-		}
-	}
-
-	return true;
 }
 
 #define MAKE_STR(X) #X
@@ -958,9 +994,6 @@ int process_profile_policydb(Profile *prof)
 		goto out;
 
 	if (!post_process_policydb_ents(prof))
-		goto out;
-	/* TODO: move to network class */
-	if (features_supports_networkv8 && !post_process_policydb_net(prof))
 		goto out;
 
 	/* insert entries to show indicate what compiler/policy expects

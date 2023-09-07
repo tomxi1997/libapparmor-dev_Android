@@ -29,6 +29,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <unordered_map>
+#include <vector>
 
 #include "parser.h"
 #include "rule.h"
@@ -82,13 +84,10 @@ struct network_tuple {
 	unsigned int protocol;
 };
 
-/* supported AF protocols */
 struct aa_network_entry {
-	unsigned int family;
+	long unsigned int family;
 	unsigned int type;
 	unsigned int protocol;
-
-	struct aa_network_entry *next;
 };
 
 static inline uint32_t map_perms(uint32_t mask)
@@ -99,45 +98,75 @@ static inline uint32_t map_perms(uint32_t mask)
 		((mask & (AA_NET_SETOPT | AA_NET_GETOPT)) >> 5); /* 5 + (AA_OTHER_SHIFT - 24) */
 };
 
-
 int parse_net_perms(const char *str_mode, perms_t *perms, int fail);
-extern struct aa_network_entry *new_network_ent(unsigned int family,
-						unsigned int type,
-						unsigned int protocol);
-extern struct aa_network_entry *network_entry(const char *family,
-					      const char *type,
-					      const char *protocol);
-extern size_t get_af_max(void);
-
-void __debug_network(unsigned int *array, const char *name);
-
-struct network {
-	unsigned int *allow;		/* array of type masks
-						 * indexed by AF_FAMILY */
-	unsigned int *audit;
-	unsigned int *deny;
-	unsigned int *quiet;
-
-	network(void) { allow = audit = deny = quiet = NULL; }
-
-	void dump(void) {
-		if (allow)
-			__debug_network(allow, "Network");
-		if (audit)
-			__debug_network(audit, "Audit Net");
-		if (deny)
-			__debug_network(deny, "Deny Net");
-		if (quiet)
-			__debug_network(quiet, "Quiet Net");
-	}
-};
-
+size_t get_af_max();
 int net_find_type_val(const char *type);
 const char *net_find_type_name(int type);
 const char *net_find_af_name(unsigned int af);
-const struct network_tuple *net_find_mapping(const struct network_tuple *map,
-					     const char *family,
-					     const char *type,
-					     const char *protocol);
+
+class network_rule: public dedup_perms_rule_t {
+	void move_conditionals(struct cond_entry *conds);
+public:
+	std::unordered_map<unsigned int, std::vector<struct aa_network_entry>> network_map;
+	std::unordered_map<unsigned int, perms_t> network_perms;
+
+	/* empty constructor used only for the profile to access
+	 * static elements to maintain compatibility with
+	 * AA_CLASS_NET */
+	network_rule(): dedup_perms_rule_t(AA_CLASS_NETV8) { }
+	network_rule(struct cond_entry *conds);
+	network_rule(const char *family, const char *type,
+		     const char *protocol, struct cond_entry *conds);
+	network_rule(unsigned int family, unsigned int type);
+	virtual ~network_rule()
+	{
+		if (allow) {
+			free(allow);
+			allow = NULL;
+		}
+		if (audit) {
+			free(audit);
+			audit = NULL;
+		}
+		if (deny) {
+			free(deny);
+			deny = NULL;
+		}
+		if (quiet) {
+			free(quiet);
+			quiet = NULL;
+		}
+	};
+
+	bool gen_net_rule(Profile &prof, u16 family, unsigned int type_mask);
+	void set_netperm(unsigned int family, unsigned int type);
+	void update_compat_net(void);
+
+	virtual bool valid_prefix(const prefixes &p, const char *&error) {
+		if (p.owner) {
+			error = _("owner prefix not allowed on network rules");
+			return false;
+		}
+		return true;
+	};
+	virtual ostream &dump(ostream &os);
+	virtual int expand_variables(void);
+	virtual int gen_policy_re(Profile &prof);
+
+	virtual bool is_mergeable(void) { return true; }
+	virtual int cmp(rule_t const &rhs) const;
+
+	/* array of type masks indexed by AF_FAMILY */
+	/* allow, audit, deny and quiet are used for compatibility with AA_CLASS_NET */
+	static unsigned int *allow;
+	static unsigned int *audit;
+	static unsigned int *deny;
+	static unsigned int *quiet;
+
+	bool alloc_net_table(void);
+
+protected:
+	virtual void warn_once(const char *name) override;
+};
 
 #endif /* __AA_NETWORK_H */

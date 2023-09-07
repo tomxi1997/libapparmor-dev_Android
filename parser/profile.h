@@ -311,7 +311,7 @@ public:
 
 	flagvals flags;
 	struct capabilities caps;
-	struct network net;
+	network_rule net;
 
 	struct aa_rlimits rlimits;
 
@@ -384,7 +384,6 @@ public:
 
 		flags.dump(cerr);
 		caps.dump();
-		net.dump();
 
 		if (entries)
 			debug_cod_entries(entries);
@@ -396,8 +395,6 @@ public:
 		printf("\n");
 		hat_table.dump();
 	}
-
-	bool alloc_net_table();
 
 	std::string hname(void)
 	{
