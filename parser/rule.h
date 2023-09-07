@@ -35,8 +35,9 @@ class Profile;
 #define RULE_TYPE_RULE		0
 #define RULE_TYPE_PREFIX	1
 #define RULE_TYPE_PERMS		2
+#define RULE_TYPE_ALL		3
 // RULE_TYPE_CLASS needs to be last because various class follow it
-#define RULE_TYPE_CLASS		3
+#define RULE_TYPE_CLASS		4
 
 // rule_cast should only be used after a comparison of rule_type to ensure
 // that it is valid. Change to dynamic_cast for debugging
@@ -288,6 +289,10 @@ public:
 		}
 
 		return true;
+	}
+	virtual bool add_prefix(const prefixes &p) {
+		const char *err;
+		return add_prefix(p, err);
 	}
 
 	int cmp(prefixes const &rhs) const {

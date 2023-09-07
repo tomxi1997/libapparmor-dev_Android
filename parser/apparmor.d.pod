@@ -125,7 +125,7 @@ B<RULES> = [ ( I<LINE RULES> | I<COMMA RULES> ',' | I<BLOCK RULES> )
 
 B<LINE RULES> = ( I<COMMENT> | I<INCLUDE> ) [ '\r' ] '\n'
 
-B<COMMA RULES> = ( I<CAPABILITY RULE> | I<NETWORK RULE> | I<MOUNT RULE> | I<PIVOT ROOT RULE> | I<UNIX RULE> | I<FILE RULE> | I<LINK RULE> | I<CHANGE_PROFILE RULE> | I<RLIMIT RULE> | I<DBUS RULE> | I<MQUEUE RULE> | I<IO_URING RULE> | I<USERNS RULE>)
+B<COMMA RULES> = ( I<CAPABILITY RULE> | I<NETWORK RULE> | I<MOUNT RULE> | I<PIVOT ROOT RULE> | I<UNIX RULE> | I<FILE RULE> | I<LINK RULE> | I<CHANGE_PROFILE RULE> | I<RLIMIT RULE> | I<DBUS RULE> | I<MQUEUE RULE> | I<IO_URING RULE> | I<USERNS RULE> | I<ALL RULE>)
 
 B<BLOCK RULES> = ( I<SUBPROFILE> | I<HAT> | I<QUALIFIER BLOCK> )
 
@@ -345,6 +345,8 @@ B<CHANGE_PROFILE RULE> = 'change_profile' [ [ I<EXEC MODE> ] I<EXEC COND> ] [ '-
 B<EXEC_MODE> = ( 'safe' | 'unsafe' )
 
 B<EXEC COND> = I<FILEGLOB>
+
+B<ALL RULE> = 'all'
 
 =back
 
@@ -1603,6 +1605,26 @@ exec mode can only be specified when an exec condition is present.
 Not all kernels support B<safe> mode and the parser will downgrade rules to
 B<unsafe> mode in that situation. If no exec mode is specified, the default is
 B<safe> mode in kernels that support it.
+
+=head2 all rule
+
+The all rule is used to add a generic rule for all supported rule types.
+This is useful when policy wants to define a black list instead of
+white list, but can also be useful to add an access qualifier to all
+rules.
+
+Eg. Black list
+
+  allow all,
+  # begin blacklist
+  deny file,
+  deny unix,
+
+
+Eg. Adding audit qualifier
+
+  audit access all,
+
 
 =head2 rlimit rules
 

@@ -1,0 +1,8 @@
+#
+#=Description basic ptrace all rule
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  all read readby trace tracedby ,
+
+  }

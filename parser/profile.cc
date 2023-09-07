@@ -347,6 +347,12 @@ void Profile::add_implied_rules(void)
 {
 	int error;
 
+	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); i++) {
+		if ((*i)->skip())
+			continue;
+		(*i)->add_implied_rules(*this);
+	}
+
 	error = profile_add_hat_rules(this);
 	if (error) {
 		PERROR(_("ERROR adding hat access rule for profile %s\n"),
