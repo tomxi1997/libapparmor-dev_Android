@@ -2125,6 +2125,7 @@ def match_line_against_rule_classes(line, profile, file, lineno, in_preamble):
 
     for rule_name in (
             'abi',
+            'all',
             'alias',
             'boolean',
             'variable',

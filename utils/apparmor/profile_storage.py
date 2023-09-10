@@ -18,6 +18,7 @@ from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.regex import parse_profile_start_line
 from apparmor.rule import quote_if_needed
 from apparmor.rule.abi import AbiRule, AbiRuleset
+from apparmor.rule.all import AllRule, AllRuleset
 from apparmor.rule.capability import CapabilityRule, CapabilityRuleset
 from apparmor.rule.change_profile import ChangeProfileRule, ChangeProfileRuleset
 from apparmor.rule.dbus import DbusRule, DbusRuleset
@@ -37,6 +38,7 @@ _ = init_translation()
 ruletypes = {
     'abi':            {'rule': AbiRule,           'ruleset': AbiRuleset},
     'inc_ie':         {'rule': IncludeRule,       'ruleset': IncludeRuleset},
+    'all':            {'rule': AllRule,           'ruleset': AllRuleset},
     'capability':     {'rule': CapabilityRule,    'ruleset': CapabilityRuleset},
     'change_profile': {'rule': ChangeProfileRule, 'ruleset': ChangeProfileRuleset},
     'dbus':           {'rule': DbusRule,          'ruleset': DbusRuleset},
