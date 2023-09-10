@@ -1,30 +1,25 @@
 " ----------------------------------------------------------------------
 "    Copyright (c) 2005 Novell, Inc. All Rights Reserved.
-"    Copyright (c) 2006-2012 Christian Boltz. All Rights Reserved.
-"      
+"    Copyright (c) 2006-2023 Christian Boltz. All Rights Reserved.
+"
 "    This program is free software; you can redistribute it and/or
 "    modify it under the terms of version 2 of the GNU General Public
 "    License as published by the Free Software Foundation.
-"      
+"
 "    This program is distributed in the hope that it will be useful,
 "    but WITHOUT ANY WARRANTY; without even the implied warranty of
 "    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 "    GNU General Public License for more details.
-"      
+"
 "    You should have received a copy of the GNU General Public License
 "    along with this program; if not, contact Novell, Inc.
-"      
-"    To contact Novell about this file by physical or electronic mail, 
-"    you may find current contact information at www.novell.com.
 "
-"    To contact Christian Boltz about this file by physical or electronic
-"    mail, you may find current contact information at www.cboltz.de/en/kontakt.
-"
-"    If you want to report a bug via bugzilla.novell.com, please assign it
-"    to suse-beta[AT]cboltz.de (replace [AT] with @).
+"    If you want to report a bug for apparmor.vim, please do so at
+"    - https://gitlab.com/apparmor/apparmor/ or
+"    - https://bugzilla.opensuse.org (assign it to suse-beta[AT]cboltz.de)
 " ----------------------------------------------------------------------
 "
-" stick this file into ~/.vim/syntax/ and add these commands into your .vimrc 
+" stick this file into ~/.vim/syntax/ and add these commands into your .vimrc
 " to have vim automagically use this syntax file for these directories:
 "
 " autocmd BufNewFile,BufRead /etc/apparmor.d/*                      set syntax=apparmor
@@ -49,6 +44,7 @@ syntax case match
 "	hi sdComment2 ctermfg=darkblue
 	hi sdGlob       ctermfg=darkmagenta
 	hi sdAlias      ctermfg=darkmagenta
+	hi sdAll        ctermfg=darkred ctermbg=yellow
 	hi sdEntryWriteExec     ctermfg=black ctermbg=yellow
 	hi sdEntryUX     ctermfg=darkred cterm=underline
 	hi sdEntryUXe     ctermfg=darkred
@@ -117,11 +113,18 @@ syn match sdAlias /\v^\s*alias\s+@@FILENAME@@\s+-\>\s+@@FILENAME@@@@EOL@@/ conta
 
 " syn match sdComment /#.*/
 
-syn cluster sdEntry contains=sdEntryWriteExec,sdEntryR,sdEntryW,sdEntryIX,sdEntryPX,sdEntryPXe,sdEntryUX,sdEntryUXe,sdEntryM,sdCap,sdSetCap,sdExtHat,sdRLimit,sdNetwork,sdNetworkDanger,sdEntryChangeProfile
+" List of all (supported) rules inside a profile.
+" XXX When adding support for a new rule type, also add it here. XXX
+" XXX Otherwise it will be highlighted as an error.              XXX
+syn cluster sdEntry contains=sdAll,sdEntryWriteExec,sdEntryR,sdEntryW,sdEntryIX,sdEntryPX,sdEntryPXe,sdEntryUX,sdEntryUXe,sdEntryM,sdCap,sdSetCap,sdExtHat,sdRLimit,sdNetwork,sdNetworkDanger,sdEntryChangeProfile
 
 
 " TODO: support audit and deny keywords for all rules (not only for files)
 " TODO: highlight audit and deny keywords everywhere
+
+" 'all' rule
+syn match  sdAll /\v^\s*@@auditdeny@@all@@EOL@@/ contains=sdComment nextgroup=@sdEntry,sdComment,sdError,sdInclude
+
 
 " Capability line
 
