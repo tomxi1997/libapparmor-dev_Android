@@ -658,6 +658,10 @@ include/{WS}	{
 	yy_push_state(INCLUDE);
 }
 
+all/({WS}|[^[:alnum:]_]) {
+	RETURN_TOKEN(TOK_ALL);
+}
+
 #.*\r?\n	{ /* normal comment */
 	DUMP_AND_DEBUG("comment(%d): %s\n", current_lineno, yytext);
 	current_lineno++;

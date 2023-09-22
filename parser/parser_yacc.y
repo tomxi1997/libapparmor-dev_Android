@@ -70,8 +70,6 @@ mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 mnt_rule *do_pivot_rule(struct cond_entry *old, char *root,
 			char *transition);
 static void abi_features(char *filename, bool search);
-bool add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
-bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 
 %}
 
@@ -149,6 +147,7 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 %token TOK_IO_URING
 %token TOK_OVERRIDE_CREDS
 %token TOK_SQPOLL
+%token TOK_ALL
 
  /* rlimits */
 %token TOK_RLIMIT
@@ -188,6 +187,7 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 	#include "mqueue.h"
 	#include "io_uring.h"
 	#include "network.h"
+	#include "all_rule.h"
 }
 
 %union {
@@ -207,6 +207,7 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 	userns_rule *userns_entry;
 	mqueue_rule *mqueue_entry;
 	io_uring_rule *io_uring_entry;
+	all_rule *all_entry;
 	prefix_rule_t *prefix_entry;
 
 	flagvals flags;
@@ -303,6 +304,7 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&errror);
 %type <fperms>	io_uring_perms
 %type <fperms>	opt_io_uring_perm
 %type <io_uring_entry>	io_uring_rule
+%type <all_entry>	all_rule
 %%
 
 
@@ -656,7 +658,7 @@ rules:  rules opt_prefix rule
 		PDEBUG("rules rule: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `rule' returned NULL."));
-		if (!add_prefix($3, $2, error)) {
+		if (!entry_add_prefix($3, $2, error)) {
 			yyerror(_("%s"), error);
 		}
 		add_entry_to_policy($1, $3);
@@ -677,7 +679,7 @@ rules: rules opt_prefix block
 		list_for_each_safe($3->entries, entry, tmp) {
 			const char *error;
 			entry->next = NULL;
-			if (!add_prefix(entry, $2, error)) {
+			if (!entry_add_prefix(entry, $2, error)) {
 				yyerror(_("%s"), error);
 			}
 			/* transfer rule for now, TODO keep block and just
@@ -722,6 +724,7 @@ prefix_rule : mnt_rule { $$ = $1; }
 	| userns_rule { $$ = $1; }
 	| mqueue_rule { $$ = $1; }
 	| io_uring_rule { $$ = $1; }
+	| all_rule { $$ = $1; }
 
 rules:  rules opt_prefix prefix_rule
 	{
@@ -1511,6 +1514,14 @@ io_uring_rule: TOK_IO_URING opt_io_uring_perm opt_conds opt_cond_list TOK_END_OF
 		$$ = ent;
 	}
 
+all_rule: TOK_ALL TOK_END_OF_RULE
+	{
+		all_rule *ent = new all_rule();
+		if (!ent)
+			yyerror(_("Memory allocation error."));
+		$$ = ent;
+	}
+
 hat_start: TOK_CARET {}
 	| TOK_HAT {}
 
@@ -1773,43 +1784,3 @@ static void abi_features(char *filename, bool search)
 
 };
 
-bool check_x_qualifier(struct cod_entry *entry, const char *&error)
-{
-	if (entry->perms & AA_EXEC_BITS) {
-		if ((entry->rule_mode == RULE_DENY) &&
-		    (entry->perms & ALL_AA_EXEC_TYPE)) {
-			error = _("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'");
-			return false;
-		} else if ((entry->rule_mode != RULE_DENY) &&
-			   !(entry->perms & ALL_AA_EXEC_TYPE)) {
-			error = _("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'");
-			return false;
-		}
-	}
-	return true;
-}
-
-// cod_entry version of ->add_prefix here just as file rules aren't converted yet
-bool add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
-{
-	/* modifiers aren't correctly stored for cod_entries yet so
-	 * we can't conflict on them easily. Leave that until conversion
-	 * to rule_t
-	 */
-	/* apply rule mode */
-	entry->rule_mode = p.rule_mode;
-
-	/* apply owner/other */
-	if (p.owner == 1)
-		entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
-	else if (p.owner == 2)
-		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
-
-	/* implied audit modifier */
-	if (p.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
-		entry->audit = AUDIT_FORCE;
-	else if (p.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
-		entry->audit = AUDIT_FORCE;
-
-	return check_x_qualifier(entry, error);
-}

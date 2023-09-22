@@ -12,7 +12,7 @@
  *   GNU General Public License for more details.
  *
  *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, contact or Canonical Ltd.
+ *   along with this program; if not, contact Canonical Ltd.
  */
 
 #include "common_optarg.h"

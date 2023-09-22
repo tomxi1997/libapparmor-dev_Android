@@ -461,6 +461,9 @@ extern bool strcomp (const char *lhs, const char *rhs);
 extern struct cod_entry *copy_cod_entry(struct cod_entry *cod);
 extern void free_cod_entries(struct cod_entry *list);
 void debug_cod_entries(struct cod_entry *list);
+bool check_x_qualifier(struct cod_entry *entry, const char *&error);
+bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
+
 
 #define SECONDS_P_MS (1000LL * 1000LL)
 long long convert_time_units(long long value, long long base, const char *units);

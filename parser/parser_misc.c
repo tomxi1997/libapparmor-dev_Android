@@ -129,6 +129,7 @@ static struct keyword_table keyword_table[] = {
 	{"io_uring",		TOK_IO_URING},
 	{"override_creds",	TOK_OVERRIDE_CREDS},
 	{"sqpoll",		TOK_SQPOLL},
+	{"all",			TOK_ALL},
 
 	/* terminate */
 	{NULL, 0}
@@ -1084,6 +1085,47 @@ void debug_cod_entries(struct cod_entry *list)
 			printf("\tlink:\t(%s)\n", item->link_name ? item->link_name : "/**");
 
 	}
+}
+
+bool check_x_qualifier(struct cod_entry *entry, const char *&error)
+{
+	if (entry->perms & AA_EXEC_BITS) {
+		if ((entry->rule_mode == RULE_DENY) &&
+		    (entry->perms & ALL_AA_EXEC_TYPE)) {
+			error = _("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'");
+			return false;
+		} else if ((entry->rule_mode != RULE_DENY) &&
+			   !(entry->perms & ALL_AA_EXEC_TYPE)) {
+			error = _("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'");
+			return false;
+		}
+	}
+	return true;
+}
+
+// cod_entry version of ->add_prefix here just as file rules aren't converted yet
+bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
+{
+	/* modifiers aren't correctly stored for cod_entries yet so
+	 * we can't conflict on them easily. Leave that until conversion
+	 * to rule_t
+	 */
+	/* apply rule mode */
+	entry->rule_mode = p.rule_mode;
+
+	/* apply owner/other */
+	if (p.owner == 1)
+		entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
+	else if (p.owner == 2)
+		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
+
+	/* implied audit modifier */
+	if (p.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
+		entry->audit = AUDIT_FORCE;
+	else if (p.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
+		entry->audit = AUDIT_FORCE;
+
+	return check_x_qualifier(entry, error);
 }
 
 // these need to move to stl

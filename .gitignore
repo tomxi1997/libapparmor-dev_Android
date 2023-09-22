@@ -29,6 +29,7 @@ parser/parser_yacc.h
 parser/pod2htm*.tmp
 parser/af_rule.o
 parser/af_unix.o
+parser/all_rule.o
 parser/common_optarg.o
 parser/dbus.o
 parser/default_features.o

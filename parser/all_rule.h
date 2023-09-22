@@ -15,10 +15,10 @@
  *   along with this program; if not, contact Canonical Ltd.
  */
 
-#ifndef __AA_IO_URING_H
-#define __AA_IO_URING_H
+#ifndef __AA_ALL_H
+#define __AA_ALL_H
 
-#include "parser.h"
+#include "rule.h"
 
 #define AA_IO_URING_OVERRIDE_CREDS AA_MAY_APPEND
 #define AA_IO_URING_SQPOLL AA_MAY_CREATE
@@ -26,41 +26,45 @@
 #define AA_VALID_IO_URING_PERMS (AA_IO_URING_OVERRIDE_CREDS | \
 				 AA_IO_URING_SQPOLL)
 
-class io_uring_rule: public perms_rule_t {
+class all_rule: public prefix_rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
 	char *label;
 
-	io_uring_rule(perms_t perms, struct cond_entry *conds, struct cond_entry *ring_conds);
-	virtual ~io_uring_rule()
-	{
-		free(label);
-	};
+	all_rule(void): prefix_rule_t(RULE_TYPE_ALL) { }
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) {
 		if (p.owner) {
-			error = _("owner prefix not allowed on io_uring rules");
+			error = _("owner prefix not allowed on all rules");
 			return false;
 		}
 		return true;
 	};
 
-	virtual ostream &dump(ostream &os);
-	virtual int expand_variables(void);
-	virtual int gen_policy_re(Profile &prof);
+	int expand_variables(void)
+	{
+		return 0;
+	}
+	virtual ostream &dump(ostream &os) {
+		prefix_rule_t::dump(os);
 
+		os << "all";
+
+		return os;
+	}
 	virtual bool is_mergeable(void) { return true; }
 	virtual int cmp(rule_t const &rhs) const
 	{
-		int res = perms_rule_t::cmp(rhs);
-		if (res)
-			return res;
-		return null_strcmp(label,
-			       (rule_cast<io_uring_rule const &>(rhs)).label);
+		return prefix_rule_t::cmp(rhs);
 	};
 
+	virtual void add_implied_rules(Profile &prof);
+
+	virtual int gen_policy_re(Profile &prof unused) { return RULE_OK; };
+
 protected:
-	virtual void warn_once(const char *name) override;
+  virtual void warn_once(const char *name unused, const char *msg unused) { };
+  virtual void warn_once(const char *name unused)  { };
 };
 
-#endif /* __AA_IO_URING_H */
+#endif /* __AA_ALL_H */

@@ -263,6 +263,14 @@ unknown_line = (
     'file/ok_other_2.sd',
     'file/ok_other_3.sd',
 
+    # 'all' keyword
+    'all/ok_01.sd',
+    'all/ok_02.sd',
+    'all/ok_03.sd',
+    'all/ok_04.sd',
+    'all/ok_05.sd',
+    'all/ok_06.sd',
+
     # 'unsafe' keyword
     'file/file/front_perms_ok_1.sd',
     'file/front_perms_ok_1.sd',
