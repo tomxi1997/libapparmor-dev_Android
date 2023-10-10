@@ -1,0 +1,110 @@
+#
+#=DESCRIPTION validate some uses of the profile flags.
+#=EXRESULT PASS
+# vim:syntax=subdomain
+#
+
+#==============================
+
+/does/not/exist1 flags=(default_allow, chroot_relative, mediate_deleted) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+/does/not/exist2 flags=(chroot_relative, mediate_deleted, default_allow) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+
+#-------
+
+
+/does/not/exist12 flags=(default_allow, chroot_relative, delegate_deleted) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+/does/not/exist13 flags=(chroot_relative, delegate_deleted, default_allow) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+
+#-------
+
+
+/does/not/exist22 flags=(default_allow, chroot_relative, attach_disconnected) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+/does/not/exist23 flags=(chroot_relative, attach_disconnected, default_allow) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+
+#-------
+
+/does/not/exist32 flags=(default_allow, chroot_relative, no_attach_disconnected) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+/does/not/exist33 flags=(chroot_relative, no_attach_disconnected, default_allow) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+
+#-------
+
+
+/does/not/exist42 flags=(default_allow, chroot_relative, chroot_attach) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+/does/not/exist43 flags=(chroot_relative, chroot_attach, default_allow) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+
+#-------
+
+
+/does/not/exist52 flags=(default_allow, chroot_relative, chroot_no_attach) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+/does/not/exist53 flags=(chroot_relative, chroot_no_attach, default_allow) {
+  
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}

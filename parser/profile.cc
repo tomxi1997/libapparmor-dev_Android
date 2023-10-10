@@ -28,6 +28,7 @@ const char *profile_mode_table[] = {
 	"kill",
 	"unconfined",
 	"prompt",
+	"default_allow",
 	"conflict"		/* should not ever be displayed */
 };
 

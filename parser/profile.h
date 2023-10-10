@@ -64,9 +64,10 @@ enum profile_mode {
 	MODE_KILL = 3,
 	MODE_UNCONFINED = 4,
 	MODE_PROMPT = 5,
-	MODE_CONFLICT = 6	/* greater than MODE_LAST */
+	MODE_DEFAULT_ALLOW = 6,
+	MODE_CONFLICT = 7	/* greater than MODE_LAST */
 };
-#define MODE_LAST MODE_PROMPT
+#define MODE_LAST MODE_DEFAULT_ALLOW
 
 static inline enum profile_mode operator++(enum profile_mode &mode)
 {
@@ -85,6 +86,9 @@ static inline enum profile_mode merge_profile_mode(enum profile_mode l, enum pro
 
 static inline uint32_t profile_mode_packed(enum profile_mode mode)
 {
+	/* until dominance is fixed use unconfined mode for default_allow */
+	if (mode == MODE_DEFAULT_ALLOW)
+		mode = MODE_UNCONFINED;
 	/* kernel doesn't have an unspecified mode everything
 	 * shifts down by 1
 	 */

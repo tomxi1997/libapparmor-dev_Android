@@ -281,7 +281,7 @@ def set_complain(filename, program):
     # a force-complain symlink is more packaging-friendly, but breaks caching
     # create_symlink('force-complain', filename)
     delete_symlink('disable', filename)
-    change_profile_flags(filename, program, ['enforce', 'kill', 'unconfined', 'prompt'], False)  # remove conflicting mode flags
+    change_profile_flags(filename, program, ['enforce', 'kill', 'unconfined', 'prompt', 'default_allow'], False)  # remove conflicting mode flags
     change_profile_flags(filename, program, 'complain', True)
 
 
@@ -290,7 +290,7 @@ def set_enforce(filename, program):
     aaui.UI_Info(_('Setting %s to enforce mode.') % (filename if program is None else program))
     delete_symlink('force-complain', filename)
     delete_symlink('disable', filename)
-    change_profile_flags(filename, program, ['complain', 'kill', 'unconfined', 'prompt'], False)  # remove conflicting and complain mode flags
+    change_profile_flags(filename, program, ['complain', 'kill', 'unconfined', 'prompt','default_allow'], False)  # remove conflicting and complain mode flags
 
 
 def delete_symlink(subdir, filename):

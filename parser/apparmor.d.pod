@@ -117,7 +117,7 @@ B<PROFILE FLAGS> = I<PROFILE MODE> | I<AUDIT_MODE> | 'mediate_deleted'
 | 'attach_disconnected' | 'attach_disconneced.path='I<ABS PATH> | 'chroot_relative'
 | 'debug' | 'interruptible' | 'kill.signal='I<SIGNAL>
 
-B<PROFILE MODE> = 'enforce' | 'complain' | 'kill' | 'unconfined' | 'prompt'
+B<PROFILE MODE> = 'enforce' | 'complain' | 'kill' | 'default_allow' | 'unconfined' | 'prompt'
 
 B<AUDIT MODE> = 'audit'
 
@@ -466,12 +466,36 @@ a signal to kill it.
 permission the action will be allowed, but the violation will be logged
 with a tag of the access being B<ALLOWED>.
 
+=item B<default_allow> This mode changes the default behavior of
+apparmor from default deny to default allow. When default_allow is
+specified the resulting profile will allow operations that the profile
+does not have a rule for. This mode is similar to I<unconfined> but
+allows for allow and deny rules, specifying audit, and domain
+transitions.  Profiles in this mode may be be reported as being in
+I<enforce> mode or I<allow> mode when introspected from the kernel.
+
+Note: default_allow is similar and for many profiles will be equivalent
+to specifying an I<allow all,> rule in the profile. The default_allow
+flag does not provide all the same option that the I<allow all,> rule
+provides.
+
 =item B<unconfined> This mode allows a task confined by the profile to
-behave as though they are I<unconfined>. This mode allow for an
-unconfined behavior that can be later changed to confinement by using
-profile replacement. This mode is should not be used under regular
-deployment but can be useful during debugging and some system
-initialization scenarios.
+behave as though it is I<unconfined>. The unconfined behavior can be
+later changed to confinement by using profile replacement. This mode
+should not be used under regular deployment but can be useful during
+debugging and some system initialization scenarios.
+
+This mode is similar to default_allow and may be emulated by
+default_allow in kernels that no longer support a true unconfined
+mode. It does not generally allow for specifying deny rules, or allow
+rules that override the default behavior, except in a few custom
+kernels where unconfined restricts a few operations. It relies on
+special customized behavior of the unconfined profile in the kernel
+and as such should only be used for debugging.
+
+Note: true unconfined is being phased out, with unconfined becoming a
+replaceable profile. As such unconfined mode will be emulated by a
+special profile compiled with the default_allow flag in newer kernels.
 
 =item B<prompt> This mode allows task mediation to send an up call to
 userspace to ask for a decision when there isn't a rule covering the
