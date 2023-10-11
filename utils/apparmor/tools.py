@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 #    Copyright (C) 2013 Kshitij Gupta <kgupta8592@gmail.com>
-#    Copyright (C) 2015-2022 Christian Boltz <apparmor@cboltz.de>
+#    Copyright (C) 2015-2023 Christian Boltz <apparmor@cboltz.de>
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -27,6 +27,7 @@ _ = init_translation()
 class aa_tools:
     def __init__(self, tool_name, args):
         apparmor.init_aa(profiledir=args.dir, confdir=args.configdir)
+        apparmor.read_profiles()
 
         if not user_perm(apparmor.profile_dir):
             raise AppArmorException("Cannot write to profile directory: %s" % (apparmor.profile_dir))
@@ -92,9 +93,6 @@ class aa_tools:
             yield (program, profile)
 
     def cleanprof_act(self):
-        # used by aa-cleanprof
-        apparmor.read_profiles()
-
         for (program, profile) in self.get_next_to_profile():
             if program is None:
                 program = profile
@@ -118,8 +116,6 @@ class aa_tools:
                     sys.exit(1)
 
     def cmd_disable(self):
-        apparmor.read_profiles()
-
         for (program, profile) in self.get_next_to_profile():
 
             output_name = profile if program is None else program
@@ -134,8 +130,6 @@ class aa_tools:
             self.unload_profile(profile)
 
     def cmd_enforce(self):
-        apparmor.read_profiles()
-
         for (program, profile) in self.get_next_to_profile():
 
             output_name = profile if program is None else program
@@ -149,8 +143,6 @@ class aa_tools:
             self.reload_profile(profile)
 
     def cmd_complain(self):
-        apparmor.read_profiles()
-
         for (program, profile) in self.get_next_to_profile():
 
             output_name = profile if program is None else program
@@ -164,8 +156,6 @@ class aa_tools:
             self.reload_profile(profile)
 
     def cmd_audit(self):
-        apparmor.read_profiles()
-
         for (program, profile) in self.get_next_to_profile():
 
             output_name = profile if program is None else program
@@ -189,7 +179,6 @@ class aa_tools:
             self.reload_profile(profile)
 
     def cmd_autodep(self):
-        apparmor.read_profiles()
         apparmor.loadincludes()
 
         for (program, profile) in self.get_next_to_profile():
