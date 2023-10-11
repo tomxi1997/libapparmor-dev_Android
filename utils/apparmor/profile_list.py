@@ -44,8 +44,7 @@ class ProfileList:
 
     def __init__(self):
         self.profile_names = {}     # profile name -> filename
-        self.attachments = {}       # attachment -> {'f': filename, 'p': profile}
-        self.attachments_AARE = {}  # attachment -> AARE(attachment)
+        self.attachments = {}       # attachment -> {'f': filename, 'p': profile, 're': AARE(attachment)}
         self.files = {}             # filename -> content - see init_file()
         self.profiles = {}          # profile_name -> ProfileStorage
 
@@ -91,7 +90,7 @@ class ProfileList:
 
         if attachment:
             self.attachments[attachment] = {'f': filename, 'p': profile_name or attachment}  # if a profile doesn't have a name, the attachment is stored as profile name
-            self.attachments_AARE[attachment] = AARE(attachment, True)
+            self.attachments[attachment]['re'] = AARE(attachment, True)
 
         self.init_file(filename)
 
@@ -224,7 +223,7 @@ class ProfileList:
 
         # try AARE matches to cover profile names with alternations and wildcards
         for path in self.attachments.keys():
-            if self.attachments_AARE[path].match(attachment):
+            if self.attachments[path]['re'].match(attachment):
                 return self.attachments[path][thing]  # XXX this returns the first match, not necessarily the best one
 
         return None  # nothing found

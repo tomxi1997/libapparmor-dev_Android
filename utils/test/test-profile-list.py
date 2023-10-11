@@ -17,6 +17,7 @@ import apparmor.aa
 from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.profile_list import ProfileList
 from apparmor.profile_storage import ProfileStorage
+from apparmor.aare import AARE
 from apparmor.rule.abi import AbiRule
 from apparmor.rule.alias import AliasRule
 from apparmor.rule.boolean import BooleanRule
@@ -38,14 +39,14 @@ class TestAdd_profile(AATest):
     def testAdd_profile_1(self):
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
         self.assertEqual(self.pl.profile_names, {'foo': '/etc/apparmor.d/bin.foo'})
-        self.assertEqual(self.pl.attachments, {'/bin/foo': {'f': '/etc/apparmor.d/bin.foo', 'p': 'foo'}})
+        self.assertEqual(self.pl.attachments, {'/bin/foo': {'f': '/etc/apparmor.d/bin.foo', 'p': 'foo', 're': AARE('/bin/foo', True)}})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profile_2(self):
         self.pl.add_profile('/etc/apparmor.d/bin.foo', None, '/bin/foo', self.dummy_profile)
         self.assertEqual(self.pl.profile_names, {})
-        self.assertEqual(self.pl.attachments, {'/bin/foo': {'f': '/etc/apparmor.d/bin.foo', 'p': '/bin/foo'}})
+        self.assertEqual(self.pl.attachments, {'/bin/foo': {'f': '/etc/apparmor.d/bin.foo', 'p': '/bin/foo', 're': AARE('/bin/foo', True)}})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['/bin/foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
