@@ -54,17 +54,20 @@ class aa_tools:
 
             program = None
             profile = None
+            prof_filename = None
+
             if os.path.exists(p) or p.startswith('/'):
                 fq_path = apparmor.get_full_path(p).strip()
                 if os.path.commonprefix([apparmor.profile_dir, fq_path]) == apparmor.profile_dir:
                     program = None
-                    profile = fq_path
+                    prof_filename = fq_path
+                    profile = None
                 else:
                     program = fq_path
                     if self.name == 'cleanprof':
                         profile = apparmor.active_profiles.profile_from_attachment(fq_path)
                     else:
-                        profile = apparmor.get_profile_filename_from_attachment(fq_path, True)
+                        prof_filename = apparmor.get_profile_filename_from_attachment(fq_path, True)
             else:
                 which_ = which(p)
                 if self.name == 'cleanprof' and p in apparmor.aa:
@@ -75,13 +78,13 @@ class aa_tools:
                     if self.name == 'cleanprof':
                         profile = program
                     else:
-                        profile = apparmor.get_profile_filename_from_attachment(program, True)
+                        prof_filename = apparmor.get_profile_filename_from_attachment(program, True)
                 elif os.path.exists(os.path.join(apparmor.profile_dir, p)):
                     program = None
                     if self.name == 'cleanprof':
                         profile = p
                     else:
-                        profile = apparmor.get_full_path(os.path.join(apparmor.profile_dir, p)).strip()
+                        prof_filename = apparmor.get_full_path(os.path.join(apparmor.profile_dir, p)).strip()
                 else:
                     if '/' not in p:
                         aaui.UI_Info(_("Can't find %(program)s in the system path list. If the name of the application\nis correct, please run 'which %(program)s' as a user with correct PATH\nenvironment set up in order to find the fully-qualified path and\nuse the full path as parameter.")
@@ -90,12 +93,12 @@ class aa_tools:
                         aaui.UI_Info(_("%s does not exist, please double-check the path.") % p)
                     continue
 
-            yield (program, profile)
+            yield (program, profile, prof_filename)
 
     def get_next_for_modechange(self):
         """common code for mode/flags changes"""
 
-        for (program, prof_filename) in self.get_next_to_profile():
+        for (program, _, prof_filename) in self.get_next_to_profile():
             output_name = prof_filename if program is None else program
 
             if not os.path.isfile(prof_filename) or is_skippable_file(prof_filename):
@@ -105,7 +108,7 @@ class aa_tools:
             yield (program, prof_filename, output_name)
 
     def cleanprof_act(self):
-        for (program, profile) in self.get_next_to_profile():
+        for (program, profile, _) in self.get_next_to_profile():
             if program is None:
                 program = profile
 
@@ -167,9 +170,9 @@ class aa_tools:
     def cmd_autodep(self):
         apparmor.loadincludes()
 
-        for (program, profile) in self.get_next_to_profile():
+        for (program, _, prof_filename) in self.get_next_to_profile():
             if not program:
-                aaui.UI_Info(_('Please pass an application to generate a profile for, not a profile itself - skipping %s.') % profile)
+                aaui.UI_Info(_('Please pass an application to generate a profile for, not a profile itself - skipping %s.') % prof_filename)
                 continue
 
             apparmor.check_qualifiers(program)
