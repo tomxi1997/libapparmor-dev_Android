@@ -211,6 +211,27 @@ class TestAAREIsEqual(AATest):
             aare_obj.is_equal(42)
 
 
+class TestAAREIs_eq(AATest):
+    tests = (
+        # regex     is path?  check for  expected
+        (('/foo',   True,     '/foo'),   True),
+        (('@{foo}', True,     '@{foo}'), True),
+        (('/**',    True,     '/foo'),   False),
+    )
+
+    def _run_test(self, params, expected):
+        regex, is_path, check_for = params
+        aare_obj_1 = AARE(regex, is_path)
+        aare_obj_2 = AARE(check_for, is_path)
+
+        self.assertEqual(aare_obj_1 == aare_obj_2, expected)
+        self.assertFalse(aare_obj_1 == check_for)
+
+    def test_is_eq_invalid_1(self):
+        aare_obj = AARE('/foo/**', True)
+        self.assertFalse(aare_obj == 42)
+
+
 class TestAAREIsPath(AATest):
     tests = (
         # regex       is path?  match for   expected
