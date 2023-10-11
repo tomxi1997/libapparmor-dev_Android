@@ -92,6 +92,18 @@ class aa_tools:
 
             yield (program, profile)
 
+    def get_next_for_modechange(self):
+        """common code for mode/flags changes"""
+
+        for (program, prof_filename) in self.get_next_to_profile():
+            output_name = prof_filename if program is None else program
+
+            if not os.path.isfile(prof_filename) or is_skippable_file(prof_filename):
+                aaui.UI_Info(_('Profile for %s not found, skipping') % output_name)
+                continue
+
+            yield (program, prof_filename, output_name)
+
     def cleanprof_act(self):
         for (program, profile) in self.get_next_to_profile():
             if program is None:
@@ -116,53 +128,26 @@ class aa_tools:
                     sys.exit(1)
 
     def cmd_disable(self):
-        for (program, profile) in self.get_next_to_profile():
-
-            output_name = profile if program is None else program
-
-            if not os.path.isfile(profile) or is_skippable_file(profile):
-                aaui.UI_Info(_('Profile for %s not found, skipping') % output_name)
-                continue
-
+        for (program, profile, output_name) in self.get_next_for_modechange():
             aaui.UI_Info(_('Disabling %s.') % output_name)
             self.disable_profile(profile)
 
             self.unload_profile(profile)
 
     def cmd_enforce(self):
-        for (program, profile) in self.get_next_to_profile():
-
-            output_name = profile if program is None else program
-
-            if not os.path.isfile(profile) or is_skippable_file(profile):
-                aaui.UI_Info(_('Profile for %s not found, skipping') % output_name)
-                continue
-
+        for (program, profile, output_name) in self.get_next_for_modechange():
             apparmor.set_enforce(profile, program)
 
             self.reload_profile(profile)
 
     def cmd_complain(self):
-        for (program, profile) in self.get_next_to_profile():
-
-            output_name = profile if program is None else program
-
-            if not os.path.isfile(profile) or is_skippable_file(profile):
-                aaui.UI_Info(_('Profile for %s not found, skipping') % output_name)
-                continue
-
+        for (program, profile, output_name) in self.get_next_for_modechange():
             apparmor.set_complain(profile, program)
 
             self.reload_profile(profile)
 
     def cmd_audit(self):
-        for (program, profile) in self.get_next_to_profile():
-
-            output_name = profile if program is None else program
-
-            if not os.path.isfile(profile) or is_skippable_file(profile):
-                aaui.UI_Info(_('Profile for %s not found, skipping') % output_name)
-                continue
+        for (program, profile, output_name) in self.get_next_for_modechange():
 
             # keep this to allow toggling 'audit' flags
             if not self.remove:
