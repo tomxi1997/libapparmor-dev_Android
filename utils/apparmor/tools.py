@@ -130,7 +130,8 @@ class aa_tools:
     def cmd_disable(self):
         for (program, profile, output_name) in self.get_next_for_modechange():
             aaui.UI_Info(_('Disabling %s.') % output_name)
-            self.disable_profile(profile)
+
+            apparmor.create_symlink('disable', profile)
 
             self.unload_profile(profile)
 
@@ -214,12 +215,6 @@ class aa_tools:
                 self.reload_profile(filename)
         else:
             raise AppArmorException(_('The profile for %s does not exists. Nothing to clean.') % program)
-
-    def enable_profile(self, filename):
-        apparmor.delete_symlink('disable', filename)
-
-    def disable_profile(self, filename):
-        apparmor.create_symlink('disable', filename)
 
     def unload_profile(self, profile):
         if not self.do_reload:
