@@ -185,19 +185,20 @@ class aa_tools:
                     apparmor.reload(program)
 
     def clean_profile(self, program, profile):
-        filename = apparmor.get_profile_filename_from_profile_name(profile)
         import apparmor.cleanprofile as cleanprofile
-        prof = cleanprofile.Prof(filename)
+
+        prof_filename = apparmor.get_profile_filename_from_profile_name(profile)
+        prof = cleanprofile.Prof(prof_filename)
         cleanprof = cleanprofile.CleanProf(True, prof, prof)
         deleted = cleanprof.remove_duplicate_rules(profile)
         aaui.UI_Info(_("\nDeleted %s rules.") % deleted)
         apparmor.changed[profile] = True
 
-        if filename:
+        if prof_filename:
             if not self.silent:
                 q = aaui.PromptQuestion()
                 q.title = 'Changed Local Profiles'
-                q.explanation = _('The local profile for %(program)s in file %(file)s was changed. Would you like to save it?') % {'program': program, 'file': filename}
+                q.explanation = _('The local profile for %(program)s in file %(file)s was changed. Would you like to save it?') % {'program': program, 'file': prof_filename}
                 q.functions = ['CMD_SAVE_CHANGES', 'CMD_VIEW_CHANGES', 'CMD_ABORT']
                 q.default = 'CMD_VIEW_CHANGES'
                 q.options = []
@@ -208,14 +209,14 @@ class aa_tools:
                     ans, arg = q.promptUser()
                     if ans == 'CMD_SAVE_CHANGES':
                         apparmor.write_profile_ui_feedback(profile)
-                        self.reload_profile(filename)
+                        self.reload_profile(prof_filename)
                     elif ans == 'CMD_VIEW_CHANGES':
                         # oldprofile = apparmor.serialize_profile(apparmor.split_to_merged(apparmor.original_aa), profile, {})
                         newprofile = apparmor.serialize_profile(apparmor.split_to_merged(apparmor.aa), profile, {})  # , {'is_attachment': True})
-                        aaui.UI_Changes(filename, newprofile, comments=True)
+                        aaui.UI_Changes(prof_filename, newprofile, comments=True)
             else:
                 apparmor.write_profile_ui_feedback(profile, True)
-                self.reload_profile(filename)
+                self.reload_profile(prof_filename)
         else:
             raise AppArmorException(_('The profile for %s does not exists. Nothing to clean.') % program)
 
