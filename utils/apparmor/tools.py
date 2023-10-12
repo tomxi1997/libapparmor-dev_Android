@@ -52,10 +52,6 @@ class aa_tools:
             if not p:
                 continue
 
-            program = None
-            profile = None
-            prof_filename = None
-
             if os.path.exists(p) or p.startswith('/'):
                 fq_path = apparmor.get_full_path(p).strip()
                 if os.path.commonprefix([apparmor.profile_dir, fq_path]) == apparmor.profile_dir:
@@ -64,33 +60,29 @@ class aa_tools:
                     profile = None
                 else:
                     program = fq_path
-                    if self.name == 'cleanprof':
-                        profile = apparmor.active_profiles.profile_from_attachment(fq_path)
-                    else:
-                        prof_filename = apparmor.get_profile_filename_from_attachment(fq_path, True)
+                    profile = apparmor.active_profiles.profile_from_attachment(fq_path)
+                    prof_filename = apparmor.get_profile_filename_from_attachment(fq_path, True)
             else:
                 which_ = which(p)
                 if self.name == 'cleanprof' and p in apparmor.aa:
                     program = p  # not really correct, but works
                     profile = p
+                    prof_filename = apparmor.get_profile_filename_from_profile_name(profile)
                 elif which_ is not None:
                     program = apparmor.get_full_path(which_)
-                    if self.name == 'cleanprof':
-                        profile = program
-                    else:
-                        prof_filename = apparmor.get_profile_filename_from_attachment(program, True)
+                    profile = program
+                    prof_filename = apparmor.get_profile_filename_from_attachment(program, True)
                 elif os.path.exists(os.path.join(apparmor.profile_dir, p)):
                     program = None
-                    if self.name == 'cleanprof':
-                        profile = p
-                    else:
-                        prof_filename = apparmor.get_full_path(os.path.join(apparmor.profile_dir, p)).strip()
+                    profile = p
+                    prof_filename = apparmor.get_full_path(os.path.join(apparmor.profile_dir, p)).strip()
                 else:
                     if '/' not in p:
                         aaui.UI_Info(_("Can't find %(program)s in the system path list. If the name of the application\nis correct, please run 'which %(program)s' as a user with correct PATH\nenvironment set up in order to find the fully-qualified path and\nuse the full path as parameter.")
                                      % {'program': p})
                     else:
                         aaui.UI_Info(_("%s does not exist, please double-check the path.") % p)
+
                     continue
 
             yield (program, profile, prof_filename)
@@ -108,7 +100,7 @@ class aa_tools:
             yield (program, prof_filename, output_name)
 
     def cleanprof_act(self):
-        for (program, profile, _) in self.get_next_to_profile():
+        for (program, profile, prof_filename) in self.get_next_to_profile():
             if program is None:
                 program = profile
 
@@ -120,7 +112,7 @@ class aa_tools:
                     sys.exit(1)
 
             if program and profile in apparmor.aa:
-                self.clean_profile(program, profile)
+                self.clean_profile(program, profile, prof_filename)
 
             else:
                 if '/' not in program:
@@ -184,10 +176,9 @@ class aa_tools:
                 if self.aa_mountpoint:
                     apparmor.reload(program)
 
-    def clean_profile(self, program, profile):
+    def clean_profile(self, program, profile, prof_filename):
         import apparmor.cleanprofile as cleanprofile
 
-        prof_filename = apparmor.get_profile_filename_from_profile_name(profile)
         prof = cleanprofile.Prof(prof_filename)
         cleanprof = cleanprofile.CleanProf(True, prof, prof)
         deleted = cleanprof.remove_duplicate_rules(profile)
