@@ -47,6 +47,15 @@ class AARE:
         """returns a "printable" representation of object"""
         return type(self).__name__ + "('%s')" % self.regex
 
+    def __eq__(self, other):
+        """check if the given object is equal
+           Note that the == check is more strict than is_equal() - it doesn't accept if other is a string instead of AARE"""
+
+        if isinstance(other, type(self)):
+            return self.regex == other.regex
+
+        return False
+
     def __deepcopy__(self, memo):
         # thanks to http://bugs.python.org/issue10076, we need to implement this ourself
         if self.orig_regex:
