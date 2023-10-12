@@ -194,31 +194,31 @@ class aa_tools:
         aaui.UI_Info(_("\nDeleted %s rules.") % deleted)
         apparmor.changed[profile] = True
 
-        if prof_filename:
-            if not self.silent:
-                q = aaui.PromptQuestion()
-                q.title = 'Changed Local Profiles'
-                q.explanation = _('The local profile for %(program)s in file %(file)s was changed. Would you like to save it?') % {'program': program, 'file': prof_filename}
-                q.functions = ['CMD_SAVE_CHANGES', 'CMD_VIEW_CHANGES', 'CMD_ABORT']
-                q.default = 'CMD_VIEW_CHANGES'
-                q.options = []
-                q.selected = 0
-                ans = ''
-                arg = None
-                while ans != 'CMD_SAVE_CHANGES':
-                    ans, arg = q.promptUser()
-                    if ans == 'CMD_SAVE_CHANGES':
-                        apparmor.write_profile_ui_feedback(profile)
-                        self.reload_profile(prof_filename)
-                    elif ans == 'CMD_VIEW_CHANGES':
-                        # oldprofile = apparmor.serialize_profile(apparmor.split_to_merged(apparmor.original_aa), profile, {})
-                        newprofile = apparmor.serialize_profile(apparmor.split_to_merged(apparmor.aa), profile, {})  # , {'is_attachment': True})
-                        aaui.UI_Changes(prof_filename, newprofile, comments=True)
-            else:
-                apparmor.write_profile_ui_feedback(profile, True)
-                self.reload_profile(prof_filename)
-        else:
+        if not prof_filename:
             raise AppArmorException(_('The profile for %s does not exists. Nothing to clean.') % program)
+
+        if self.silent:
+            apparmor.write_profile_ui_feedback(profile, True)
+            self.reload_profile(prof_filename)
+        else:
+            q = aaui.PromptQuestion()
+            q.title = 'Changed Local Profiles'
+            q.explanation = _('The local profile for %(program)s in file %(file)s was changed. Would you like to save it?') % {'program': program, 'file': prof_filename}
+            q.functions = ['CMD_SAVE_CHANGES', 'CMD_VIEW_CHANGES', 'CMD_ABORT']
+            q.default = 'CMD_VIEW_CHANGES'
+            q.options = []
+            q.selected = 0
+            ans = ''
+            arg = None
+            while ans != 'CMD_SAVE_CHANGES':
+                ans, arg = q.promptUser()
+                if ans == 'CMD_SAVE_CHANGES':
+                    apparmor.write_profile_ui_feedback(profile)
+                    self.reload_profile(prof_filename)
+                elif ans == 'CMD_VIEW_CHANGES':
+                    # oldprofile = apparmor.serialize_profile(apparmor.split_to_merged(apparmor.original_aa), profile, {})
+                    newprofile = apparmor.serialize_profile(apparmor.split_to_merged(apparmor.aa), profile, {})  # , {'is_attachment': True})
+                    aaui.UI_Changes(prof_filename, newprofile, comments=True)
 
     def unload_profile(self, prof_filename):
         if not self.do_reload:
