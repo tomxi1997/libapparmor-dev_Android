@@ -16,14 +16,35 @@
 import unittest
 
 import apparmor.severity as severity
-from apparmor.common import AppArmorBug, AppArmorException, hasher
+from apparmor.common import AppArmorBug, AppArmorException, cmd, hasher
 from apparmor.logparser import ReadLog
-from apparmor.rule.capability import CapabilityRule, CapabilityRuleset
+from apparmor.rule.capability import CapabilityRule, CapabilityRuleset, capability_keywords
 from apparmor.translations import init_translation
 from common_test import AATest, setup_all_loops
 
 _ = init_translation()
 
+
+# --- check if the keyword list is up to date --- #
+
+class CapabilityKeywordsTest(AATest):
+    def test_capability_keyword_list(self):
+        rc, output = cmd('../../common/list_capabilities.sh')
+        self.assertEqual(rc, 0)
+
+        cap_list = output.replace('CAP_', '').strip().lower().split('\n')
+
+        missing_caps = []
+        for keyword in cap_list:
+            if keyword not in capability_keywords:
+                # keywords missing in the system are ok (= older kernel), but cap_list needs to have the full list
+                missing_caps.append(keyword)
+
+        self.assertEqual(
+            missing_caps, [],
+            'Missing capabilities in CapabilityRule capabilities list. This test is likely running '
+            'on an newer kernel and will require updating the list of capability keywords in '
+            'utils/apparmor/rule/capability.py')
 
 # --- tests for single CapabilityRule --- #
 
