@@ -58,25 +58,21 @@ class CapabilityRule(BaseRule):
             self.capability = set()
         else:
             if isinstance(cap_list, str):
-                if not cap_list.strip():
-                    raise AppArmorBug('Passed empty/whitespace-only capability to %s: %s' % (type(self).__name__, cap_list))
-                if cap_list not in capability_keywords:
-                    raise AppArmorException('Passed unknown capability to %s: %s' % (type(self).__name__, cap_list))
-                self.capability = {cap_list}
-            elif isinstance(cap_list, list) and cap_list:
+                cap_list = [ cap_list ]
+
+            if isinstance(cap_list, list):
+                if not cap_list:
+                    raise AppArmorBug('Passed empty capability list to %s: %s' % (type(self).__name__, str(cap_list)))
                 for cap in cap_list:
                     if not cap.strip():
-                        raise AppArmorBug('Passed empty/whitespace-only capability to %s: %s' % (type(self).__name__, cap))
+                        # make sure none of the cap_list arguments are blank, in
+                        # case we decide to return one cap per output line
+                        raise AppArmorBug('Passed empty capability to %s: %s' % (type(self).__name__, str(cap_list)))
                     if cap not in capability_keywords:
                         raise AppArmorException('Passed unknown capability to %s: %s' % (type(self).__name__, cap))
                 self.capability = set(cap_list)
             else:
                 raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(cap_list)))
-            # make sure none of the cap_list arguments are blank, in
-            # case we decide to return one cap per output line
-            for cap in self.capability:
-                if not cap.strip():
-                    raise AppArmorBug('Passed empty capability to %s: %s' % (type(self).__name__, str(cap_list)))
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):
