@@ -460,7 +460,6 @@ class CapabiliySeverityTest(AATest):
         ('dac_read_search',             7),
         (['fsetid', 'dac_read_search'], 9),
         (CapabilityRule.ALL,            10),
-        ('foo',                         'unknown'),
     )
 
     def _run_test(self, params, expected):

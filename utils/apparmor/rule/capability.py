@@ -15,7 +15,7 @@
 
 import re
 
-from apparmor.common import AppArmorBug
+from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.regex import RE_PROFILE_CAP
 from apparmor.rule import BaseRule, BaseRuleset, logprof_value_or_all, parse_modifiers
 from apparmor.translations import init_translation
@@ -58,8 +58,17 @@ class CapabilityRule(BaseRule):
             self.capability = set()
         else:
             if isinstance(cap_list, str):
+                if not cap_list.strip():
+                    raise AppArmorBug('Passed empty/whitespace-only capability to %s: %s' % (type(self).__name__, cap_list))
+                if cap_list not in capability_keywords:
+                    raise AppArmorException('Passed unknown capability to %s: %s' % (type(self).__name__, cap_list))
                 self.capability = {cap_list}
             elif isinstance(cap_list, list) and cap_list:
+                for cap in cap_list:
+                    if not cap.strip():
+                        raise AppArmorBug('Passed empty/whitespace-only capability to %s: %s' % (type(self).__name__, cap))
+                    if cap not in capability_keywords:
+                        raise AppArmorException('Passed unknown capability to %s: %s' % (type(self).__name__, cap))
                 self.capability = set(cap_list)
             else:
                 raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(cap_list)))
