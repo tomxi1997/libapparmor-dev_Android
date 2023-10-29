@@ -480,6 +480,13 @@ class CapabiliySeverityTest(AATest):
             # (might need adjustment if a new capability gets a different severity assigned)
             self.assertTrue(rank in [0, 7, 8, 9, 10], 'unexpected severity for capability %s: %s' % (cap, rank))
 
+    def test_unknown_cap(self):
+        sev_db = severity.Severity('../severity.db', 'unknown')
+        obj = CapabilityRule('sys_admin')
+        obj.capability = {'unknown_and_broken'}  # override capability with an unknown one to test for 'unknown' severity (creating obj with this invalid capability would raise an error)
+        rank = obj.severity(sev_db)
+        self.assertEqual(rank, 'unknown')
+
 
 class CapabilityLogprofHeaderTest(AATest):
     tests = (
