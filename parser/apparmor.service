@@ -6,6 +6,8 @@ After=systemd-journald-audit.socket
 # profile cache: /var/cache/apparmor/ and /usr/share/apparmor/cache/
 After=var.mount var-cache.mount usr.mount usr-share.mount
 ConditionSecurity=apparmor
+Documentation=man:apparmor(7)
+Documentation=https://gitlab.com/apparmor/apparmor/wikis/home/
 
 [Service]
 Type=oneshot
