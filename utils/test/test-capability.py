@@ -468,6 +468,18 @@ class CapabiliySeverityTest(AATest):
         rank = obj.severity(sev_db)
         self.assertEqual(rank, expected)
 
+    def test_all_caps(self):
+        ''' make sure all capabilities have a severity defined '''
+
+        sev_db = severity.Severity('../severity.db', 'unknown')
+
+        for cap in capability_keywords:
+            obj = CapabilityRule(cap)
+            rank = obj.severity(sev_db)
+            # capabilities have a severity of 7..10, with the exception of 0 for the unused CAP_NET_BROADCAST
+            # (might need adjustment if a new capability gets a different severity assigned)
+            self.assertTrue(rank in [0, 7, 8, 9, 10], 'unexpected severity for capability %s: %s' % (cap, rank))
+
 
 class CapabilityLogprofHeaderTest(AATest):
     tests = (
