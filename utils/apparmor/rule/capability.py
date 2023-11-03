@@ -15,12 +15,21 @@
 
 import re
 
-from apparmor.common import AppArmorBug
+from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.regex import RE_PROFILE_CAP
 from apparmor.rule import BaseRule, BaseRuleset, logprof_value_or_all, parse_modifiers
 from apparmor.translations import init_translation
 
 _ = init_translation()
+
+capability_keywords = [
+    'audit_control', 'audit_read', 'audit_write', 'block_suspend', 'bpf', 'checkpoint_restore',
+    'chown', 'dac_override', 'dac_read_search', 'fowner', 'fsetid', 'ipc_lock', 'ipc_owner',
+    'kill', 'lease', 'linux_immutable', 'mac_admin', 'mac_override', 'mknod', 'net_admin',
+    'net_bind_service', 'net_broadcast', 'net_raw', 'perfmon', 'setfcap', 'setgid', 'setpcap',
+    'setuid', 'syslog', 'sys_admin', 'sys_boot', 'sys_chroot', 'sys_module', 'sys_nice',
+    'sys_pacct', 'sys_ptrace', 'sys_rawio', 'sys_resource', 'sys_time', 'sys_tty_config',
+    'wake_alarm']
 
 
 class CapabilityRule(BaseRule):
@@ -49,16 +58,21 @@ class CapabilityRule(BaseRule):
             self.capability = set()
         else:
             if isinstance(cap_list, str):
-                self.capability = {cap_list}
-            elif isinstance(cap_list, list) and cap_list:
+                cap_list = [ cap_list ]
+
+            if isinstance(cap_list, list):
+                if not cap_list:
+                    raise AppArmorBug('Passed empty capability list to %s: %s' % (type(self).__name__, str(cap_list)))
+                for cap in cap_list:
+                    if not cap.strip():
+                        # make sure none of the cap_list arguments are blank, in
+                        # case we decide to return one cap per output line
+                        raise AppArmorBug('Passed empty capability to %s: %s' % (type(self).__name__, str(cap_list)))
+                    if cap not in capability_keywords:
+                        raise AppArmorException('Passed unknown capability to %s: %s' % (type(self).__name__, cap))
                 self.capability = set(cap_list)
             else:
                 raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(cap_list)))
-            # make sure none of the cap_list arguments are blank, in
-            # case we decide to return one cap per output line
-            for cap in self.capability:
-                if not cap.strip():
-                    raise AppArmorBug('Passed empty capability to %s: %s' % (type(self).__name__, str(cap_list)))
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):

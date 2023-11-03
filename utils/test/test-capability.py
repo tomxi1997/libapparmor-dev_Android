@@ -16,14 +16,35 @@
 import unittest
 
 import apparmor.severity as severity
-from apparmor.common import AppArmorBug, AppArmorException, hasher
+from apparmor.common import AppArmorBug, AppArmorException, cmd, hasher
 from apparmor.logparser import ReadLog
-from apparmor.rule.capability import CapabilityRule, CapabilityRuleset
+from apparmor.rule.capability import CapabilityRule, CapabilityRuleset, capability_keywords
 from apparmor.translations import init_translation
 from common_test import AATest, setup_all_loops
 
 _ = init_translation()
 
+
+# --- check if the keyword list is up to date --- #
+
+class CapabilityKeywordsTest(AATest):
+    def test_capability_keyword_list(self):
+        rc, output = cmd('../../common/list_capabilities.sh')
+        self.assertEqual(rc, 0)
+
+        cap_list = output.replace('CAP_', '').strip().lower().split('\n')
+
+        missing_caps = []
+        for keyword in cap_list:
+            if keyword not in capability_keywords:
+                # keywords missing in the system are ok (= older kernel), but cap_list needs to have the full list
+                missing_caps.append(keyword)
+
+        self.assertEqual(
+            missing_caps, [],
+            'Missing capabilities in CapabilityRule capabilities list. This test is likely running '
+            'on an newer kernel and will require updating the list of capability keywords in '
+            'utils/apparmor/rule/capability.py')
 
 # --- tests for single CapabilityRule --- #
 
@@ -285,9 +306,9 @@ class WriteCapabilityTest(AATest):
         self._check_write_rule('   deny capability      sys_admin      audit_write,# foo bar', 'deny capability audit_write sys_admin, # foo bar')
 
     def test_write_manually(self):
-        obj = CapabilityRule(['ptrace', 'audit_write'], allow_keyword=True)
+        obj = CapabilityRule(['sys_ptrace', 'audit_write'], allow_keyword=True)
 
-        expected = '    allow capability audit_write ptrace,'
+        expected = '    allow capability audit_write sys_ptrace,'
 
         self.assertEqual(expected, obj.get_clean(2), 'unexpected clean rule')
         self.assertEqual(expected, obj.get_raw(2), 'unexpected raw rule')
@@ -425,12 +446,12 @@ class CapabilityCoveredTest(AATest):
         obj = CapabilityRule('fsetid')
         obj2 = CapabilityRule('fsetid')
         obj.capability.add('sys_admin')
-        obj2.capability.add('ptrace')
+        obj2.capability.add('sys_ptrace')
 
         self.assertTrue(self._is_covered(obj, 'capability sys_admin,'))
-        self.assertFalse(self._is_covered(obj, 'capability ptrace,'))
+        self.assertFalse(self._is_covered(obj, 'capability sys_ptrace,'))
         self.assertFalse(self._is_covered(obj2, 'capability sys_admin,'))
-        self.assertTrue(self._is_covered(obj2, 'capability ptrace,'))
+        self.assertTrue(self._is_covered(obj2, 'capability sys_ptrace,'))
 
 
 class CapabiliySeverityTest(AATest):
@@ -439,7 +460,6 @@ class CapabiliySeverityTest(AATest):
         ('dac_read_search',             7),
         (['fsetid', 'dac_read_search'], 9),
         (CapabilityRule.ALL,            10),
-        ('foo',                         'unknown'),
     )
 
     def _run_test(self, params, expected):
@@ -447,6 +467,25 @@ class CapabiliySeverityTest(AATest):
         obj = CapabilityRule(params)
         rank = obj.severity(sev_db)
         self.assertEqual(rank, expected)
+
+    def test_all_caps(self):
+        ''' make sure all capabilities have a severity defined '''
+
+        sev_db = severity.Severity('../severity.db', 'unknown')
+
+        for cap in capability_keywords:
+            obj = CapabilityRule(cap)
+            rank = obj.severity(sev_db)
+            # capabilities have a severity of 7..10, with the exception of 0 for the unused CAP_NET_BROADCAST
+            # (might need adjustment if a new capability gets a different severity assigned)
+            self.assertTrue(rank in [0, 7, 8, 9, 10], 'unexpected severity for capability %s: %s' % (cap, rank))
+
+    def test_unknown_cap(self):
+        sev_db = severity.Severity('../severity.db', 'unknown')
+        obj = CapabilityRule('sys_admin')
+        obj.capability = {'unknown_and_broken'}  # override capability with an unknown one to test for 'unknown' severity (creating obj with this invalid capability would raise an error)
+        rank = obj.severity(sev_db)
+        self.assertEqual(rank, 'unknown')
 
 
 class CapabilityLogprofHeaderTest(AATest):
@@ -506,18 +545,18 @@ class CapabilityRulesTest(AATest):
         rules = [
             'capability chown,',
             'allow capability sys_admin,',
-            'deny capability chgrp, # example comment',
+            'deny capability fowner, # example comment',
         ]
 
         expected_raw = [
             '  capability chown,',
             '  allow capability sys_admin,',
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
             '  allow capability sys_admin,',
             '  capability chown,',
@@ -531,13 +570,13 @@ class CapabilityRulesTest(AATest):
         self.assertEqual(expected_clean, ruleset.get_clean(1))
 
     def test_ruleset_add(self):
-        rule = CapabilityRule('chgrp', comment=' # example comment')
+        rule = CapabilityRule('fowner', comment=' # example comment')
 
         ruleset = CapabilityRuleset()
         ruleset.add(rule)
 
         expected_raw = [
-            '  capability chgrp, # example comment',
+            '  capability fowner, # example comment',
             '',
         ]
 
@@ -555,7 +594,7 @@ class CapabilityRulesCoveredTest(AATest):
             'capability setuid setgid,',
             'allow capability sys_admin,',
             'audit capability kill,',
-            'deny capability chgrp, # example comment',
+            'deny capability fowner, # example comment',
         ]
 
         for rule in rules:
@@ -601,15 +640,15 @@ class CapabilityRulesCoveredTest(AATest):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability kill,')))
 
     def test_ruleset_is_covered_19(self):
-        self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability chgrp,')))
+        self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability fowner,')))
     def test_ruleset_is_covered_20(self):
-        self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit deny capability chgrp,')))
+        self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit deny capability fowner,')))
     def test_ruleset_is_covered_21(self):
-        self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability chgrp,')))
+        self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability fowner,')))
     def test_ruleset_is_covered_22(self):
-        self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('capability chgrp,')))
+        self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('capability fowner,')))
     def test_ruleset_is_covered_23(self):
-        self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability chgrp,'), check_allow_deny=False))
+        self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability fowner,'), check_allow_deny=False))
     def test_ruleset_is_covered_24(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability chown,'), check_allow_deny=False))
 
@@ -634,12 +673,12 @@ class CapabilityRulesCoveredTest(AATest):
 #    def test_ruleset_is_log_covered_4(self):
 #        self._test_log_covered(True, 'kill')
 #    def test_ruleset_is_log_covered_5(self):
-#        self._test_log_covered(False, 'chgrp')
+#        self._test_log_covered(False, 'fowner')
 #    def test_ruleset_is_log_covered_6(self):
 #        event_base = 'type=AVC msg=audit(1415403814.628:662): apparmor="ALLOWED" operation="capable" profile="/bin/ping" pid=15454 comm="ping" capability=13  capname="%s"'
 #
 #        parser = ReadLog('', '', '')
-#        self.assertEqual(True, self.ruleset.is_log_covered(parser.parse_event(event_base%'chgrp'), False))  # ignores allow/deny
+#        self.assertEqual(True, self.ruleset.is_log_covered(parser.parse_event(event_base%'fowner'), False))  # ignores allow/deny
 
 
 class CapabilityGlobTest(AATest):
@@ -660,7 +699,7 @@ class CapabilityDeleteTest(AATest):
         rules = [
             'capability chown,',
             'allow capability sys_admin,',
-            'deny capability chgrp, # example comment',
+            'deny capability fowner, # example comment',
         ]
 
         for rule in rules:
@@ -669,12 +708,12 @@ class CapabilityDeleteTest(AATest):
     def test_delete(self):
         expected_raw = [
             '  capability chown,',
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
             '  capability chown,',
             '',
@@ -688,13 +727,13 @@ class CapabilityDeleteTest(AATest):
     def test_delete_with_allcaps(self):
         expected_raw = [
             '  capability chown,',
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '  capability,',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
             '  capability chown,',
             '  capability,',
@@ -711,12 +750,12 @@ class CapabilityDeleteTest(AATest):
         expected_raw = [
             '  capability chown,',
             '  allow capability sys_admin,',
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
             '  allow capability sys_admin,',
             '  capability chown,',
@@ -745,7 +784,7 @@ class CapabilityDeleteTest(AATest):
         inc = CapabilityRuleset()
         rules = [
             'capability chown,',
-            'deny capability chgrp, # example comment',
+            'deny capability fowner, # example comment',
         ]
 
         for rule in rules:
@@ -766,7 +805,7 @@ class CapabilityDeleteTest(AATest):
         inc = CapabilityRuleset()
         rules = [
             'capability audit_write,',
-            'capability chgrp, # example comment',
+            'capability fowner, # example comment',
         ]
 
         for rule in rules:
@@ -775,12 +814,12 @@ class CapabilityDeleteTest(AATest):
         expected_raw = [
             '  capability chown,',
             '  allow capability sys_admin,',
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
             '  allow capability sys_admin,',
             '  capability chown,',
@@ -805,13 +844,13 @@ class CapabilityDeleteTest(AATest):
         expected_raw = [
             '  capability chown,',
             '  allow capability sys_admin,',
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '  audit capability dac_override,',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
             '  allow capability sys_admin,',
             '  audit capability dac_override,',
@@ -831,12 +870,12 @@ class CapabilityDeleteTest(AATest):
             inc.add(CapabilityRule.create_instance(rule))
 
         expected_raw = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
         ]
 
@@ -848,12 +887,12 @@ class CapabilityDeleteTest(AATest):
         expected_raw = [
             '  capability chown,',
             '  allow capability sys_admin,',
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
             '  allow capability sys_admin,',
             '  capability chown,',
@@ -868,12 +907,12 @@ class CapabilityDeleteTest(AATest):
         expected_raw = [
             '  capability chown,',
             '  allow capability sys_admin,',
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
         ]
 
         expected_clean = [
-            '  deny capability chgrp, # example comment',
+            '  deny capability fowner, # example comment',
             '',
             '  allow capability sys_admin,',
             '  capability chown,',

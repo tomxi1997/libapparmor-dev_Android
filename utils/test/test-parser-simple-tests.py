@@ -44,12 +44,6 @@ exception_not_raised = (
     'abi/bad_11.sd',
     'abi/bad_12.sd',
 
-    # invalid capabilities (like "foobar"), but syntactically correct
-    'capability/bad_1.sd',
-    'capability/bad_2.sd',
-    'capability/bad_3.sd',
-    'capability/bad_4.sd',
-
     # interesting[tm] profile name
     'change_hat/bad_parsing.sd',
 
@@ -176,8 +170,6 @@ exception_not_raised = (
     'profile/flags/flags_bad_disconnected_path4.sd',
     'profile/flags/flags_bad_disconnected_path5.sd',
     'profile/profile_ns_bad8.sd',  # 'profile :ns/t' without terminating ':'
-    'ptrace/bad_05.sd',  # actually contains a capability rule with invalid (ptrace-related) keyword
-    'ptrace/bad_06.sd',  # actually contains a capability rule with invalid (ptrace-related) keyword
     'ptrace/bad_10.sd',  # peer with invalid regex
     'signal/bad_21.sd',  # invalid regex
     'unix/bad_attr_1.sd',
