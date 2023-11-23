@@ -72,6 +72,7 @@ static inline Chars* insert_char_range(Chars* cset, transchar a, transchar b)
  * parsing succeeds!
  */
 %destructor { $$->release(); } expr terms0 terms qterm term
+%destructor { delete $$; } charset cset_chars
 
 %%
 
