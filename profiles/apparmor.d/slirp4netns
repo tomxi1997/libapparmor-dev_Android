@@ -8,5 +8,5 @@ profile slirp4netns /usr/bin/slirp4netns flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.bin.slirp4netns>
+  include if exists <local/slirp4netns>
 }

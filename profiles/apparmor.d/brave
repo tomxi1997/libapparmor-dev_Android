@@ -8,5 +8,5 @@ profile brave /opt/brave.com/brave/brave flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/opt.brave.com.brave.brave>
+  include if exists <local/brave>
 }

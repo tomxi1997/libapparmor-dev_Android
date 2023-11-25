@@ -8,5 +8,5 @@ profile vpnns /usr/bin/vpnns flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.bin.vpnns>
+  include if exists <local/vpnns>
 }

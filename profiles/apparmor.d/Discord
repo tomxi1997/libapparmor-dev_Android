@@ -8,5 +8,5 @@ profile Discord /usr/share/discord/Discord flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.share.discord.Discord>
+  include if exists <local/Discord>
 }

@@ -8,5 +8,5 @@ profile qcam /usr/bin/qcam flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.bin.qcam>
+  include if exists <local/qcam>
 }

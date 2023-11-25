@@ -8,5 +8,5 @@ profile sbuild-clean /usr/bin/sbuild-clean flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.bin.sbuild-clean>
+  include if exists <local/sbuild-clean>
 }
