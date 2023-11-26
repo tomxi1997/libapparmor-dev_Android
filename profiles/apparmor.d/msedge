@@ -8,5 +8,5 @@ profile msedge /opt/microsoft/msedge/msedge flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/opt.microsoft.msedge.msedge>
+  include if exists <local/msedge>
 }

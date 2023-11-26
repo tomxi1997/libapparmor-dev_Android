@@ -8,5 +8,5 @@ profile vivaldi-bin /opt/vivaldi/vivaldi-bin flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/opt.vivaldi.vivaldi-bin>
+  include if exists <local/vivaldi-bin>
 }
