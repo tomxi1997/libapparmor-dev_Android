@@ -403,11 +403,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	sd_write_struct(buf, "profile");
 	if (flattened) {
 		assert(profile->parent);
-		autofree char *name = (char *) malloc(3 + strlen(profile->name) + strlen(profile->parent->name));
-		if (!name)
-			return;
-		sprintf(name, "%s//%s", profile->parent->name, profile->name);
-		sd_write_string(buf, name, NULL);
+		sd_write_string(buf, profile->get_name(false).c_str(), NULL);
 	} else {
 		sd_write_string(buf, profile->name, NULL);
 	}
