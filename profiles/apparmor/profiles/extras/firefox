@@ -58,11 +58,11 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   # for networking
   network inet stream,
   network inet6 stream,
-  @{PROC}/@{pid}/net/arp r,
-  @{PROC}/@{pid}/net/if_inet6 r,
-  @{PROC}/@{pid}/net/ipv6_route r,
-  @{PROC}/@{pid}/net/dev r,
-  @{PROC}/@{pid}/net/wireless r,
+  owner @{PROC}/@{pid}/net/arp r,
+  owner @{PROC}/@{pid}/net/if_inet6 r,
+  owner @{PROC}/@{pid}/net/ipv6_route r,
+  owner @{PROC}/@{pid}/net/dev r,
+  owner @{PROC}/@{pid}/net/wireless r,
   dbus (send)
        bus=system
        path=/org/freedesktop/NetworkManager
@@ -85,8 +85,26 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   dbus (receive)
        bus=system
        path=/org/freedesktop/login1
+       interface=org.freedesktop.DBus.Properties
+       member=PropertiesChanged
+       peer=(label=unconfined),
+  dbus (send)
+       bus=system
+       path=/org/freedesktop/login1
+       interface=org.freedesktop.DBus.Properties
+       member=GetAll
+       peer=(label=unconfined),
+  dbus (receive)
+       bus=system
+       path=/org/freedesktop/login1
        interface=org.freedesktop.login1.Manager
        member={SessionNew,SessionRemoved,UserNew}
+       peer=(label=unconfined),
+  dbus (send)
+       bus=system
+       path=/org/freedesktop/timedate1
+       interface=org.freedesktop.DBus.Properties
+       member=GetAll
        peer=(label=unconfined),
 
   # should maybe be in abstractions
@@ -140,6 +158,7 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   deny /.suspended r,
   deny /boot/initrd.img* r,
   deny /boot/vmlinuz* r,
+  deny /etc/** w,
   deny /var/cache/fontconfig/ w,
   deny @{HOME}/.local/share/recently-used.xbel r,
 
@@ -156,18 +175,19 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   /{usr/,}bin/which ixr,
   /usr/bin/tr ixr,
   @{PROC}/ r,
-  @{PROC}/@{pid}/cmdline r,
-  @{PROC}/@{pid}/mountinfo r,
-  @{PROC}/@{pid}/stat r,
+  owner @{PROC}/@{pid}/cmdline r,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/stat r,
   owner @{PROC}/@{pid}/task/@{tid}/comm r,
   owner @{PROC}/@{pid}/task/@{tid}/stat r,
-  @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/status r,
   owner @{PROC}/@{pid}/cgroup r,
   owner @{PROC}/@{pid}/oom_score_adj w,
   owner @{PROC}/@{pid}/setgroups w,
   owner @{PROC}/@{pid}/{uid,gid}_map w,
   @{PROC}/filesystems r,
   @{PROC}/sys/vm/overcommit_memory r,
+  @{sys}/fs/cgroup/user.slice/user-[0-9]*.slice/session-[0-9]*.scope/cpu.max r,
   # prevent crash LP: #1931602
   /sys/devices/pci[0-9]*/**/{uevent,resource,irq,class} r,
   /sys/devices/platform/**/uevent r,
@@ -181,6 +201,7 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   /etc/fstab r,
 
   # Needed for the crash reporter
+  ptrace (trace) peer=@{profile_name},
   owner @{PROC}/@{pid}/environ r,
   owner @{PROC}/@{pid}/auxv r,
   /etc/lsb-release r,
@@ -418,7 +439,6 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   owner @{HOME}/.mozilla/**/extensions/** mixr,
 
   # Widevine CDM plugin (LP: #1777070)
-  ptrace (trace) peer=@{profile_name},
   owner @{HOME}/.mozilla/firefox/*/gmp-widevinecdm/*/libwidevinecdm.so m,
 
   deny @{MOZ_LIBDIR}/update.test w,
