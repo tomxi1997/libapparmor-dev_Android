@@ -1,0 +1,25 @@
+#
+#=DESCRIPTION verify whitespace is allowed in profile flags.
+#=EXRESULT PASS
+# vim:syntax=subdomain
+#
+/does/not/exist3 flags=(default_allow, audit) {
+  #include <includes/base>
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist5 r,
+}
+
+/does/not/exist4 flags = (audit , default_allow){
+  #include <includes/base>
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist7 r,
+}
+
+/does/not/exist5 flags 	= (	audit , default_allow  	, audit ) {
+  #include <includes/base>
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist8 r,
+}
