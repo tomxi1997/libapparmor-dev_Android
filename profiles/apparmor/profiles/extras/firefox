@@ -58,11 +58,11 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   # for networking
   network inet stream,
   network inet6 stream,
-  owner @{PROC}/@{pid}/net/arp r,
-  owner @{PROC}/@{pid}/net/if_inet6 r,
-  owner @{PROC}/@{pid}/net/ipv6_route r,
-  owner @{PROC}/@{pid}/net/dev r,
-  owner @{PROC}/@{pid}/net/wireless r,
+  @{PROC}/@{pid}/net/arp r,
+  @{PROC}/@{pid}/net/if_inet6 r,
+  @{PROC}/@{pid}/net/ipv6_route r,
+  @{PROC}/@{pid}/net/dev r,
+  @{PROC}/@{pid}/net/wireless r,
   dbus (send)
        bus=system
        path=/org/freedesktop/NetworkManager
