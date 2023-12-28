@@ -822,13 +822,6 @@ def ask_exec(hashlog):
 
     for aamode in hashlog:
         for full_profile in hashlog[aamode]:
-            if '//' in hashlog[aamode][full_profile]['final_name'] and hashlog[aamode][full_profile]['exec'].keys():
-                # TODO: is this really needed? Or would removing Cx from the options be good enough?
-                aaui.UI_Important(
-                    'WARNING: Ignoring exec event in %s, nested profiles are not supported yet.'
-                    % hashlog[aamode][full_profile]['final_name'])
-                continue
-
             profile, hat = split_name(full_profile)  # XXX temporary solution to avoid breaking the existing code
 
             for exec_target in hashlog[aamode][full_profile]['exec']:
@@ -858,8 +851,10 @@ def ask_exec(hashlog):
                     # if exec_target == profile:
                     #     options = 'i'
 
-                    # Don't allow hats to cx?
-                    options.replace('c', '')
+                    # Don't allow hats to cx (nested profiles not supported by aa-logprof yet)
+                    if '//' in hashlog[aamode][full_profile]['final_name'] and hashlog[aamode][full_profile]['exec'].keys():
+                        options = options.replace('c', '')
+
                     # Add deny to options
                     options += 'd'
                     # Define the default option
