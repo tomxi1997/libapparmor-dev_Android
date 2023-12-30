@@ -33,7 +33,7 @@ otherok="${otherfile}:${okperm}"
 thirdok="${thirdfile}:${okperm}"
 sharedok="${sharedfile}:${okperm}"
 
-getcon="/proc/*/attr/current:r"
+getcon="/proc/*/attr/{apparmor/,}current:r"
 
 othertest="$pwd/rename"
 thirdtest="$pwd/exec"
