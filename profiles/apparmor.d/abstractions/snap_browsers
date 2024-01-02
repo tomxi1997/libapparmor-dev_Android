@@ -33,11 +33,7 @@ profile snap_browsers {
   /sys/kernel/security/apparmor/features/ r,
 
   # allow launching official browser snaps.
-  /snap/chromium/[0-9]*/meta/{snap.yaml,hooks/} r,
-  /snap/firefox/[0-9]*/meta/{snap.yaml,hooks/} r,
-  /snap/opera/[0-9]*/meta/{snap.yaml,hooks/} r,
-
-  /var/lib/snapd/sequence/{chromium,firefox,opera}.json r,
-  /var/lib/snapd/inhibit/{chromium,firefox,opera}.lock rk,
-  # add other browsers here
+  /snap/{brave,chromium,firefox,opera}/[0-9]*/meta/{snap.yaml,hooks/} r,
+  /var/lib/snapd/sequence/{brave,chromium,firefox,opera}.json r,
+  /var/lib/snapd/inhibit/{brave,chromium,firefox,opera}.lock rk,
 }
