@@ -109,6 +109,7 @@ SRC=access.c \
     mmap.c \
     mkdir.c \
     mount.c \
+    move_mount.c \
     named_pipe.c \
     net_raw.c \
     open.c \

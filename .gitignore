@@ -264,6 +264,7 @@ tests/regression/apparmor/link_subset
 tests/regression/apparmor/mkdir
 tests/regression/apparmor/mmap
 tests/regression/apparmor/mount
+tests/regression/apparmor/move_mount
 tests/regression/apparmor/named_pipe
 tests/regression/apparmor/net_raw
 tests/regression/apparmor/open
