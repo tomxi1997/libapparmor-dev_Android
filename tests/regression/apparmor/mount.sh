@@ -275,6 +275,155 @@ test_options() {
 	# run_all_combinations_test
 }
 
+open_tree_test() {
+	desc=$1
+	qualifier=$2
+	additional_perms=$3
+	result=$4
+
+	genprofile cap:sys_admin ${qualifier}mount:ALL ${additional_perms}
+	mount ${loop_device} ${mnt_source}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount,)" ${result} open_tree ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	genprofile cap:sys_admin "${qualifier}mount:-> ${mnt_target}/" ${additional_perms}
+	mount ${loop_device} ${mnt_source}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount -> ${mnt_target}/,)" ${result} open_tree ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	genprofile cap:sys_admin "${qualifier}mount: options=(move) -> ${mnt_target}/" ${additional_perms}
+	mount ${loop_device} ${mnt_source}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount options=(move) -> ${mnt_target}/,)" ${result} open_tree ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	# genprofile cap:sys_admin "${qualifier}mount: detached -> ${mnt_target}/" ${additional_perms}
+	# mount ${loop_device} ${mnt_source}
+	# runchecktest "MOVE_MOUNT (confined${desc}: mount detached -> ${mnt_target}/,)" ${result} open_tree ${mnt_source} ${mnt_target} ${fsname}
+	# remove_mnt
+
+	# genprofile cap:sys_admin "${qualifier}mount: options=(move) detached -> ${mnt_target}/" ${additional_perms}
+	# mount ${loop_device} ${mnt_source}
+	# runchecktest "MOVE_MOUNT (confined${desc}: mount options=(move) detached -> ${mnt_target}/,)" ${result} open_tree ${mnt_source} ${mnt_target} ${fsname}
+	# remove_mnt
+
+	genprofile cap:sys_admin "${qualifier}mount: \"\" -> ${mnt_target}/" ${additional_perms}
+	mount ${loop_device} ${mnt_source}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount \"\" -> ${mnt_target}/,)" ${result} open_tree ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	genprofile cap:sys_admin "${qualifier}mount: options=(move) \"\" -> ${mnt_target}/" ${additional_perms}
+	mount ${loop_device} ${mnt_source}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount options=(move) \"\" -> ${mnt_target}/,)" ${result} open_tree ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+}
+
+open_tree_tests() {
+	mnt_source=$1
+	mnt_target=$2
+	fsname=$3
+	settest move_mount
+	# TODO: check for move_mount syscall support
+	# TODO: check that parser supports detached
+	# eg. move_mount tmpfs /tmp/move_mount_test tmpfs
+
+	success=pass
+	should_fail=fail
+	if [ "$(kernel_features mount/move_mount)" != "true" ] ; then
+		# kernels that don't have move_mount should fail on with disconnected path
+		success=fail
+		# addresses kernels that are not mediating move_mount
+		should_fail=xfail
+	fi
+
+	mount ${loop_device} ${mnt_source}
+	runchecktest "MOVE_MOUNT (unconfined open_tree)" pass open_tree ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	genprofile cap:sys_admin
+	mount ${loop_device} ${mnt_source}
+	runchecktest "MOVE_MOUNT (confined open_tree: no mount rule)" ${should_fail} open_tree ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	#              desc         qual add_perms pass/fail
+	open_tree_test " open_tree" ""   ""        pass
+	open_tree_test " open_tree deny" "qual=deny:" "" ${should_fail}
+	# now some attach_disconnected with move_mount tests
+	# attach_disconnected should not affect move_mount mediation
+	open_tree_test " open_tree att_dis" "" "flag:attach_disconnected" pass
+	open_tree_test " open_tree deny att_dis" "qual=deny:" "flag:attach_disconnected" ${should_fail}
+}
+
+fsmount_test() {
+	desc=$1
+	qualifier=$2
+	additional_perms=$3
+	result=$4
+
+	genprofile cap:sys_admin ${qualifier}mount:ALL ${additional_perms}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount,)" ${result} fsmount ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	genprofile cap:sys_admin "${qualifier}mount:-> ${mnt_target}/" ${additional_perms}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount -> ${mnt_target}/,)" ${result} fsmount ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	genprofile cap:sys_admin "${qualifier}mount: options=(move) -> ${mnt_target}/" ${additional_perms}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount options=(move) -> ${mnt_target}/,)" ${result} fsmount ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	# genprofile cap:sys_admin "${qualifier}mount: detached -> ${mnt_target}/" ${additional_perms}
+	# runchecktest "MOVE_MOUNT (confined${desc}: mount detached -> ${mnt_target}/,)" ${result} fsmount ${mnt_source} ${mnt_target} ${fsname}
+	# remove_mnt
+
+	# genprofile cap:sys_admin "${qualifier}mount: options=(move) detached -> ${mnt_target}/" ${additional_perms}
+	# runchecktest "MOVE_MOUNT (confined${desc}: mount options=(move) detached -> ${mnt_target}/,)" ${result} fsmount ${mnt_source} ${mnt_target} ${fsname}
+	# remove_mnt
+
+	genprofile cap:sys_admin "${qualifier}mount: \"\" -> ${mnt_target}/" ${additional_perms}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount \"\" -> ${mnt_target}/,)" ${result} fsmount ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	genprofile cap:sys_admin "${qualifier}mount: options=(move) \"\" -> ${mnt_target}/" ${additional_perms}
+	runchecktest "MOVE_MOUNT (confined${desc}: mount options=(move) \"\" -> ${mnt_target}/,)" ${result} fsmount ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+}
+
+fsmount_tests() {
+	mnt_source=$1
+	mnt_target=$2
+	fsname=$3
+	settest move_mount
+	# TODO: check for move_mount syscall support
+	# TODO: check that parser supports detached
+	# eg. move_mount tmpfs /tmp/move_mount_test tmpfs
+
+	success=pass
+	should_fail=fail
+	if [ "$(kernel_features mount/move_mount)" != "true" ] ; then
+		# kernels that don't have move_mount should fail on with disconnected path
+		success=fail
+		# addresses kernels that are not mediating move_mount
+		should_fail=xfail
+	fi
+
+	runchecktest "MOVE_MOUNT (unconfined fsmount)" pass fsmount ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	genprofile cap:sys_admin
+	runchecktest "MOVE_MOUNT (confined fsmount: no mount rule)" ${should_fail} fsmount ${mnt_source} ${mnt_target} ${fsname}
+	remove_mnt
+
+	#            desc         qual add_perms pass/fail
+	fsmount_test " fsmount"	  ""   ""        pass
+	fsmount_test " fsmount deny" "qual=deny:" "" ${should_fail}
+	# now some attach_disconnected with move_mount tests
+	# attach_disconnected should not affect move_mount mediation
+	fsmount_test " fsmount att_dis" "" "flag:attach_disconnected" pass
+	fsmount_test " fsmount deny att_dis" "qual=deny:" "flag:attach_disconnected" ${should_fail}
+}
+
 # TEST 1.  Make sure can mount and umount unconfined
 runchecktest "MOUNT (unconfined)" pass mount ${loop_device} ${mount_point}
 remove_mnt
@@ -409,6 +558,11 @@ else
 	remove_mnt
 
 	test_options
+
+        # test new mount interface
+	fsmount_tests tmpfs ${mount_point} tmpfs
+	fsmount_tests ${loop_device} ${mount_point} ${fstype}
+	open_tree_tests ${mount_point2} ${mount_point} ${fstype}
 fi
 
 #need tests for chroot
