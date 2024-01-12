@@ -240,5 +240,5 @@ int main(int argc, char *argv[])
 	}
 	if (ret == 0)
 		printf("PASS\n");
-	exit(ret);
+	exit(ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
