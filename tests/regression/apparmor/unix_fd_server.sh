@@ -100,7 +100,6 @@ sleep 1
 rm -f ${socket}
 
 # PASS - confined -> confined
-echo "PASS-----------------------------------------"
 genprofile $file:$okperm $af_unix $socket:rw $fd_client:px -- image=$fd_client $file:$okperm $af_unix $socket:rw
 runchecktest "fd passing; confined -> confined" pass $file $fd_client $socket
 

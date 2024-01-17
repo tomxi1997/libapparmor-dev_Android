@@ -300,46 +300,48 @@ checktestfg()
 
 	ret=`cat $outfile 2>/dev/null`
 	teststatus=pass
-	
-	case "$ret" in
-		PASS)	if [ "$_pfmode" != "pass" -a -z "${_known}" ]
-			then
-				echo "Error: ${testname} passed. Test '${_testdesc}' was expected to '${_pfmode}'"
-				testfailed
-				return
-			elif [ "$_pfmode" == "pass" -a -n "${_known}" ]
-			then
-				echo "Alert: ${testname} passed. Test '${_testdesc}' was marked as expected pass but known problem (xpass)"
-			fi
-			;;
-		FAIL*)  if [ "$_pfmode" != "fail" -a -z "${_known}" ]
-			then
-				echo "Error: ${testname} failed. Test '${_testdesc}' was expected to '${_pfmode}'. Reason for failure '${ret}'"
-				testfailed
-				return
-			elif [ "$_pfmode" == "fail" -a -n "${_known}" ]
-			then
-				echo "Alert: ${testname} failed. Test '${_testdesc}' was marked as expected fail but known problem (xfail)."
-			fi
-			;;
-		SIGNAL*) killedsig=`echo $ret | sed 's/SIGNAL//'`
-			case "$_pfmode" in
-			signal*) expectedsig=`echo ${_pfmode} | sed 's/signal//'`
-				if [ -n "${expectedsig}" -a ${expectedsig} != ${killedsig} ]
-				then
-					echo "Error: ${testname} failed. Test '${_testdesc}' was expected to terminate with signal ${expectedsig}${_known}. Instead it terminated with signal ${killedsig}"
+	testresult=pass
+	failurereason=""
+	while IFS= read -r line; do
+		case "$line" in
+			PASS)	;;
+			FAIL*)  testresult=fail
+				failurereason=". Reason for failure '${line}'"
+				break
+				;;
+			SIGNAL*) killedsig=`echo $line | sed 's/SIGNAL//'`
+				 case "$_pfmode" in
+				 signal*) expectedsig=`echo ${_pfmode} | sed 's/signal//'`
+					if [ -n "${expectedsig}" -a ${expectedsig} != ${killedsig} ]
+					then
+						echo "Error: ${testname} failed. Test '${_testdesc}' was expected to terminate with signal ${expectedsig}${_known}. Instead it terminated with signal ${killedsig}"
+						testfailed
+						return
+					fi
+					;;
+				 *)	echo "Error: ${testname} failed. Test '${_testdesc}' was expected to '${_pfmode}'${_known}. Reason for failure 'killed by signal ${killedsig}'"
 					testfailed
 					return
-				fi
+					;;
+				 esac
+				 ;;
+			*)	testerror
+				return
 				;;
-			*) 	echo "Error: ${testname} failed. Test '${_testdesc}' was expected to '${_pfmode}'${_known}. Reason for failure 'killed by signal ${killedsig}'"
+		esac
+	done <<< "$ret"
+
+	case "$_pfmode" in
+		signal*) ;;
+		*)	 if [ "$_pfmode" != "$testresult" -a -z "${_known}" ]
+			 then
+				echo "Error: ${testname} ${testresult}ed. Test '${_testdesc}' was expected to '${_pfmode}'$failurereason"
 				testfailed
 				return
-				;;	
-			esac
-			;;
-		*)	testerror
-			return
+			elif [ "$_pfmode" == "$testresult" -a -n "${_known}" ]
+			then
+				echo "Alert: ${testname} ${testresult}ed. Test '${_testdesc}' was marked as expected $_pfmode but known problem (x$_pfmode)"
+			fi
 			;;
 	esac
 
