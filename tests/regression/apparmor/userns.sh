@@ -79,7 +79,7 @@ do_test()
 	runchecktest "$desc setns - user" $expect_setns_user -s $userns_setns_bin -p $pipe # setns
 }
 
-if [ $unprivileged_userns_clone -eq 0 ]; then
+if [ -e $unprivileged_userns_clone_path ] && [ $unprivileged_userns_clone -eq 0 ]; then
 	echo "WARN: unprivileged_userns_clone is enabled. Both confined and unconfined unprivileged user namespaces are not allowed"
 
 	detail="unprivileged_userns_clone disabled"
@@ -132,9 +132,19 @@ run_confined_tests "$detail"
 # enable restrictions on unprivileged user namespaces
 echo 1 > $apparmor_restrict_unprivileged_userns_path
 
+user_testresult=fail
+# check if kernel supports the transition of unconfined to
+# unprivileged_userns on unprivileged unshare/clone.
+# the unprivileged_userns profile also needs to be loaded
+if [ "$(kernel_features namespaces/userns_create/pciu&)" == "true" ] && \
+   grep -q unprivileged_userns /sys/kernel/security/apparmor/profiles; then
+	user_testresult=pass
+fi
+
 detail="apparmor_restrict_unprivileged_userns enabled"
 # user cannot create user namespace unless cap_sys_admin
-do_test "unconfined $detail" pass fail pass pass
+# exceptions described above
+do_test "unconfined $detail" pass $user_testresult pass pass
 
 # it should work when running as user with cap_sys_admin
 setcap cap_sys_admin+pie $bin/userns
