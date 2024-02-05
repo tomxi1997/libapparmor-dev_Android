@@ -119,32 +119,38 @@ genprofile "${tmpdir}/file\*/beta**:$okperm"
 runchecktest "GLOB FOLLOWED BY DOUBLE TAILGLOB (fail)" fail ${file2}
 
 settest exec
-file=/bin/true
+cp -pL /bin/true ${tmpdir}/true
+cp -pL /bin/false ${tmpdir}/false
+file=${tmpdir}/true
 okperm=rix
 baderm=r
 
 # PASS TEST - looking for *
-genprofile /bin/\*:$okperm
+genprofile ${tmpdir}/\*:$okperm
 runchecktest "SINGLE TAILGLOB (exec)" pass $file
 
+tmpdir_len=${#tmpdir}
+# remove 2 characters from the end of tmpdir
+partial_tmpdir=${tmpdir:0:$((tmpdir_len - 2))}
+
 # PASS TEST - looking for **
-genprofile /bi\*\*:$okperm
+genprofile ${partial_tmpdir}\*\*:$okperm
 runchecktest "DOUBLE TAILGLOB (exec)" pass $file
 
 # PASS TEST - looking for { , }
-genprofile /bin/\{true,false\}:$okperm
+genprofile ${tmpdir}/\{true,false\}:$okperm
 runchecktest "CURLY BRACES (exec)" pass $file
 
 # PASS TEST - looking for []
-genprofile /bin/\[aeft\]rue:$okperm
+genprofile ${tmpdir}/\[aeft\]rue:$okperm
 runchecktest "SQUARE BRACES 1 (exec)" pass $file
 
 # PASS TEST - looking for []
-genprofile /bin/\[s-v\]rue:$okperm
+genprofile ${tmpdir}/\[s-v\]rue:$okperm
 runchecktest "SQUARE BRACES 2 (exec)" pass $file
 
 # PASS TEST - looking for ?
-genprofile /bin/t\?ue:$okperm
+genprofile ${tmpdir}/t\?ue:$okperm
 runchecktest "QUESTION MARK (exec)" pass $file
 
 # FAIL TEST - looking for *
@@ -156,17 +162,17 @@ genprofile /sbi\*\*:$okperm signal:ALL
 runchecktest "DOUBLE TAILGLOB (exec, fail)" fail $file
 
 # FAIL TEST - looking for { , }
-genprofile /bin/\{flase,false\}:$okperm signal:ALL
+genprofile ${tmpdir}/\{flase,false\}:$okperm signal:ALL
 runchecktest "CURLY BRACES (exec, fail)" fail $file
 
 # FAIL TEST - looking for []
-genprofile /bin/\[aef\]rue:$okperm signal:ALL
+genprofile ${tmpdir}/\[aef\]rue:$okperm signal:ALL
 runchecktest "SQUARE BRACES 1 (exec, fail)" fail $file
 
 # FAIL TEST - looking for []
-genprofile /bin/\[u-x\]rue:$okperm signal:ALL
+genprofile ${tmpdir}/\[u-x\]rue:$okperm signal:ALL
 runchecktest "SQUARE BRACES 2 (exec, fail)" fail $file
 
 # FAIL TEST - looking for ?
-genprofile /bin/b\?ue:$okperm signal:ALL
+genprofile ${tmpdir}/b\?ue:$okperm signal:ALL
 runchecktest "QUESTION MARK (exec, fail)" fail $file
