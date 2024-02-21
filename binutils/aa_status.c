@@ -773,7 +773,7 @@ static int print_usage(const char *command, bool error)
 	 "  --pretty-json   same data as --json, formatted for human consumption as well\n"
 	 "  --verbose       (default) displays data points about loaded policy set\n"
 	 "  --quiet         don't output error messages\n"
-	 "  -h [(legacy|filters)]     this message, or info on the specified option\n"
+	 "  -h[(legacy|filters)]      this message, or info on the specified option\n"
 	 "  --help[=(legacy|filters)] this message, or info on the specified option\n",
 	 command);
 
@@ -830,7 +830,7 @@ static int parse_args(int argc, char **argv)
 	};
 
 	// Using exit here is temporary
-	while ((opt = getopt_long(argc, argv, "+vh", long_opts, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "+vh::", long_opts, NULL)) != -1) {
 		switch (opt) {
 		case ARG_ENABLED:
 			exit(aa_is_enabled() == 1 ? 0 : AA_EXIT_DISABLED);
