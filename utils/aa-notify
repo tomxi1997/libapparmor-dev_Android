@@ -92,7 +92,24 @@ def format_event(event, logsource):
     return "\n".join(output)
 
 
-def notify_about_new_entries(logfile, wait=0):
+def is_event_in_filter(event, filters):
+    """Checks if event is in filter"""
+    if filters['profile'] and event.profile and not re.match(filters['profile'], event.profile):
+        return False
+    if filters['operation'] and event.operation and not re.match(filters['operation'], event.operation):
+        return False
+    if filters['name'] and event.name and not re.match(filters['name'], event.name):
+        return False
+    if filters['denied_mask'] and event.denied_mask and not re.match(filters['denied_mask'], event.denied_mask):
+        return False
+    if filters['net_family'] and event.net_family and not re.match(filters['net_family'], event.net_family):
+        return False
+    if filters['net_sock_type'] and event.net_sock_type and not re.match(filters['net_sock_type'], event.net_sock_type):
+        return False
+    return True
+
+
+def notify_about_new_entries(logfile, filters, wait=0):
     """Run the notification daemon in the background."""
     # Kill other instances of aa-notify if already running
     for process in psutil.process_iter():
@@ -109,6 +126,8 @@ def notify_about_new_entries(logfile, wait=0):
         # Rate limit to not show too many notifications
         try:
             for event in follow_apparmor_events(logfile, wait):
+                if not is_event_in_filter(event, filters):
+                    continue
                 debug_logger.info(format_event(event, logfile))
                 yield (format_event(event, logfile))
         except PermissionError:
@@ -121,10 +140,12 @@ def notify_about_new_entries(logfile, wait=0):
         os._exit(0)  # Exit child without calling exit handlers etc
 
 
-def show_entries_since_epoch(logfile, epoch_since):
+def show_entries_since_epoch(logfile, epoch_since, filters):
     """Show AppArmor notifications since given timestamp."""
     count = 0
     for event in get_apparmor_events(logfile, epoch_since):
+        if not is_event_in_filter(event, filters):
+            continue
         count += 1
         if args.verbose:
             print(format_event(event, logfile))
@@ -145,7 +166,7 @@ def show_entries_since_epoch(logfile, epoch_since):
             print(_('For more information, please see: {}').format(debug_docs_url))
 
 
-def show_entries_since_last_login(logfile, username=get_user_login()):
+def show_entries_since_last_login(logfile, filters, username=get_user_login()):
     """Show AppArmor notifications since last login of user."""
     # If running as sudo, use username of sudo user instead of root
     if 'SUDO_USER' in os.environ.keys():
@@ -158,15 +179,15 @@ def show_entries_since_last_login(logfile, username=get_user_login()):
     if epoch_since == 0:
         print(_('ERROR: Could not find last login'), file=sys.stderr)
         sys.exit(1)
-    show_entries_since_epoch(logfile, epoch_since)
+    show_entries_since_epoch(logfile, epoch_since, filters)
 
 
-def show_entries_since_days(logfile, since_days):
+def show_entries_since_days(logfile, since_days, filters):
     """Show AppArmor notifications since the given amount of days."""
     day_in_seconds = 60 * 60 * 24
     epoch_now = int(time.time())
     epoch_since = epoch_now - day_in_seconds * since_days
-    show_entries_since_epoch(logfile, epoch_since)
+    show_entries_since_epoch(logfile, epoch_since, filters)
 
 
 def follow_apparmor_events(logfile, wait=0):
@@ -398,6 +419,17 @@ def main():
     parser.add_argument('--debug', action='store_true', help=_('debug mode'))
     parser.add_argument('--configdir', type=str, help=argparse.SUPPRESS)
 
+    filter_group = parser.add_argument_group('Filtering options',
+                                             description=('Filters are used to reduce the output of information to only '
+                                                          'those entries that will match the filter. Filters use Python\'s regular '
+                                                          'expression syntax.'))
+    filter_group.add_argument('--filter.profile', metavar='PROFILE', help=_('regular expression to match the profile'))
+    filter_group.add_argument('--filter.operation', metavar='OPERATION', help=_('regular expression to match the operation'))
+    filter_group.add_argument('--filter.name', metavar='NAME', help=_('regular expression to match the name'))
+    filter_group.add_argument('--filter.denied', metavar='DENIED', help=_('regular expression to match the denied mask'))
+    filter_group.add_argument('--filter.family', metavar='FAMILY', help=_('regular expression to match the network family'))
+    filter_group.add_argument('--filter.socket', metavar='SOCKET', help=_('regular expression to match the network socket type'))
+
     # If a TTY then assume running in test mode and fix output width
     if not sys.stdout.isatty():
         parser.formatter_class = lambda prog: argparse.HelpFormatter(prog, width=80)
@@ -463,6 +495,12 @@ def main():
     - message_body
     - message_footer
     - use_group
+    - filter.profile,
+    - filter.operation,
+    - filter.name,
+    - filter.denied,
+    - filter.family,
+    - filter.socket,
     """
 
     # # Config checks
@@ -472,7 +510,13 @@ def main():
         'use_group',
         'show_notifications',
         'message_body',
-        'message_footer'
+        'message_footer',
+        'filter.profile',
+        'filter.operation',
+        'filter.name',
+        'filter.denied',
+        'filter.family',
+        'filter.socket',
     ]
     found_config_keys = config[''].keys()
     unknown_keys = [
@@ -480,6 +524,42 @@ def main():
     ]
     for item in unknown_keys:
         print(_('Warning! Configuration item "{}" is unknown!').format(item))
+
+    filters = {
+        'profile': '',
+        'operation': '',
+        'name': '',
+        'denied_mask': '',
+        'net_family': '',
+        'net_sock_type': '',
+    }
+
+    if 'filter.profile' in config['']:
+        filters['profile'] = config['']['filter.profile']
+    if 'filter.operation' in config['']:
+        filters['operation'] = config['']['filter.operation']
+    if 'filter.name' in config['']:
+        filters['name'] = config['']['filter.name']
+    if 'filter.denied' in config['']:
+        filters['denied_mask'] = config['']['filter.denied']
+    if 'filter.family' in config['']:
+        filters['net_family'] = config['']['filter.family']
+    if 'filter.socket' in config['']:
+        filters['net_sock_type'] = config['']['filter.socket']
+
+    # command line filters override notify.conf
+    if getattr(args, 'filter.profile'):
+        filters['profile'] = getattr(args, 'filter.profile')
+    if getattr(args, 'filter.operation'):
+        filters['operation'] = getattr(args, 'filter.operation')
+    if getattr(args, 'filter.name'):
+        filters['name'] = getattr(args, 'filter.name')
+    if getattr(args, 'filter.denied'):
+        filters['denied_mask'] = getattr(args, 'filter.denied')
+    if getattr(args, 'filter.family'):
+        filters['net_family'] = getattr(args, 'filter.family')
+    if getattr(args, 'filter.socket'):
+        filters['net_sock_type'] = getattr(args, 'filter.socket')
 
     # Warn if use_group is defined and current group does not match defined
     if 'use_group' in config['']:
@@ -535,7 +615,7 @@ def main():
         # has been opened and access granted. Further reads of the file will not
         # trigger any new permission checks.
         # @TODO Plan to catch PermissionError here or..?
-        for message in notify_about_new_entries(logfile, args.wait):
+        for message in notify_about_new_entries(logfile, filters, args.wait):
 
             # Notifications should not be run as root, since root probably is
             # the wrong desktop user and not the one getting the notifications.
@@ -562,9 +642,9 @@ def main():
             raise_privileges()
 
     elif args.since_last:
-        show_entries_since_last_login(logfile)
+        show_entries_since_last_login(logfile, filters)
     elif args.since_days:
-        show_entries_since_days(logfile, args.since_days)
+        show_entries_since_days(logfile, args.since_days, filters)
     else:
         parser.print_help()
 

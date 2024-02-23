@@ -65,9 +65,9 @@ def cmd(command):
     return sp.returncode, out.decode('utf-8')
 
 
-class AANotifyTest(AATest):
+class AANotifyBase(AATest):
 
-    def create_logfile_contents(self, _time):
+    def create_logfile_contents(_time):
         """Create temporary log file with 30 entries of different age"""
 
         test_logfile_contents_999_days_old = \
@@ -120,13 +120,14 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoc
             + test_logfile_contents_unrelevant_entries \
             + test_logfile_contents_0_seconds_old
 
-    def AASetup(self):
+    @classmethod
+    def setUpClass(cls):
         file_current = NamedTemporaryFile("w+", prefix='test-aa-notify-', delete=False)
         file_last_login = NamedTemporaryFile("w+", prefix='test-aa-notify-', delete=False)
-        self.test_logfile_current = file_current.name
-        self.test_logfile_last_login = file_last_login.name
+        cls.test_logfile_current = file_current.name
+        cls.test_logfile_last_login = file_last_login.name
 
-        current_time_contents = self.create_logfile_contents(time.time())
+        current_time_contents = cls.create_logfile_contents(time.time())
         file_current.write(current_time_contents)
 
         if os.path.isfile('/var/log/wtmp'):
@@ -146,16 +147,20 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoc
                 last_login = output.split()[3]
                 last_login_epoch = datetime.fromisoformat(last_login).timestamp()
                 # add 60 seconds to the epoch so that the time in the logs are AFTER login time
-                last_login_contents = self.create_logfile_contents(last_login_epoch + 60)
+                last_login_contents = cls.create_logfile_contents(last_login_epoch + 60)
                 file_last_login.write(last_login_contents)
 
-    def AATeardown(self):
+    @classmethod
+    def tearDownClass(cls):
         """Remove temporary log file after tests ended"""
 
-        if self.test_logfile_current and os.path.exists(self.test_logfile_current):
-            os.remove(self.test_logfile_current)
-        if self.test_logfile_last_login and os.path.exists(self.test_logfile_last_login):
-            os.remove(self.test_logfile_last_login)
+        if cls.test_logfile_current and os.path.exists(cls.test_logfile_current):
+            os.remove(cls.test_logfile_current)
+        if cls.test_logfile_last_login and os.path.exists(cls.test_logfile_last_login):
+            os.remove(cls.test_logfile_last_login)
+
+
+class AANotifyTest(AANotifyBase):
 
     # The Perl aa-notify script was written so, that it will checked for kern.log
     # before printing help when invoked without arguments (sic!).
@@ -178,13 +183,17 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoc
         expected_return_code = 0
         expected_output_1 = \
 '''usage: aa-notify [-h] [-p] [--display DISPLAY] [-f FILE] [-l] [-s NUM] [-v]
-                 [-u USER] [-w NUM] [--debug]
+                 [-u USER] [-w NUM] [--debug] [--filter.profile PROFILE]
+                 [--filter.operation OPERATION] [--filter.name NAME]
+                 [--filter.denied DENIED] [--filter.family FAMILY]
+                 [--filter.socket SOCKET]
 
 Display AppArmor notifications or messages for DENIED entries.
 '''
 
         expected_output_2 = \
 '''
+options:
   -h, --help            show this help message and exit
   -p, --poll            poll AppArmor logs and display notifications
   --display DISPLAY     set the DISPLAY environment variable (might be needed if
@@ -199,6 +208,22 @@ Display AppArmor notifications or messages for DENIED entries.
   -w NUM, --wait NUM    wait NUM seconds before displaying notifications (with
                         -p)
   --debug               debug mode
+
+Filtering options:
+  Filters are used to reduce the output of information to only those entries
+  that will match the filter. Filters use Python's regular expression syntax.
+
+  --filter.profile PROFILE
+                        regular expression to match the profile
+  --filter.operation OPERATION
+                        regular expression to match the operation
+  --filter.name NAME    regular expression to match the name
+  --filter.denied DENIED
+                        regular expression to match the denied mask
+  --filter.family FAMILY
+                        regular expression to match the network family
+  --filter.socket SOCKET
+                        regular expression to match the network socket type
 '''
 
         return_code, output = cmd(aanotify_bin + ['--help'])
@@ -310,6 +335,264 @@ AppArmor denials: 10 (since'''.format(logfile=self.test_logfile_last_login)
         self.assertEqual(expected_return_code, return_code, result + output)
         result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
         self.assertIn(expected_output_has, output, result + output)
+
+
+class AANotifyProfileFilterTest(AANotifyBase):
+
+    def test_profile_regex_since_100_days(self):
+        profile_tests = (
+            (['--filter.profile', 'libreoffice'], (0, 'AppArmor denials: 20 (since')),
+            (['--filter.profile', 'libreoffice-soffice'], (0, 'AppArmor denials: 20 (since')),
+            (['--filter.profile', 'libreoffice-soffice$'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.profile', '^libreoffice-soffice$'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.profile', 'libreoffice-soffice//null-/bin/uname'], (0, 'AppArmor denials: 14 (since')),
+            (['--filter.profile', 'uname'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.profile', '.*uname'], (0, 'AppArmor denials: 14 (since')),
+            (['--filter.profile', 'libreoffice-soffice//null-/.*'], (0, 'AppArmor denials: 16 (since')),
+            (['--filter.profile', 'libreoffice-soffice//null-/foo'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.profile', 'libreoffice-soffice/foo'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.profile', 'bar'], (0, 'AppArmor denials: 0 (since')),
+        )
+        days_params = ['-f', self.test_logfile_current, '-s', '100']
+
+        for test in profile_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd(aanotify_bin + days_params + params)
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    def test_profile_regex_since_login(self):
+        profile_tests = (
+            (['--filter.profile', 'libreoffice'], (0, 'AppArmor denials: 10 (since')),
+            (['--filter.profile', 'libreoffice-soffice'], (0, 'AppArmor denials: 10 (since')),
+            (['--filter.profile', 'libreoffice-soffice$'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.profile', '^libreoffice-soffice$'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.profile', 'libreoffice-soffice//null-/bin/uname'], (0, 'AppArmor denials: 7 (since')),
+            (['--filter.profile', 'uname'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.profile', '.*uname'], (0, 'AppArmor denials: 7 (since')),
+            (['--filter.profile', 'libreoffice-soffice//null-/.*'], (0, 'AppArmor denials: 8 (since')),
+            (['--filter.profile', 'libreoffice-soffice//null-/foo'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.profile', 'libreoffice-soffice/foo'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.profile', 'bar'], (0, 'AppArmor denials: 0 (since')),
+        )
+        login_params = ['-f', self.test_logfile_last_login, '-l']
+
+        for test in profile_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd(aanotify_bin + login_params + params)
+                if 'ERROR: Could not find last login' in output:
+                    self.skipTest('Could not find last login')
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+
+class AANotifyOperationFilterTest(AANotifyBase):
+
+    def test_operation_regex_since_100_days(self):
+        operation_tests = (
+            (['--filter.operation', 'exec'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.operation', 'file_inherit'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.operation', 'file_mmap'], (0, 'AppArmor denials: 8 (since')),
+            (['--filter.operation', 'open'], (0, 'AppArmor denials: 6 (since')),
+            (['--filter.operation', 'file.*'], (0, 'AppArmor denials: 10 (since')),
+            (['--filter.operation', 'profile_load'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.operation', 'profile_replace'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.operation', 'bar'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.operation', 'userns_create'], (0, 'AppArmor denials: 0 (since')),
+        )
+        days_params = ['-f', self.test_logfile_current, '-s', '100']
+
+        for test in operation_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd(aanotify_bin + days_params + params)
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    def test_operation_regex_since_login(self):
+        operation_tests = (
+            (['--filter.operation', 'exec'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.operation', 'file_inherit'], (0, 'AppArmor denials: 1 (since')),
+            (['--filter.operation', 'file_mmap'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.operation', 'open'], (0, 'AppArmor denials: 3 (since')),
+            (['--filter.operation', 'file.*'], (0, 'AppArmor denials: 5 (since')),
+            (['--filter.operation', 'profile_load'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.operation', 'profile_replace'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.operation', 'bar'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.operation', 'userns_create'], (0, 'AppArmor denials: 0 (since')),
+        )
+        login_params = ['-f', self.test_logfile_last_login, '-l']
+
+        for test in operation_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd(aanotify_bin + login_params + params)
+                if 'ERROR: Could not find last login' in output:
+                    self.skipTest('Could not find last login')
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+
+class AANotifyNameFilterTest(AANotifyBase):
+
+    def test_name_regex_since_100_days(self):
+        name_tests = (
+            (['--filter.name', '/bin/uname'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.name', '/dev/null'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.name', '/lib/x86_64-linux-gnu/ld-2.27.so'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.name', '/lib/x86_64-linux-gnu/libc-2.27.so'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.name', '/etc/ld.so.cache'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.name', '/usr/lib/locale/locale-archive'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.name', '/usr/bin/file'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.name', '/'], (0, 'AppArmor denials: 20 (since')),
+            (['--filter.name', '/.*'], (0, 'AppArmor denials: 20 (since')),
+            (['--filter.name', '.*bin.*'], (0, 'AppArmor denials: 8 (since')),
+            (['--filter.name', '/(usr/)?bin.*'], (0, 'AppArmor denials: 8 (since')),
+            (['--filter.name', '/foo'], (0, 'AppArmor denials: 0 (since')),
+        )
+        days_params = ['-f', self.test_logfile_current, '-s', '100']
+
+        for test in name_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd(aanotify_bin + days_params + params)
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    def test_name_regex_since_login(self):
+        name_tests = (
+            (['--filter.name', '/bin/uname'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.name', '/dev/null'], (0, 'AppArmor denials: 1 (since')),
+            (['--filter.name', '/lib/x86_64-linux-gnu/ld-2.27.so'], (0, 'AppArmor denials: 1 (since')),
+            (['--filter.name', '/lib/x86_64-linux-gnu/libc-2.27.so'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.name', '/etc/ld.so.cache'], (0, 'AppArmor denials: 1 (since')),
+            (['--filter.name', '/usr/lib/locale/locale-archive'], (0, 'AppArmor denials: 1 (since')),
+            (['--filter.name', '/usr/bin/file'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.name', '/'], (0, 'AppArmor denials: 10 (since')),
+            (['--filter.name', '/.*'], (0, 'AppArmor denials: 10 (since')),
+            (['--filter.name', '.*bin.*'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.name', '/(usr/)?bin.*'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.name', '/foo'], (0, 'AppArmor denials: 0 (since')),
+        )
+        login_params = ['-f', self.test_logfile_last_login, '-l']
+
+        for test in name_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd(aanotify_bin + login_params + params)
+                if 'ERROR: Could not find last login' in output:
+                    self.skipTest('Could not find last login')
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+
+class AANotifyDeniedFilterTest(AANotifyBase):
+
+    def test_denied_regex_since_100_days(self):
+        denied_tests = (
+            (['--filter.denied', 'x'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.denied', 'w'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.denied', 'rm'], (0, 'AppArmor denials: 8 (since')),
+            (['--filter.denied', 'r'], (0, 'AppArmor denials: 14 (since')),
+            (['--filter.denied', '^r$'], (0, 'AppArmor denials: 6 (since')),
+            (['--filter.denied', 'x|w'], (0, 'AppArmor denials: 6 (since')),
+            (['--filter.denied', '^(?!rm).*'], (0, 'AppArmor denials: 12 (since')),
+            (['--filter.denied', '.(?!m).*'], (0, 'AppArmor denials: 12 (since')),
+            (['--filter.denied', 'r.?'], (0, 'AppArmor denials: 14 (since')),
+        )
+        days_params = ['-f', self.test_logfile_current, '-s', '100']
+
+        for test in denied_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd(aanotify_bin + days_params + params)
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    def test_denied_regex_since_login(self):
+        denied_tests = (
+            (['--filter.denied', 'x'], (0, 'AppArmor denials: 2 (since')),
+            (['--filter.denied', 'w'], (0, 'AppArmor denials: 1 (since')),
+            (['--filter.denied', 'rm'], (0, 'AppArmor denials: 4 (since')),
+            (['--filter.denied', 'r'], (0, 'AppArmor denials: 7 (since')),
+            (['--filter.denied', '^r$'], (0, 'AppArmor denials: 3 (since')),
+            (['--filter.denied', 'x|w'], (0, 'AppArmor denials: 3 (since')),
+            (['--filter.denied', '^(?!rm).*'], (0, 'AppArmor denials: 6 (since')),
+            (['--filter.denied', '.(?!m).*'], (0, 'AppArmor denials: 6 (since')),
+            (['--filter.denied', 'r.?'], (0, 'AppArmor denials: 7 (since')),
+        )
+        login_params = ['-f', self.test_logfile_last_login, '-l']
+
+        for test in denied_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd(aanotify_bin + login_params + params)
+                if 'ERROR: Could not find last login' in output:
+                    self.skipTest('Could not find last login')
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
 
 
 setup_aa(aa)  # Wrapper for aa.init_aa()
