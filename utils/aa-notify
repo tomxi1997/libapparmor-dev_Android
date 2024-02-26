@@ -94,17 +94,17 @@ def format_event(event, logsource):
 
 def is_event_in_filter(event, filters):
     """Checks if event is in filter"""
-    if filters['profile'] and event.profile and not re.match(filters['profile'], event.profile):
+    if filters['profile'] and event.profile and not filters['profile_re'].match(event.profile):
         return False
-    if filters['operation'] and event.operation and not re.match(filters['operation'], event.operation):
+    if filters['operation'] and event.operation and not filters['operation_re'].match(event.operation):
         return False
-    if filters['name'] and event.name and not re.match(filters['name'], event.name):
+    if filters['name'] and event.name and not filters['name_re'].match(event.name):
         return False
-    if filters['denied_mask'] and event.denied_mask and not re.match(filters['denied_mask'], event.denied_mask):
+    if filters['denied_mask'] and event.denied_mask and not filters['denied_mask_re'].match(event.denied_mask):
         return False
-    if filters['net_family'] and event.net_family and not re.match(filters['net_family'], event.net_family):
+    if filters['net_family'] and event.net_family and not filters['net_family_re'].match(event.net_family):
         return False
-    if filters['net_sock_type'] and event.net_sock_type and not re.match(filters['net_sock_type'], event.net_sock_type):
+    if filters['net_sock_type'] and event.net_sock_type and not filters['net_sock_type_re'].match(event.net_sock_type):
         return False
     return True
 
@@ -380,6 +380,24 @@ def read_notify_conf(path, shell_config):
         return {}
 
 
+def compile_filter_regex(filters):
+    """Compile each filter regex and add it to filters"""
+    if filters['profile']:
+        filters['profile_re'] = re.compile(filters['profile'])
+    if filters['operation']:
+        filters['operation_re'] = re.compile(filters['operation'])
+    if filters['name']:
+        filters['name_re'] = re.compile(filters['name'])
+    if filters['denied_mask']:
+        filters['denied_mask_re'] = re.compile(filters['denied_mask'])
+    if filters['net_family']:
+        filters['net_family_re'] = re.compile(filters['net_family'])
+    if filters['net_sock_type']:
+        filters['net_sock_type_re'] = re.compile(filters['net_sock_type'])
+
+    return filters
+
+
 def main():
     """Run aa-notify.
 
@@ -560,6 +578,8 @@ def main():
         filters['net_family'] = getattr(args, 'filter.family')
     if getattr(args, 'filter.socket'):
         filters['net_sock_type'] = getattr(args, 'filter.socket')
+
+    filters = compile_filter_regex(filters)
 
     # Warn if use_group is defined and current group does not match defined
     if 'use_group' in config['']:
