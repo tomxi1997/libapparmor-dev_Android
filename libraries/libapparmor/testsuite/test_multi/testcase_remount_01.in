@@ -1,0 +1,1 @@
+type=AVC msg=audit(1709108389.303:12383): apparmor="DENIED" operation="mount" class="mount" info="failed mntpnt match" error=-13 profile="/home/user/test/testmount" name="/tmp/foo/" pid=14155 comm="testmount" flags="ro, remount"

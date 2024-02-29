@@ -1,0 +1,1 @@
+type=AVC msg=audit(1709025786.045:43147): apparmor="DENIED" operation="umount" class="mount" profile="/home/user/test/testmount" name="/mnt/a/" pid=26697 comm="testmount"

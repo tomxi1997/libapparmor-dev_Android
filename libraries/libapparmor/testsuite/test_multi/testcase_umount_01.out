@@ -1,0 +1,12 @@
+START
+File: testcase_umount_01.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1709025786.045:43147
+Operation: umount
+Profile: /home/user/test/testmount
+Name: /mnt/a/
+Command: testmount
+PID: 26697
+Class: mount
+Epoch: 1709025786
+Audit subid: 43147

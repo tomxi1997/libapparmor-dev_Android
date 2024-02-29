@@ -1,0 +1,15 @@
+START
+File: testcase_remount_01.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1709108389.303:12383
+Operation: mount
+Profile: /home/user/test/testmount
+Name: /tmp/foo/
+Command: testmount
+Info: failed mntpnt match
+ErrorCode: 13
+PID: 14155
+Flags: ro, remount
+Class: mount
+Epoch: 1709108389
+Audit subid: 12383
