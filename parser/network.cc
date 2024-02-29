@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <arpa/inet.h>
 
 #include "lib.h"
 #include "parser.h"
@@ -298,7 +299,59 @@ const struct network_tuple *net_find_mapping(const struct network_tuple *map,
 	return NULL;
 }
 
-void network_rule::move_conditionals(struct cond_entry *conds)
+bool parse_ipv4_address(const char *input, struct ip_address *result)
+{
+	struct in_addr addr;
+	if (inet_pton(AF_INET, input, &addr) == 1) {
+		result->family = AF_INET;
+		result->address.address_v4 = addr.s_addr;
+		return true;
+	}
+	return false;
+}
+
+bool parse_ipv6_address(const char *input, struct ip_address *result)
+{
+	struct in6_addr addr;
+	if (inet_pton(AF_INET6, input, &addr) == 1) {
+		result->family = AF_INET6;
+		memcpy(result->address.address_v6, addr.s6_addr, 16);
+		return true;
+	}
+	return false;
+}
+
+bool parse_ip(const char *ip, struct ip_address *result)
+{
+	return parse_ipv6_address(ip, result) ||
+		parse_ipv4_address(ip, result);
+}
+
+bool parse_port_number(const char *port_entry, uint16_t *port) {
+	char *eptr;
+	unsigned long port_tmp = strtoul(port_entry, &eptr, 10);
+
+	if (port_tmp >= 0 && port_entry != eptr &&
+	    *eptr == '\0' && port_tmp <= UINT16_MAX) {
+		*port = port_tmp;
+		return true;
+	}
+	return false;
+}
+
+bool network_rule::parse_port(ip_conds &entry)
+{
+	entry.is_port = true;
+	return parse_port_number(entry.sport, &entry.port);
+}
+
+bool network_rule::parse_address(ip_conds &entry)
+{
+	entry.is_ip = true;
+	return parse_ip(entry.sip, &entry.ip);
+}
+
+void network_rule::move_conditionals(struct cond_entry *conds, ip_conds &ip_cond)
 {
 	struct cond_entry *cond_ent;
 
@@ -306,10 +359,18 @@ void network_rule::move_conditionals(struct cond_entry *conds)
 		/* for now disallow keyword 'in' (list) */
 		if (!cond_ent->eq)
 			yyerror("keyword \"in\" is not allowed in network rules\n");
-
-		/* no valid conditionals atm */
-		yyerror("invalid network rule conditional \"%s\"\n",
-			cond_ent->name);
+		if (strcmp(cond_ent->name, "ip") == 0) {
+			move_conditional_value("network", &ip_cond.sip, cond_ent);
+			if (!parse_address(ip_cond))
+				yyerror("network invalid ip='%s'\n", ip_cond.sip);
+		} else if (strcmp(cond_ent->name, "port") == 0) {
+			move_conditional_value("network", &ip_cond.sport, cond_ent);
+			if (!parse_port(ip_cond))
+				yyerror("network invalid port='%s'\n", ip_cond.sport);
+		} else {
+			yyerror("invalid network rule conditional \"%s\"\n",
+				cond_ent->name);
+		}
 	}
 }
 
@@ -322,7 +383,8 @@ void network_rule::set_netperm(unsigned int family, unsigned int type)
 		network_perms[family] |= 1 << type;
 }
 
-network_rule::network_rule(struct cond_entry *conds):
+network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
+			   struct cond_entry *peer_conds):
 	dedup_perms_rule_t(AA_CLASS_NETV8)
 {
 	size_t family_index;
@@ -331,12 +393,25 @@ network_rule::network_rule(struct cond_entry *conds):
 		set_netperm(family_index, 0xFFFFFFFF);
 	}
 
-	move_conditionals(conds);
+	move_conditionals(conds, local);
+	move_conditionals(peer_conds, peer);
 	free_cond_list(conds);
+	free_cond_list(peer_conds);
+
+	if (perms_p) {
+		perms = perms_p;
+		if (perms & ~AA_VALID_NET_PERMS)
+			yyerror("perms contains invalid permissions for network rules\n");
+		else if ((perms & ~AA_PEER_NET_PERMS) && has_peer_conds())
+			yyerror("network 'create', 'shutdown', 'setattr', 'getattr', 'bind', 'listen', 'setopt', and/or 'getopt' accesses cannot be used with peer socket conditionals\n");
+	} else {
+		perms = AA_VALID_NET_PERMS;
+	}
 }
 
-network_rule::network_rule(const char *family, const char *type,
-			   const char *protocol, struct cond_entry *conds):
+network_rule::network_rule(perms_t perms_p, const char *family, const char *type,
+			   const char *protocol, struct cond_entry *conds,
+			   struct cond_entry *peer_conds):
 	dedup_perms_rule_t(AA_CLASS_NETV8)
 {
 	const struct network_tuple *mapping = NULL;
@@ -355,15 +430,37 @@ network_rule::network_rule(const char *family, const char *type,
 	if (network_map.empty())
 		yyerror(_("Invalid network entry."));
 
-	move_conditionals(conds);
+	move_conditionals(conds, local);
+	move_conditionals(peer_conds, peer);
 	free_cond_list(conds);
+	free_cond_list(peer_conds);
+
+	if (perms_p) {
+		perms = perms_p;
+		if (perms & ~AA_VALID_NET_PERMS)
+			yyerror("perms contains invalid permissions for network rules\n");
+		else if ((perms & ~AA_PEER_NET_PERMS) && has_peer_conds())
+			yyerror("network 'create', 'shutdown', 'setattr', 'getattr', 'bind', 'listen', 'setopt', and/or 'getopt' accesses cannot be used with peer socket conditionals\n");
+	} else {
+		perms = AA_VALID_NET_PERMS;
+	}
 }
 
-network_rule::network_rule(unsigned int family, unsigned int type):
+network_rule::network_rule(perms_t perms_p, unsigned int family, unsigned int type):
 	dedup_perms_rule_t(AA_CLASS_NETV8)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
 	set_netperm(family, type);
+
+	if (perms_p) {
+		perms = perms_p;
+		if (perms & ~AA_VALID_NET_PERMS)
+			yyerror("perms contains invalid permissions for network rules\n");
+		else if ((perms & ~AA_PEER_NET_PERMS) && has_peer_conds())
+			yyerror("network 'create', 'shutdown', 'setattr', 'getattr', 'bind', 'listen', 'setopt', and/or 'getopt' accesses cannot be used with peer socket conditionals\n");
+	} else {
+		perms = AA_VALID_NET_PERMS;
+	}
 }
 
 ostream &network_rule::dump(ostream &os)
@@ -428,6 +525,79 @@ void network_rule::warn_once(const char *name)
 	rule_t::warn_once(name, "network rules not enforced");
 }
 
+std::string gen_ip_cond(const struct ip_address ip)
+{
+	std::ostringstream oss;
+	int i;
+	if (ip.family == AF_INET) {
+		/* add a byte containing the size of the following ip */
+		oss << "\\x04";
+
+		u8 *byte = (u8 *) &ip.address.address_v4; /* in network byte order */
+		for (i = 0; i < 4; i++)
+			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(byte[i]);
+	} else {
+		/* add a byte containing the size of the following ip */
+		oss << "\\x10";
+		for (i = 0; i < 16; ++i)
+			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(ip.address.address_v6[i]);
+	}
+	return oss.str();
+}
+
+std::string gen_port_cond(uint16_t port)
+{
+	std::ostringstream oss;
+	if (port > 0) {
+		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((port & 0xff00) >> 8);
+		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (port & 0xff);
+	} else {
+		oss << "..";
+	}
+	return oss.str();
+}
+
+void network_rule::gen_ip_conds(std::ostringstream &oss, ip_conds entry, bool is_peer, bool is_cmd)
+{
+	/* encode protocol */
+	if (!is_cmd) {
+		if (entry.is_ip) {
+			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((entry.ip.family & 0xff00) >> 8);
+			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (entry.ip.family & 0xff);
+		} else {
+			oss << "..";
+		}
+	}
+
+	if (entry.is_port) {
+		/* encode port type (privileged - 1, remote - 2, unprivileged - 0) */
+		if (!is_peer && perms & AA_NET_BIND && entry.port < IPPORT_RESERVED)
+			oss << "\\x01";
+		else if (is_peer)
+			oss << "\\x02";
+		else
+			oss << "\\x00";
+
+		oss << gen_port_cond(entry.port);
+	} else {
+		/* port type + port number */
+		if (!is_cmd)
+			oss << ".";
+		oss << "..";
+	}
+
+	if (entry.is_ip) {
+		oss << gen_ip_cond(entry.ip);
+	} else {
+		/* encode 0 to indicate there's no ip (ip size) */
+		oss << "\\x00";
+	}
+
+	oss << "\\-x01"; /* oob separator */
+	oss << default_match_pattern; /* label - not used for now */
+	oss << "\\x00"; /* null transition */
+}
+
 bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mask) {
 	std::ostringstream buffer;
 	std::string buf;
@@ -441,13 +611,59 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((type_mask & 0xff00) >> 8);
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
 	}
-	buf = buffer.str();
 
-	if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(AA_VALID_NET_PERMS),
-					 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(AA_VALID_NET_PERMS) : 0,
-					 parseopts))
-		return false;
+	if (!features_supports_inet) {
+		buf = buffer.str();
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(AA_VALID_NET_PERMS),
+						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(AA_VALID_NET_PERMS) : 0,
+						 parseopts))
+			return false;
+		return true;
+	}
 
+	if (perms & AA_PEER_NET_PERMS) {
+		gen_ip_conds(buffer, peer, true, false);
+
+		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_ADDR;
+
+		gen_ip_conds(buffer, local, false, true);
+
+		buf = buffer.str();
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
+						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+						 parseopts))
+			return false;
+	}
+	if ((perms & AA_NET_LISTEN) || (perms & AA_NET_OPT)) {
+		gen_ip_conds(buffer, local, false, false);
+
+		if (perms & AA_NET_LISTEN) {
+			std::ostringstream cmd_buffer;
+			cmd_buffer << buffer.str();
+			cmd_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_LISTEN;
+			/* length of queue allowed - not used for now */
+			cmd_buffer << "..";
+			buf = cmd_buffer.str();
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
+							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+							 parseopts))
+				return false;
+		}
+		if (perms & AA_NET_OPT) {
+			std::ostringstream cmd_buffer;
+			cmd_buffer << buffer.str();
+			cmd_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_OPT;
+			/* level - not used for now */
+			cmd_buffer << "..";
+			/* socket mapping - not used for now */
+			cmd_buffer << "..";
+			buf = cmd_buffer.str();
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
+							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+							 parseopts))
+				return false;
+		}
+	}
 	return true;
 }
 
