@@ -612,6 +612,15 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
 	}
 
+	if (!features_supports_inet) {
+		buf = buffer.str();
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(AA_VALID_NET_PERMS),
+						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(AA_VALID_NET_PERMS) : 0,
+						 parseopts))
+			return false;
+		return true;
+	}
+
 	if (perms & AA_PEER_NET_PERMS) {
 		gen_ip_conds(buffer, peer, true, false);
 
