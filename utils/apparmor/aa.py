@@ -53,6 +53,7 @@ from apparmor.rule.signal import SignalRule
 from apparmor.rule.userns import UserNamespaceRule
 from apparmor.rule.mqueue import MessageQueueRule
 from apparmor.rule.io_uring import IOUringRule
+from apparmor.rule.mount import MountRule
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -1757,6 +1758,19 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                     if not hat_exists or not is_known_rule(aa[profile][hat], 'io_uring', io_uring_event):
                         log_dict[aamode][final_name]['io_uring'].add(io_uring_event)
 
+            mount = hashlog[aamode][full_profile]['mount']
+            for operation, operation_val in mount.items():
+                for options, options_val in operation_val.items():
+                    for fstype, fstype_value in options_val.items():
+                        for dest, dest_value in fstype_value.items():
+                            for source, source_value in dest_value.items():
+                                _options = (options[0], options[1].split(', ')) if options is not None else MountRule.ALL
+                                _fstype = (fstype[0], fstype[1].split(', ')) if fstype is not None else MountRule.ALL
+                                _source = source if source is not None else MountRule.ALL
+                                _dest = dest if dest is not None else MountRule.ALL
+                                mount_event = MountRule(operation=operation, fstype=_fstype, options=_options, source=_source, dest=_dest)
+                                if not hat_exists or not is_known_rule(aa[profile][hat], 'mount', mount_event):
+                                    log_dict[aamode][final_name]['mount'].add(mount_event)
     return log_dict
 
 
@@ -2136,6 +2150,7 @@ def match_line_against_rule_classes(line, profile, file, lineno, in_preamble):
             'userns',
             'mqueue',
             'io_uring',
+            'mount',
     ):
 
         if rule_name in ruletypes:

@@ -47,6 +47,13 @@ exception_not_raised = (
     # interesting[tm] profile name
     'change_hat/bad_parsing.sd',
 
+    'dbus/bad_regex_04.sd',
+    'dbus/bad_regex_05.sd',
+    'dbus/bad_regex_06.sd',
+    'file/bad_re_brace_1.sd',
+    'file/bad_re_brace_2.sd',
+    'file/bad_re_brace_3.sd',
+
     # The tools don't detect conflicting change_profile exec modes
     'change_profile/onx_conflict_unsafe1.sd',
     'change_profile/onx_conflict_unsafe2.sd',
@@ -70,49 +77,14 @@ exception_not_raised = (
     'file/bad_re_brace_1.sd',
     'file/bad_re_brace_2.sd',
     'file/bad_re_brace_3.sd',
-    'mount/bad_1.sd',
-    'mount/bad_2.sd',
-    'mount/bad_3.sd',
-    'mount/bad_4.sd',
-    'mount/bad_opt_10.sd',
-    'mount/bad_opt_11.sd',
-    'mount/bad_opt_12.sd',
-    'mount/bad_opt_13.sd',
-    'mount/bad_opt_14.sd',
-    'mount/bad_opt_15.sd',
-    'mount/bad_opt_16.sd',
-    'mount/bad_opt_17.sd',
-    'mount/bad_opt_18.sd',
-    'mount/bad_opt_19.sd',
-    'mount/bad_opt_1.sd',
-    'mount/bad_opt_20.sd',
-    'mount/bad_opt_21.sd',
-    'mount/bad_opt_22.sd',
-    'mount/bad_opt_23.sd',
-    'mount/bad_opt_24.sd',
-    'mount/bad_opt_2.sd',
-    'mount/bad_opt_3.sd',
-    'mount/bad_opt_4.sd',
-    'mount/bad_opt_5.sd',
-    'mount/bad_opt_6.sd',
-    'mount/bad_opt_7.sd',
-    'mount/bad_opt_8.sd',
-    'mount/bad_opt_9.sd',
-    'mount/bad_opt_25.sd',
-    'mount/bad_opt_26.sd',
-    'mount/bad_opt_27.sd',
-    'mount/bad_opt_28.sd',
+
+    # We do not check that options are compatible
     'mount/bad_opt_29.sd',
     'mount/bad_opt_30.sd',
     'mount/bad_opt_31.sd',
-    'mount/bad_opt_32.sd',
-    'mount/bad_opt_35.sd',
-    'mount/bad_opt_36.sd',
-    'mount/bad_opt_37.sd',
-    'mount/bad_opt_38.sd',
-    'mount/bad_opt_39.sd',
-    'mount/bad_opt_40.sd',
-    'mount/bad_opt_41.sd',
+    'mount/bad_1.sd',
+    'mount/bad_2.sd',
+
     'profile/flags/flags_bad10.sd',
     'profile/flags/flags_bad11.sd',
     'profile/flags/flags_bad12.sd',
@@ -341,6 +313,48 @@ unknown_line = (
     'bare_include_tests/ok_84.sd',
     'bare_include_tests/ok_85.sd',
     'bare_include_tests/ok_86.sd',
+
+    # option = make-${valid-option} (e.g. make-private) is not supported
+    'mount/ok_opt_48.sd',
+    'mount/ok_opt_49.sd',
+    'mount/ok_opt_50.sd',
+    'mount/ok_opt_51.sd',
+    'mount/ok_opt_52.sd',
+    'mount/ok_opt_53.sd',
+    'mount/ok_opt_54.sd',
+    'mount/ok_opt_55.sd',
+
+    # Mount with flags in {remount, [r]unbindable, [r]shared, [r]private, [r]slave} does not support a source
+    'mount/ok_opt_68.sd',
+    'mount/ok_opt_69.sd',
+    'mount/ok_opt_70.sd',
+    'mount/ok_opt_71.sd',
+    'mount/ok_opt_72.sd',
+    'mount/ok_opt_73.sd',
+    'mount/ok_opt_74.sd',
+    'mount/ok_opt_75.sd',
+
+    # option = make-${valid-option} (e.g. make-private) is not supported
+    'mount/ok_opt_76.sd',
+    'mount/ok_opt_77.sd',
+    'mount/ok_opt_78.sd',
+    'mount/ok_opt_79.sd',
+    'mount/ok_opt_80.sd',
+    'mount/ok_opt_81.sd',
+    'mount/ok_opt_82.sd',
+    'mount/ok_opt_83.sd',
+    'mount/ok_opt_84.sd',
+
+    # According to spec mount should be in the form fstype=... options=... and NOT in the form options=... fstype=...
+    'mount/ok_opt_combo_3.sd',
+    'mount/ok_opt_combo_2.sd',
+    'mount/ok_opt_combo_1.sd',
+    'mount/ok_opt_combo_4.sd',
+
+    # Invalid keyword: read-only --> Should be ro
+    'mount/ok_opt_3.sd',
+    # Options should be comma separated
+    'mount/in_4.sd',  # also order option then fstype is invalid
 )
 
 # testcases with various unexpected failures

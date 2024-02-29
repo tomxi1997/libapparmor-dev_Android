@@ -60,6 +60,7 @@ class ReadLog:
             'userns':       hasher(),
             'mqueue':       hasher(),
             'io_uring':     hasher(),
+            'mount':        hasher(),
         }
 
     def prefetch_next_log_entry(self):
@@ -116,6 +117,13 @@ class ReadLog:
             ev['peer'] = event.peer
         elif ev['operation'] and ev['operation'] == 'ptrace':
             ev['peer'] = event.peer
+        elif ev['operation'] and ev['operation'] == 'mount':
+            ev['flags'] = event.flags
+            ev['fs_type'] = event.fs_type
+            ev['src_name'] = event.src_name
+        elif ev['operation'] and (ev['operation'] == 'umount'):
+            ev['flags'] = event.flags
+            ev['fs_type'] = event.fs_type
         elif ev['operation'] and ev['operation'].startswith('dbus_'):
             ev['peer_profile'] = event.peer_profile
             ev['bus'] = event.dbus_bus
@@ -202,6 +210,19 @@ class ReadLog:
 
         elif e['class'] and e['class'] == 'io_uring':
             self.hashlog[aamode][full_profile]['io_uring'][e['denied_mask']][e['peer_profile']] = True
+            return
+
+        elif e['class'] and e['class'] == 'mount':
+            if e['flags'] != None:
+                e['flags'] = ('=', e['flags'])
+            if e['fs_type'] != None:
+                e['fs_type'] = ('=', e['fs_type'])
+
+
+            if e['operation'] == 'mount':
+                self.hashlog[aamode][full_profile]['mount'][e['operation']][e['flags']][e['fs_type']][e['name']][e['src_name']] = True
+            else:  # Umount
+                self.hashlog[aamode][full_profile]['mount'][e['operation']][e['flags']][e['fs_type']][e['name']][None] = True
             return
 
         elif self.op_type(e) == 'file':

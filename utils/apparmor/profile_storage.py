@@ -31,6 +31,8 @@ from apparmor.rule.signal import SignalRule, SignalRuleset
 from apparmor.rule.userns import UserNamespaceRule, UserNamespaceRuleset
 from apparmor.rule.mqueue import MessageQueueRule, MessageQueueRuleset
 from apparmor.rule.io_uring import IOUringRule, IOUringRuleset
+from apparmor.rule.mount import MountRule, MountRuleset
+
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -50,6 +52,8 @@ ruletypes = {
     'userns':         {'rule': UserNamespaceRule, 'ruleset': UserNamespaceRuleset},
     'mqueue':         {'rule': MessageQueueRule,  'ruleset': MessageQueueRuleset},
     'io_uring':       {'rule': IOUringRule,       'ruleset': IOUringRuleset},
+    'mount':          {'rule': MountRule,         'ruleset': MountRuleset},
+
 }
 
 
@@ -84,9 +88,7 @@ class ProfileStorage:
         data['allow'] = dict()
         data['deny'] = dict()
 
-        # mount, pivot_root, unix have a .get() fallback to list() - initialize them nevertheless
-        data['allow']['mount'] = []
-        data['deny']['mount'] = []
+        # pivot_root, unix have a .get() fallback to list() - initialize them nevertheless
         data['allow']['pivot_root'] = []
         data['deny']['pivot_root'] = []
         data['allow']['unix'] = []
@@ -181,7 +183,6 @@ class ProfileStorage:
 
         # "old" write functions for rule types not implemented as *Rule class yet
         write_functions = {
-            'mount': write_mount,
             'pivot_root': write_pivot_root,
             'unix': write_unix,
         }
@@ -307,27 +308,6 @@ def var_transform(ref):
             value = '""'
         data.append(quote_if_needed(value))
     return ' '.join(data)
-
-
-def write_mount_rules(prof_data, depth, allow):
-    pre = '  ' * depth
-    data = []
-
-    # no mount rules, so return
-    if not prof_data[allow].get('mount', False):
-        return data
-
-    for mount_rule in prof_data[allow]['mount']:
-        data.append('%s%s' % (pre, mount_rule.serialize()))
-    data.append('')
-    return data
-
-
-def write_mount(prof_data, depth):
-    data = write_mount_rules(prof_data, depth, 'deny')
-    data.extend(write_mount_rules(prof_data, depth, 'allow'))
-    return data
-
 
 def write_pivot_root_rules(prof_data, depth, allow):
     pre = '  ' * depth
