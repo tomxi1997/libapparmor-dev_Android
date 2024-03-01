@@ -31,7 +31,7 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
-
+#include <stdint.h>
 #include "expr-tree.h"
 #include "hfa.h"
 #include "policy_compat.h"
@@ -647,7 +647,7 @@ int DFA::apply_and_clear_deny(void)
 }
 
 
-typedef __uint128_t uint128_t;
+typedef pair<uint64_t,uint64_t> uint128_t;
 
 /* minimize the number of dfa states */
 void DFA::minimize(optflags const &opts)
@@ -669,7 +669,9 @@ void DFA::minimize(optflags const &opts)
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
 		size_t hash = 0;
-		uint128_t permtype = ((uint128_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32) | (uint128_t) (*i)->perms.allow | ((uint128_t) (*i)->perms.prompt << 64);
+		uint128_t permtype;
+		permtype.first = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32);
+		permtype.second = (uint64_t) (*i)->perms.allow | ((uint64_t) (*i)->perms.prompt << 32);
 		pair<uint128_t, size_t> group = make_pair(permtype, hash);
 		map<pair<uint128_t, size_t>, Partition *>::iterator p = perm_map.find(group);
 		if (p == perm_map.end()) {
@@ -678,7 +680,7 @@ void DFA::minimize(optflags const &opts)
 			perm_map.insert(make_pair(group, part));
 			partitions.push_back(part);
 			(*i)->partition = part;
-			if (permtype)
+			if (permtype.first || permtype.second)
 				accept_count++;
 		} else {
 			(*i)->partition = p->second;
