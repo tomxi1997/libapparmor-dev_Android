@@ -33,7 +33,7 @@ valid_fs = [
     'sysfs', 'tmpfs', 'bdevfs', 'procfs', 'cgroup', 'cgroup2', 'cpuset', 'devtmpfs', 'configfs', 'debugfs', 'tracefs',
     'securityfs', 'sockfs', 'bpf', 'npipefs', 'ramfs', 'hugetlbfs', 'devpts', 'ext3', 'ext2', 'ext4', 'squashfs',
     'vfat', 'ecryptfs', 'fuseblk', 'fuse', 'fusectl', 'efivarfs', 'mqueue', 'store', 'autofs', 'binfmt_misc', 'overlay',
-    'none', 'bdev', 'proc', 'pipefs', 'pstore', 'brtfs', 'xfs',
+    'none', 'bdev', 'proc', 'pipefs', 'pstore', 'btrfs', 'xfs', '9p',
 ]
 flags_keywords = [
     'ro', 'rw', 'nosuid', 'suid', 'nodev', 'dev', 'noexec', 'exec', 'sync', 'async', 'remount', 'mand', 'nomand',
