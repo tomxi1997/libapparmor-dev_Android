@@ -39,7 +39,7 @@ from apparmor.profile_storage import ProfileStorage, add_or_remove_flag, ruletyp
 from apparmor.regex import (
     RE_HAS_COMMENT_SPLIT, RE_PROFILE_CHANGE_HAT, RE_PROFILE_CONDITIONAL,
     RE_PROFILE_CONDITIONAL_BOOLEAN, RE_PROFILE_CONDITIONAL_VARIABLE, RE_PROFILE_END,
-    RE_PROFILE_HAT_DEF, RE_PROFILE_MOUNT, RE_PROFILE_PIVOT_ROOT, RE_PROFILE_START,
+    RE_PROFILE_HAT_DEF, RE_PROFILE_PIVOT_ROOT, RE_PROFILE_START,
     RE_PROFILE_UNIX, RE_RULE_HAS_COMMA, parse_profile_start_line, re_match_include)
 from apparmor.rule.abi import AbiRule
 from apparmor.rule.capability import CapabilityRule
@@ -1995,29 +1995,6 @@ def parse_profile_data(data, file, do_include, in_preamble):
             # Conditional Boolean defined
             pass
 
-        elif RE_PROFILE_MOUNT.search(line):
-            matches = RE_PROFILE_MOUNT.search(line).groups()
-
-            if not profile:
-                raise AppArmorException(_('Syntax Error: Unexpected mount entry found in file: %(file)s line: %(line)s')
-                                        % {'file': file, 'line': lineno + 1})
-
-            audit = False
-            if matches[0]:
-                audit = True
-            allow = 'allow'
-            if matches[1] and matches[1].strip() == 'deny':
-                allow = 'deny'
-            mount = matches[2]
-
-            mount_rule = parse_mount_rule(mount)
-            mount_rule.audit = audit
-            mount_rule.deny = (allow == 'deny')
-
-            mount_rules = profile_data[profname][allow].get('mount', [])
-            mount_rules.append(mount_rule)
-            profile_data[profname][allow]['mount'] = mount_rules
-
         elif RE_PROFILE_PIVOT_ROOT.search(line):
             matches = RE_PROFILE_PIVOT_ROOT.search(line).groups()
 
@@ -2200,11 +2177,6 @@ def split_to_merged(profile_data):
             merged[merged_name] = profile_data[profile][hat]
 
     return merged
-
-
-def parse_mount_rule(line):
-    # XXX Do real parsing here
-    return aarules.Raw_Mount_Rule(line)
 
 
 def parse_pivot_root_rule(line):
