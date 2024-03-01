@@ -123,7 +123,8 @@ class MountTestFilesystems(AATest):
     def test_fs(self):
         with open("/proc/filesystems") as f:
             for line in f:
-                self.assertTrue(line.split()[-1] in valid_fs)
+                fs_name = line.split()[-1]
+                self.assertTrue(fs_name in valid_fs, "/proc/filesystems contains %s which is not listed in MountRule valid_fs" % fs_name)
 
 
 class MountTestGlob(AATest):
