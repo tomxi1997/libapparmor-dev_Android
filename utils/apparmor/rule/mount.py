@@ -94,9 +94,13 @@ class MountRule(BaseRule):
         self.operation = operation
 
         self.fstype, self.all_fstype, unknown_items = check_and_split_list(fstype[1] if fstype != self.ALL else fstype, valid_fs, self.ALL, type(self).__name__, 'fstype')
+        if unknown_items:
+            raise AppArmorException(_('Passed unknown fstype keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
         self.is_fstype_equal = fstype[0] if not self.all_fstype else None
 
         self.options, self.all_options, unknown_items = check_and_split_list(options[1] if options != self.ALL else options, flags_keywords, self.ALL, type(self).__name__, 'options')
+        if unknown_items:
+            raise AppArmorException(_('Passed unknown options keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
         self.is_options_equal = options[0] if not self.all_options else None
 
         if source != self.ALL and source[0].isalpha():

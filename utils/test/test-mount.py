@@ -96,9 +96,17 @@ class MountTestParseInvalid(AATest):
         with self.assertRaises(AppArmorBug):
             MountRule('mount', ('ext3', 'ext4'), MountRule.ALL, MountRule.ALL, MountRule.ALL)  # fstype[0] should be '=' or 'in'
 
+    def test_diff_invalid_fstype_keyword(self):
+        with self.assertRaises(AppArmorException):
+            MountRule('mount', ('=', 'invalidfs'), MountRule.ALL, MountRule.ALL, MountRule.ALL)  # fstype[0] should be '=' or 'in'
+
     def test_diff_invalid_options_equals_or_in(self):
         with self.assertRaises(AppArmorBug):
             MountRule('mount', MountRule.ALL, ('rbind', 'rw'),  MountRule.ALL, MountRule.ALL)  # fstype[0] should be '=' or 'in'
+
+    def test_diff_invalid_options_keyword(self):
+        with self.assertRaises(AppArmorException):
+            MountRule('mount', MountRule.ALL, ('=', 'invalid'),  MountRule.ALL, MountRule.ALL)  # fstype[0] should be '=' or 'in'
 
     def test_diff_fstype(self):
         obj1 = MountRule('mount',("=", 'ext4'), MountRule.ALL,  MountRule.ALL, MountRule.ALL)
