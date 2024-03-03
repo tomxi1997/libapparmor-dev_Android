@@ -104,9 +104,9 @@ class MountRule(BaseRule):
             self.source_is_path = True
             self.source, self.all_source = self._aare_or_all(source, 'source', is_path=self.source_is_path, log_event=log_event)
 
-        if not self.all_fstype and self.is_fstype_equal != "=" and self.is_fstype_equal != "in":
+        if not self.all_fstype and self.is_fstype_equal not in ("=", "in"):
             raise AppArmorBug(f'Invalid is_fstype_equal : {self.is_fstype_equal}')
-        if not self.all_options and self.is_options_equal != "=" and self.is_options_equal != "in":
+        if not self.all_options and self.is_options_equal not in ("=", "in"):
             raise AppArmorBug(f'Invalid is_options_equal : {self.is_options_equal}')
         if self.operation != 'mount' and not self.all_source:
             raise AppArmorException(f'Operation {self.operation} cannot have a source')
