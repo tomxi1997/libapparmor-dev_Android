@@ -178,8 +178,8 @@ class MountRule(BaseRule):
     def get_clean(self, depth=0):
         space = '  ' * depth
 
-        fstype = ' fstype%s(%s)' % (self.is_fstype_equal, ', '.join(sorted(self.fstype))) if not self.all_fstype else ''
-        options = ' options%s(%s)' % (self.is_options_equal, ', '.join(sorted(self.options))) if not self.all_options else ''
+        fstype = ' fstype%s(%s)' % (wrap_in_with_spaces(self.is_fstype_equal), ', '.join(sorted(self.fstype))) if not self.all_fstype else ''
+        options = ' options%s(%s)' % (wrap_in_with_spaces(self.is_options_equal), ', '.join(sorted(self.options))) if not self.all_options else ''
 
         if self.operation == 'mount':
             return ('%s%s%s%s%s%s%s,%s' % ( self.modifiers_str(),
@@ -284,4 +284,10 @@ class MountRuleset(BaseRuleset):
     '''Class to handle and store a collection of Mount rules'''
 
 
+def wrap_in_with_spaces(value):
+    ''' wrap 'in' keyword in spaces, and leave everything else unchanged '''
 
+    if value == 'in':
+        value = ' in '
+
+    return value
