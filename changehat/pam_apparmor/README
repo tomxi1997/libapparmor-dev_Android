@@ -67,10 +67,10 @@ to syslog.
 References
 ----------
 Project webpage:
-http://developer.novell.com/wiki/index.php/Novell_AppArmor
+https://apparmor.net/
 
 To provide feedback or ask questions please contact the
-apparmor-dev@forge.novell.com mail list. This is the development list
+apparmor@lists.ubuntu.com mail list. This is the development list
 for the AppArmor team.
 
 See also: change_hat(3), and the Linux-PAM online documentation at
