@@ -181,25 +181,29 @@ class MountRule(BaseRule):
         fstype = ' fstype%s(%s)' % (wrap_in_with_spaces(self.is_fstype_equal), ', '.join(sorted(self.fstype))) if not self.all_fstype else ''
         options = ' options%s(%s)' % (wrap_in_with_spaces(self.is_options_equal), ', '.join(sorted(self.options))) if not self.all_options else ''
 
+        source = ""
+        dest = ""
+
         if self.operation == 'mount':
-            return ('%s%s%s%s%s%s%s,%s' % ( self.modifiers_str(),
-                                            space,
-                                            self.operation,
-                                            fstype,
-                                            options,
-                                            " " + str(self.source.regex) if not self.all_source else '',
-                                            " -> " + str(self.dest.regex) if not self.all_dest else '',
-                                            self.comment,
-            ))
+            if not self.all_source:
+                source = " " + str(self.source.regex)
+
+            if not self.all_dest:
+                dest = " -> " + str(self.dest.regex)
+
         else:
-            return ('%s%s%s%s%s%s,%s' % (   self.modifiers_str(),
-                                            space,
-                                            self.operation,
-                                            fstype,
-                                            options,
-                                            " " + str(self.dest.regex) if not self.all_dest else '',
-                                            self.comment,
-            ))
+            if not self.all_dest:
+                dest = " " + str(self.dest.regex)
+
+        return ('%s%s%s%s%s%s%s,%s' % ( self.modifiers_str(),
+                                        space,
+                                        self.operation,
+                                        fstype,
+                                        options,
+                                        source,
+                                        dest,
+                                        self.comment,
+        ))
 
     def _is_covered_localvars(self, other_rule):
         if self.operation != other_rule.operation:

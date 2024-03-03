@@ -157,7 +157,9 @@ class MountTestClean(AATest):
         ('     mount                                fstype  in (  sysfs  ,  procfs  )           ,           ', 'mount fstype in (procfs, sysfs),'),
         ('     mount  options  in (  rw  )                                                      ,           ', 'mount options in (rw),'),
         ('     mount  options  in (  rw , noatime  )                                            ,           ', 'mount options in (noatime, rw),'),
+        ('     umount                                                                           ,           ', 'umount,'),
         ('     umount                                                            /foo           ,           ', 'umount /foo,'),
+        ('     remount                                                                          ,           ', 'remount,'),
         ('     remount                                                           /foo           ,           ', 'remount /foo,'),
     )
 
