@@ -2037,8 +2037,6 @@ An example AppArmor profile:
 
 =over 4
 
-=item F</etc/init.d/boot.apparmor>
-
 =item F</etc/apparmor.d/>
 
 =back

@@ -36,12 +36,11 @@ of resources. AppArmor's unique security model is to bind access control
 attributes to programs rather than to users.
 
 AppArmor confinement is provided via I<profiles> loaded into the kernel
-via apparmor_parser(8), typically through the F</etc/init.d/apparmor>
-SysV initscript, which is used like this:
+via apparmor_parser(8), typically through the F<apparmor.service>
+systemd unit, which is used like this:
 
-	# /etc/init.d/apparmor start
-	# /etc/init.d/apparmor stop
-	# /etc/init.d/apparmor restart
+	# systemctl start apparmor
+	# systemctl reload apparmor
 
 AppArmor can operate in two modes: I<enforcement>, and I<complain or learning>:
 
@@ -273,11 +272,9 @@ Else, if auditd is running, see auditd(8) and auditd.conf(5).
 
 =over 4
 
-=item F</etc/init.d/apparmor>
-
 =item F</etc/apparmor.d/>
 
-=item F</var/lib/apparmor/>
+=item F</var/cache/apparmor/>
 
 =item F</var/log/audit/audit.log>
 
