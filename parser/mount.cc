@@ -234,6 +234,7 @@ struct mnt_keyword_table {
 	unsigned int clear;
 };
 
+// keep in sync with utils/apparmor/rule/mount.py flags_keywords
 static struct mnt_keyword_table mnt_opts_table[] = {
 	{"ro",			MS_RDONLY, 0},
 	{"r",			MS_RDONLY, 0},

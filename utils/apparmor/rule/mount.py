@@ -36,11 +36,14 @@ valid_fs = [
     'none', 'bdev', 'proc', 'pipefs', 'pstore', 'btrfs', 'xfs', '9p',
 ]
 flags_keywords = [
-    'ro', 'rw', 'nosuid', 'suid', 'nodev', 'dev', 'noexec', 'exec', 'sync', 'async', 'remount', 'mand', 'nomand',
-    'dirsync', 'noatime', 'atime', 'nodiratime', 'diratime', 'bind', 'rbind', 'move', 'verbose', 'silent', 'loud',
-    'acl', 'noacl', 'unbindable', 'runbindable', 'private', 'rprivate', 'slave', 'rslave', 'shared', 'rshared',
-    'relatime', 'norelatime', 'iversion', 'noiversion', 'strictatime', 'nostrictatime', 'lazytime', 'nolazytime',
-    'nouser', 'user', 'symfollow', 'nosymfollow', '([A-Za-z0-9]|AARE)',  # TODO: handle AARE
+    # keep in sync with parser/mount.cc mnt_opts_table!
+    'ro', 'r', 'read-only', 'rw', 'w', 'suid', 'nosuid', 'dev', 'nodev', 'exec', 'noexec', 'sync', 'async', 'remount',
+    'mand', 'nomand', 'dirsync', 'symfollow', 'nosymfollow', 'atime', 'noatime', 'diratime', 'nodiratime', 'bind', 'B',
+    'move', 'M', 'rbind', 'R', 'verbose', 'silent', 'loud', 'acl', 'noacl', 'unbindable', 'make-unbindable', 'runbindable',
+    'make-runbindable', 'private', 'make-private', 'rprivate', 'make-rprivate', 'slave', 'make-slave', 'rslave', 'make-rslave',
+    'shared', 'make-shared', 'rshared', 'make-rshared', 'relatime', 'norelatime', 'iversion', 'noiversion', 'strictatime',
+    'nostrictatime', 'lazytime', 'nolazytime', 'user', 'nouser',
+    '([A-Za-z0-9]|AARE)',  # TODO: handle AARE
 ]
 join_valid_flags = '|'.join(flags_keywords)
 join_valid_fs = '|'.join(valid_fs)
