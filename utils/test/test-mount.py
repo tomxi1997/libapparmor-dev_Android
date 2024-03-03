@@ -88,20 +88,20 @@ class MountTestParseInvalid(AATest):
 
     def test_diff_non_mountrule(self):
         exp = namedtuple('exp', ('audit', 'deny'))
-        obj = MountRule('mount',("=", '(ext4)'), MountRule.ALL,  MountRule.ALL, MountRule.ALL)
+        obj = MountRule('mount',("=", 'ext4'), MountRule.ALL,  MountRule.ALL, MountRule.ALL)
         with self.assertRaises(AppArmorBug):
             obj.is_equal(exp(False, False), False)
 
     def test_diff_invalid_fstype_equals_or_in(self):
         with self.assertRaises(AppArmorBug):
-            MountRule('mount', ('ext3', '(ext4)'), MountRule.ALL, MountRule.ALL, MountRule.ALL)  # fstype[0] should be '=' or 'in'
+            MountRule('mount', ('ext3', 'ext4'), MountRule.ALL, MountRule.ALL, MountRule.ALL)  # fstype[0] should be '=' or 'in'
 
     def test_diff_invalid_options_equals_or_in(self):
         with self.assertRaises(AppArmorBug):
-            MountRule('mount', MountRule.ALL, ('rbind', '(rw)'),  MountRule.ALL, MountRule.ALL)  # fstype[0] should be '=' or 'in'
+            MountRule('mount', MountRule.ALL, ('rbind', 'rw'),  MountRule.ALL, MountRule.ALL)  # fstype[0] should be '=' or 'in'
 
     def test_diff_fstype(self):
-        obj1 = MountRule('mount',("=", '(ext4)'), MountRule.ALL,  MountRule.ALL, MountRule.ALL)
+        obj1 = MountRule('mount',("=", 'ext4'), MountRule.ALL,  MountRule.ALL, MountRule.ALL)
         obj2 = MountRule('mount',MountRule.ALL, MountRule.ALL,  MountRule.ALL, MountRule.ALL)
         self.assertFalse(obj1.is_equal(obj2, False))
 
@@ -198,7 +198,7 @@ class MountIsCoveredTest(AATest):
         obj = MountRule("mount", ("=", ('ext3', 'ext4')), ("=", ('ro')), "/foo/b*", "/b*")
         tests = [
             ("mount",   ("in", ('ext3', 'ext4')),   ("=", ('ro')),  "/foo/bar",     "/bar"      ),
-            ("mount",   ("=", ('procfs, ext4')),    ("=", ('ro')),  "/foo/bar",     "/bar"      ),
+            ("mount",   ("=", ('procfs', 'ext4')),  ("=", ('ro')),  "/foo/bar",     "/bar"      ),
             ("mount",   ("=", ('ext3')),            ("=", ('rw')),  "/foo/bar",     "/bar"      ),
             ("mount",   ("=", ('ext3', 'ext4')),    MountRule.ALL,  "/foo/b*",      "/bar"      ),
             ("mount",   MountRule.ALL,              ("=", ('ro')),  "/foo/b*",      "/bar"      ),
