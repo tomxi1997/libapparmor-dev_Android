@@ -36,11 +36,14 @@ valid_fs = [
     'none', 'bdev', 'proc', 'pipefs', 'pstore', 'btrfs', 'xfs', '9p',
 ]
 flags_keywords = [
-    'ro', 'rw', 'nosuid', 'suid', 'nodev', 'dev', 'noexec', 'exec', 'sync', 'async', 'remount', 'mand', 'nomand',
-    'dirsync', 'noatime', 'atime', 'nodiratime', 'diratime', 'bind', 'rbind', 'move', 'verbose', 'silent', 'loud',
-    'acl', 'noacl', 'unbindable', 'runbindable', 'private', 'rprivate', 'slave', 'rslave', 'shared', 'rshared',
-    'relatime', 'norelatime', 'iversion', 'noiversion', 'strictatime', 'nostrictatime', 'lazytime', 'nolazytime',
-    'nouser', 'user', 'symfollow', 'nosymfollow', '([A-Za-z0-9]|AARE)',  # TODO: handle AARE
+    # keep in sync with parser/mount.cc mnt_opts_table!
+    'ro', 'r', 'read-only', 'rw', 'w', 'suid', 'nosuid', 'dev', 'nodev', 'exec', 'noexec', 'sync', 'async', 'remount',
+    'mand', 'nomand', 'dirsync', 'symfollow', 'nosymfollow', 'atime', 'noatime', 'diratime', 'nodiratime', 'bind', 'B',
+    'move', 'M', 'rbind', 'R', 'verbose', 'silent', 'loud', 'acl', 'noacl', 'unbindable', 'make-unbindable', 'runbindable',
+    'make-runbindable', 'private', 'make-private', 'rprivate', 'make-rprivate', 'slave', 'make-slave', 'rslave', 'make-rslave',
+    'shared', 'make-shared', 'rshared', 'make-rshared', 'relatime', 'norelatime', 'iversion', 'noiversion', 'strictatime',
+    'nostrictatime', 'lazytime', 'nolazytime', 'user', 'nouser',
+    '([A-Za-z0-9]|AARE)',  # TODO: handle AARE
 ]
 join_valid_flags = '|'.join(flags_keywords)
 join_valid_fs = '|'.join(valid_fs)
@@ -91,9 +94,13 @@ class MountRule(BaseRule):
         self.operation = operation
 
         self.fstype, self.all_fstype, unknown_items = check_and_split_list(fstype[1] if fstype != self.ALL else fstype, valid_fs, self.ALL, type(self).__name__, 'fstype')
+        if unknown_items:
+            raise AppArmorException(_('Passed unknown fstype keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
         self.is_fstype_equal = fstype[0] if not self.all_fstype else None
 
         self.options, self.all_options, unknown_items = check_and_split_list(options[1] if options != self.ALL else options, flags_keywords, self.ALL, type(self).__name__, 'options')
+        if unknown_items:
+            raise AppArmorException(_('Passed unknown options keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
         self.is_options_equal = options[0] if not self.all_options else None
 
         if source != self.ALL and source[0].isalpha():

@@ -85,6 +85,16 @@ exception_not_raised = (
     'mount/bad_1.sd',
     'mount/bad_2.sd',
 
+    # not checked/detected: "make-*" mount opt and an invalid src
+    'mount/bad_opt_17.sd',
+    'mount/bad_opt_18.sd',
+    'mount/bad_opt_19.sd',
+    'mount/bad_opt_20.sd',
+    'mount/bad_opt_21.sd',
+    'mount/bad_opt_22.sd',
+    'mount/bad_opt_23.sd',
+    'mount/bad_opt_24.sd',
+
     'profile/flags/flags_bad10.sd',
     'profile/flags/flags_bad11.sd',
     'profile/flags/flags_bad12.sd',
@@ -314,15 +324,8 @@ unknown_line = (
     'bare_include_tests/ok_85.sd',
     'bare_include_tests/ok_86.sd',
 
-    # option = make-${valid-option} (e.g. make-private) is not supported
-    'mount/ok_opt_48.sd',
-    'mount/ok_opt_49.sd',
-    'mount/ok_opt_50.sd',
-    'mount/ok_opt_51.sd',
-    'mount/ok_opt_52.sd',
-    'mount/ok_opt_53.sd',
-    'mount/ok_opt_54.sd',
-    'mount/ok_opt_55.sd',
+    # mount with fstype using AARE
+    'mount/ok_12.sd',
 
     # Mount with flags in {remount, [r]unbindable, [r]shared, [r]private, [r]slave} does not support a source
     'mount/ok_opt_68.sd',
@@ -334,15 +337,7 @@ unknown_line = (
     'mount/ok_opt_74.sd',
     'mount/ok_opt_75.sd',
 
-    # option = make-${valid-option} (e.g. make-private) is not supported
-    'mount/ok_opt_76.sd',
-    'mount/ok_opt_77.sd',
-    'mount/ok_opt_78.sd',
-    'mount/ok_opt_79.sd',
-    'mount/ok_opt_80.sd',
-    'mount/ok_opt_81.sd',
-    'mount/ok_opt_82.sd',
-    'mount/ok_opt_83.sd',
+    # options=slave with /** src (first rule in the test causes exception)
     'mount/ok_opt_84.sd',
 
     # According to spec mount should be in the form fstype=... options=... and NOT in the form options=... fstype=...
@@ -351,8 +346,6 @@ unknown_line = (
     'mount/ok_opt_combo_1.sd',
     'mount/ok_opt_combo_4.sd',
 
-    # Invalid keyword: read-only --> Should be ro
-    'mount/ok_opt_3.sd',
     # Options should be comma separated
     'mount/in_4.sd',  # also order option then fstype is invalid
 )
