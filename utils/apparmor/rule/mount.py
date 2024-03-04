@@ -16,7 +16,7 @@ import re
 from apparmor.common import AppArmorBug, AppArmorException
 
 from apparmor.regex import RE_PROFILE_MOUNT, RE_PROFILE_PATH_OR_VAR, strip_parenthesis
-#from apparmor.rule import AARE
+# from apparmor.rule import AARE
 from apparmor.rule import BaseRule, BaseRuleset, parse_modifiers, logprof_value_or_all, check_and_split_list
 
 from apparmor.translations import init_translation
@@ -48,28 +48,29 @@ flags_keywords = [
 join_valid_flags = '|'.join(flags_keywords)
 join_valid_fs = '|'.join(valid_fs)
 
-sep = r"\s*[\s,]\s*"
+sep = r'\s*[\s,]\s*'
 
-fs_type_pattern = r"\b(?P<fstype_or_vfstype>fstype|vfstype)\b\s*(?P<fstype_equals_or_in>=|in)\s*"\
-        r"(?P<fstype>\(\s*(" + join_valid_fs + ")(" + sep + "(" + join_valid_fs + r"))*\s*\)|"\
-        r"\{\s*(" + join_valid_fs + ")(" + sep + "(" + join_valid_fs + r"))*\s*\}|(\s*" + join_valid_fs + "))"\
+fs_type_pattern = r'\b(?P<fstype_or_vfstype>fstype|vfstype)\b\s*(?P<fstype_equals_or_in>=|in)\s*'\
+    r'(?P<fstype>\(\s*(' + join_valid_fs + r')(' + sep + r'(' + join_valid_fs + r'))*\s*\)|'\
+    r'\{\s*(' + join_valid_fs + r')(' + sep + r'(' + join_valid_fs + r'))*\s*\}|(\s*' + join_valid_fs + r'))'\
 
 
-option_pattern = r"\s*(\boption(s?)\b\s*(?P<options_equals_or_in>=|in)\s*"\
-        r"(?P<options>\(\s*(" + join_valid_flags + ")(" + sep + "(" + join_valid_flags + r"))*\s*\)|" \
-        r"(\s*" + join_valid_flags + ")"\
-        "))?"
-mount_condition_pattern = rf"({fs_type_pattern})?\s*({option_pattern})?"
+option_pattern = r'\s*(\boption(s?)\b\s*(?P<options_equals_or_in>=|in)\s*'\
+    r'(?P<options>\(\s*(' + join_valid_flags + r')(' + sep + r'(' + join_valid_flags + r'))*\s*\)|' \
+    r'(\s*' + join_valid_flags + r')'\
+    r'))?'
+mount_condition_pattern = rf'({fs_type_pattern})?\s*({option_pattern})?'
 
 # Source can either be
 # - A path          : /foo
 # - A filesystem    : sysfs         (sudo mount -t tmpfs tmpfs /tmp/bar)
 # - Any label       : mntlabel      (sudo mount -t tmpfs mntlabel /tmp/bar)
-source_fileglob_pattern = r"(\s*" + (RE_PROFILE_PATH_OR_VAR % "source_file")[:-1] + "|" + r"\w+" + "))"
-dest_fileglob_pattern = r"(\s*" + RE_PROFILE_PATH_OR_VAR % "dest_file" + ')'
+source_fileglob_pattern = r'(\s*' + (RE_PROFILE_PATH_OR_VAR % 'source_file')[:-1] + r'|' + r'\w+' + r'))'
+dest_fileglob_pattern = r'(\s*' + RE_PROFILE_PATH_OR_VAR % 'dest_file' + r')'
 
-RE_MOUNT_DETAILS = re.compile(r"^\s*" + mount_condition_pattern + rf"(\s+{source_fileglob_pattern})?" + rf"(\s+->\s+{dest_fileglob_pattern})?\s*" +"$")
-RE_UMOUNT_DETAILS = re.compile(r"^\s*" + mount_condition_pattern + rf"(\s+{dest_fileglob_pattern})?\s*" +"$")
+RE_MOUNT_DETAILS = re.compile(r'^\s*' + mount_condition_pattern + rf'(\s+{source_fileglob_pattern})?' + rf'(\s+->\s+{dest_fileglob_pattern})?\s*' + r'$')
+RE_UMOUNT_DETAILS = re.compile(r'^\s*' + mount_condition_pattern + rf'(\s+{dest_fileglob_pattern})?\s*' + r'$')
+
 
 class MountRule(BaseRule):
     '''Class to handle and store a single mount rule'''
@@ -105,9 +106,9 @@ class MountRule(BaseRule):
 
         self.source, self.all_source = self._aare_or_all(source, 'source', is_path=False, log_event=log_event)
 
-        if not self.all_fstype and self.is_fstype_equal not in ("=", "in"):
+        if not self.all_fstype and self.is_fstype_equal not in ('=', 'in'):
             raise AppArmorBug(f'Invalid is_fstype_equal : {self.is_fstype_equal}')
-        if not self.all_options and self.is_options_equal not in ("=", "in"):
+        if not self.all_options and self.is_options_equal not in ('=', 'in'):
             raise AppArmorBug(f'Invalid is_options_equal : {self.is_options_equal}')
         if self.operation != 'mount' and not self.all_source:
             raise AppArmorException(f'Operation {self.operation} cannot have a source')
@@ -119,7 +120,6 @@ class MountRule(BaseRule):
         self.dest, self.all_dest = self._aare_or_all(dest, 'dest', is_path=True, log_event=log_event)
 
         self.can_glob = not self.all_source and not self.all_dest and not self.all_options
-
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):
@@ -133,7 +133,7 @@ class MountRule(BaseRule):
         if matches.group('details'):
             rule_details = matches.group('details')
 
-            if operation == "mount":
+            if operation == 'mount':
                 parsed = RE_MOUNT_DETAILS.search(rule_details)
             else:
                 parsed = RE_UMOUNT_DETAILS.search(rule_details)
@@ -153,7 +153,7 @@ class MountRule(BaseRule):
                 is_options_equal = r['options_equals_or_in']
                 options = strip_parenthesis(r['options']).replace(',', ' ').split()
             else:
-                is_options_equal =None
+                is_options_equal = None
                 options = cls.ALL
 
             if operation == 'mount' and r['source_file'] is not None:  # Umount cannot have a source
@@ -169,10 +169,10 @@ class MountRule(BaseRule):
         else:
             is_fstype_equal = None
             is_options_equal = None
-            fstype  = cls.ALL
+            fstype = cls.ALL
             options = cls.ALL
-            source  = cls.ALL
-            dest    = cls.ALL
+            source = cls.ALL
+            dest = cls.ALL
 
         return cls(operation=operation, fstype=(is_fstype_equal, fstype), options=(is_options_equal, options), source=source, dest=dest, audit=audit, deny=deny, allow_keyword=allow_keyword, comment=comment)
 
@@ -182,29 +182,29 @@ class MountRule(BaseRule):
         fstype = ' fstype%s(%s)' % (wrap_in_with_spaces(self.is_fstype_equal), ', '.join(sorted(self.fstype))) if not self.all_fstype else ''
         options = ' options%s(%s)' % (wrap_in_with_spaces(self.is_options_equal), ', '.join(sorted(self.options))) if not self.all_options else ''
 
-        source = ""
-        dest = ""
+        source = ''
+        dest = ''
 
         if self.operation == 'mount':
             if not self.all_source:
-                source = " " + str(self.source.regex)
+                source = ' ' + str(self.source.regex)
 
             if not self.all_dest:
-                dest = " -> " + str(self.dest.regex)
+                dest = ' -> ' + str(self.dest.regex)
 
         else:
             if not self.all_dest:
-                dest = " " + str(self.dest.regex)
+                dest = ' ' + str(self.dest.regex)
 
-        return ('%s%s%s%s%s%s%s,%s' % ( self.modifiers_str(),
-                                        space,
-                                        self.operation,
-                                        fstype,
-                                        options,
-                                        source,
-                                        dest,
-                                        self.comment,
-        ))
+        return ('%s%s%s%s%s%s%s,%s' % (self.modifiers_str(),
+                                       space,
+                                       self.operation,
+                                       fstype,
+                                       options,
+                                       source,
+                                       dest,
+                                       self.comment,
+                                       ))
 
     def _is_covered_localvars(self, other_rule):
         if self.operation != other_rule.operation:
@@ -251,8 +251,8 @@ class MountRule(BaseRule):
         elif not self.all_source and type(self.source) is not str:
             self.source = self.source.glob_path()
             if self.source.is_equal('/**/'):
-                self.all_source= True
-                self.source=self.ALL
+                self.all_source = True
+                self.source = self.ALL
 
         else:
             self.options = self.ALL
@@ -268,12 +268,13 @@ class MountRule(BaseRule):
 
         return (
             _('Operation'), operation,
-            _('Fstype'), (self.is_fstype_equal, fstype) if fstype != 'ALL' else fstype ,
-            _('Options'), (self.is_options_equal, options) if options != 'ALL'  else options ,
+            _('Fstype'), (self.is_fstype_equal, fstype) if fstype != 'ALL' else fstype,
+            _('Options'), (self.is_options_equal, options) if options != 'ALL' else options,
             _('Source'), source,
             _('Destination'), dest,
 
         )
+
 
 class MountRuleset(BaseRuleset):
     '''Class to handle and store a collection of Mount rules'''
