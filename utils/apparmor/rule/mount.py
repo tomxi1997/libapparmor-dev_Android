@@ -96,13 +96,7 @@ class MountRule(BaseRule):
         self.options, self.all_options, unknown_items = check_and_split_list(options[1] if options != self.ALL else options, flags_keywords, self.ALL, type(self).__name__, 'options')
         self.is_options_equal = options[0] if not self.all_options else None
 
-        if source != self.ALL and source[0].isalpha():
-            self.source = source
-            self.all_source = False
-            self.source_is_path = False
-        else:
-            self.source_is_path = True
-            self.source, self.all_source = self._aare_or_all(source, 'source', is_path=self.source_is_path, log_event=log_event)
+        self.source, self.all_source = self._aare_or_all(source, 'source', is_path=False, log_event=log_event)
 
         if not self.all_fstype and self.is_fstype_equal != "=" and self.is_fstype_equal != "in":
             raise AppArmorBug(f'Invalid is_fstype_equal : {self.is_fstype_equal}')
@@ -212,12 +206,7 @@ class MountRule(BaseRule):
             return False
         if not self._is_covered_list(self.options, self.all_options, other_rule.options, other_rule.all_options, 'options'):
             return False
-        if not self.source_is_path and not other_rule.source_is_path:
-            if self.source != other_rule.source:
-                return False
-        elif self.source_is_path != other_rule.source_is_path:
-            return False
-        elif not self._is_covered_aare(self.source, self.all_source, other_rule.source, other_rule.all_source, 'source'):
+        if not self._is_covered_aare(self.source, self.all_source, other_rule.source, other_rule.all_source, 'source'):
             return False
         if not self._is_covered_aare(self.dest, self.all_dest, other_rule.dest, other_rule.all_dest, 'dest'):
             return False
@@ -233,12 +222,7 @@ class MountRule(BaseRule):
             return False
         if self.fstype != rule_obj.fstype or self.options != rule_obj.options:
             return False
-        if not self.source_is_path and not rule_obj.source_is_path:
-            if self.source != rule_obj.source:
-                return False
-        elif self.source_is_path != rule_obj.source_is_path:
-            return False
-        elif not self._is_equal_aare(self.source, self.all_source, rule_obj.source, rule_obj.all_source, 'source'):
+        if not self._is_equal_aare(self.source, self.all_source, rule_obj.source, rule_obj.all_source, 'source'):
             return False
         if not self._is_equal_aare(self.dest, self.all_dest, rule_obj.dest, rule_obj.all_dest, 'dest'):
             return False
