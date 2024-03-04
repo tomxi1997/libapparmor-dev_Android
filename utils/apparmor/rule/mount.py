@@ -48,13 +48,13 @@ join_valid_fs = '|'.join(valid_fs)
 sep = r"\s*[\s,]\s*"
 
 fs_type_pattern = r"\b(?P<fstype_or_vfstype>fstype|vfstype)\b\s*(?P<fstype_equals_or_in>=|in)\s*"\
-        r"(?P<fstype>\(\s*(" + join_valid_fs + ")(" + sep + "(" + join_valid_fs + "))*\s*\)|"\
+        r"(?P<fstype>\(\s*(" + join_valid_fs + ")(" + sep + "(" + join_valid_fs + r"))*\s*\)|"\
         r"\{\s*(" + join_valid_fs + ")(" + sep + "(" + join_valid_fs + r"))*\s*\}|(\s*" + join_valid_fs + "))"\
 
 
 option_pattern = r"\s*(\boption(s?)\b\s*(?P<options_equals_or_in>=|in)\s*"\
         r"(?P<options>\(\s*(" + join_valid_flags + ")(" + sep + "(" + join_valid_flags + r"))*\s*\)|" \
-        "(\s*" + join_valid_flags + ")"\
+        r"(\s*" + join_valid_flags + ")"\
         "))?"
 mount_condition_pattern = rf"({fs_type_pattern})?\s*({option_pattern})?"
 
