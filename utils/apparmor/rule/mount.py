@@ -104,9 +104,9 @@ class MountRule(BaseRule):
             self.source_is_path = True
             self.source, self.all_source = self._aare_or_all(source, 'source', is_path=self.source_is_path, log_event=log_event)
 
-        if not self.all_fstype and self.is_fstype_equal != "=" and self.is_fstype_equal != "in":
+        if not self.all_fstype and self.is_fstype_equal not in ("=", "in"):
             raise AppArmorBug(f'Invalid is_fstype_equal : {self.is_fstype_equal}')
-        if not self.all_options and self.is_options_equal != "=" and self.is_options_equal != "in":
+        if not self.all_options and self.is_options_equal not in ("=", "in"):
             raise AppArmorBug(f'Invalid is_options_equal : {self.is_options_equal}')
         if self.operation != 'mount' and not self.all_source:
             raise AppArmorException(f'Operation {self.operation} cannot have a source')
@@ -178,28 +178,32 @@ class MountRule(BaseRule):
     def get_clean(self, depth=0):
         space = '  ' * depth
 
-        fstype = ' fstype%s(%s)' % (self.is_fstype_equal, ', '.join(sorted(self.fstype))) if not self.all_fstype else ''
-        options = ' options%s(%s)' % (self.is_options_equal, ', '.join(sorted(self.options))) if not self.all_options else ''
+        fstype = ' fstype%s(%s)' % (wrap_in_with_spaces(self.is_fstype_equal), ', '.join(sorted(self.fstype))) if not self.all_fstype else ''
+        options = ' options%s(%s)' % (wrap_in_with_spaces(self.is_options_equal), ', '.join(sorted(self.options))) if not self.all_options else ''
+
+        source = ""
+        dest = ""
 
         if self.operation == 'mount':
-            return ('%s%s%s%s%s%s%s,%s' % ( self.modifiers_str(),
-                                            space,
-                                            self.operation,
-                                            fstype,
-                                            options,
-                                            " " + str(self.source.regex) if not self.all_source else '',
-                                            " -> " + str(self.dest.regex) if not self.all_dest else '',
-                                            self.comment,
-            ))
+            if not self.all_source:
+                source = " " + str(self.source.regex)
+
+            if not self.all_dest:
+                dest = " -> " + str(self.dest.regex)
+
         else:
-            return ('%s%s%s%s%s%s,%s' % (   self.modifiers_str(),
-                                            space,
-                                            self.operation,
-                                            fstype,
-                                            options,
-                                            " " + str(self.dest.regex) if not self.all_dest else '',
-                                            self.comment,
-            ))
+            if not self.all_dest:
+                dest = " " + str(self.dest.regex)
+
+        return ('%s%s%s%s%s%s%s,%s' % ( self.modifiers_str(),
+                                        space,
+                                        self.operation,
+                                        fstype,
+                                        options,
+                                        source,
+                                        dest,
+                                        self.comment,
+        ))
 
     def _is_covered_localvars(self, other_rule):
         if self.operation != other_rule.operation:
@@ -284,4 +288,10 @@ class MountRuleset(BaseRuleset):
     '''Class to handle and store a collection of Mount rules'''
 
 
+def wrap_in_with_spaces(value):
+    ''' wrap 'in' keyword in spaces, and leave everything else unchanged '''
 
+    if value == 'in':
+        value = ' in '
+
+    return value
