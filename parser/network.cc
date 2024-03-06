@@ -612,10 +612,10 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
 	}
 
-	if (!features_supports_inet) {
+	if (!features_supports_inet || (family != AF_INET && family != AF_INET6)) {
 		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(AA_VALID_NET_PERMS),
-						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(AA_VALID_NET_PERMS) : 0,
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
+						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 						 parseopts))
 			return false;
 		return true;
