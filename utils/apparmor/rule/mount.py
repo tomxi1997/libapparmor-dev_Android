@@ -16,7 +16,7 @@ import re
 from apparmor.common import AppArmorBug, AppArmorException
 
 from apparmor.regex import RE_PROFILE_MOUNT, RE_PROFILE_PATH_OR_VAR, strip_parenthesis
-# from apparmor.rule import AARE
+from apparmor.rule import AARE
 from apparmor.rule import BaseRule, BaseRuleset, parse_modifiers, logprof_value_or_all, check_and_split_list
 
 from apparmor.translations import init_translation
@@ -25,7 +25,7 @@ _ = init_translation()
 
 # TODO :
 #   - match correctly AARE on every field
-#   - Find the actual list of supported filesystems. This one comes from /proc/filesystems
+#   - Find the actual list of supported filesystems. This one comes from /proc/filesystems. We also blindly accept fuse.*
 #   - Support path that begin by { (e.g. {,/usr}/lib/...) This syntax is not a valid AARE but is used by usr.lib.snapd.snap-confine.real in Ubuntu and will currently raise an error in genprof if these lines are not modified.
 #   - Apparmor remount logs are displayed as mount (with remount flag). Profiles generated with aa-genprof are therefore mount rules. It could be interesting to make them remount rules.
 
@@ -33,8 +33,10 @@ valid_fs = [
     'sysfs', 'tmpfs', 'bdevfs', 'procfs', 'cgroup', 'cgroup2', 'cpuset', 'devtmpfs', 'configfs', 'debugfs', 'tracefs',
     'securityfs', 'sockfs', 'bpf', 'npipefs', 'ramfs', 'hugetlbfs', 'devpts', 'ext3', 'ext2', 'ext4', 'squashfs',
     'vfat', 'ecryptfs', 'fuseblk', 'fuse', 'fusectl', 'efivarfs', 'mqueue', 'store', 'autofs', 'binfmt_misc', 'overlay',
-    'none', 'bdev', 'proc', 'pipefs', 'pstore', 'btrfs', 'xfs', '9p',
+    'none', 'bdev', 'proc', 'pipefs', 'pstore', 'btrfs', 'xfs', '9p', 'resctrl', 'zfs', 'iso9660', 'udf', 'ntfs3',
+    'nfs', 'cifs',
 ]
+
 flags_keywords = [
     # keep in sync with parser/mount.cc mnt_opts_table!
     'ro', 'r', 'read-only', 'rw', 'w', 'suid', 'nosuid', 'dev', 'nodev', 'exec', 'noexec', 'sync', 'async', 'remount',
@@ -43,16 +45,19 @@ flags_keywords = [
     'make-runbindable', 'private', 'make-private', 'rprivate', 'make-rprivate', 'slave', 'make-slave', 'rslave', 'make-rslave',
     'shared', 'make-shared', 'rshared', 'make-rshared', 'relatime', 'norelatime', 'iversion', 'noiversion', 'strictatime',
     'nostrictatime', 'lazytime', 'nolazytime', 'user', 'nouser',
-    '([A-Za-z0-9]|AARE)',  # TODO: handle AARE
+    '([A-Za-z0-9])',
 ]
 join_valid_flags = '|'.join(flags_keywords)
 join_valid_fs = '|'.join(valid_fs)
 
 sep = r'\s*[\s,]\s*'
 
+# We aim to be a bit more restrictive than \S+ used in regex.py
+FS_AARE = r'([][".*@{}\w^-]+)'
+
 fs_type_pattern = r'\b(?P<fstype_or_vfstype>fstype|vfstype)\b\s*(?P<fstype_equals_or_in>=|in)\s*'\
-    r'(?P<fstype>\(\s*(' + join_valid_fs + r')(' + sep + r'(' + join_valid_fs + r'))*\s*\)|'\
-    r'\{\s*(' + join_valid_fs + r')(' + sep + r'(' + join_valid_fs + r'))*\s*\}|(\s*' + join_valid_fs + r'))'\
+    r'(?P<fstype>\(\s*(' + FS_AARE + r')(' + sep + r'(' + FS_AARE + r'))*\s*\)|'\
+    r'\{\s*(' + FS_AARE + r')(' + sep + r'(' + FS_AARE + r'))*\s*\}|(\s*' + FS_AARE + r'))'\
 
 
 option_pattern = r'\s*(\boption(s?)\b\s*(?P<options_equals_or_in>=|in)\s*'\
@@ -63,9 +68,12 @@ mount_condition_pattern = rf'({fs_type_pattern})?\s*({option_pattern})?'
 
 # Source can either be
 # - A path          : /foo
+# - A globbed Path  : {,/usr}/lib{,32,64,x32}/modules/
 # - A filesystem    : sysfs         (sudo mount -t tmpfs tmpfs /tmp/bar)
 # - Any label       : mntlabel      (sudo mount -t tmpfs mntlabel /tmp/bar)
-source_fileglob_pattern = r'(\s*' + (RE_PROFILE_PATH_OR_VAR % 'source_file')[:-1] + r'|' + r'\w+' + r'))'
+# Thus we cannot use directly RE_PROFILE_PATH_OR_VAR
+
+source_fileglob_pattern = r'(\s*(?P<source_file>([/{]\S*|"[/{][^"]*"|@{\S+}\S*|"@{\S+}[^"]*")|\w+))'
 dest_fileglob_pattern = r'(\s*' + RE_PROFILE_PATH_OR_VAR % 'dest_file' + r')'
 
 RE_MOUNT_DETAILS = re.compile(r'^\s*' + mount_condition_pattern + rf'(\s+{source_fileglob_pattern})?' + rf'(\s+->\s+{dest_fileglob_pattern})?\s*' + r'$')
@@ -95,8 +103,25 @@ class MountRule(BaseRule):
         self.operation = operation
 
         self.fstype, self.all_fstype, unknown_items = check_and_split_list(fstype[1] if fstype != self.ALL else fstype, valid_fs, self.ALL, type(self).__name__, 'fstype')
+
         if unknown_items:
-            raise AppArmorException(_('Passed unknown fstype keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
+            for it in unknown_items:
+
+                # Several filesystems use fuse internally and are referred as fuse.<software_name> (e.g. fuse.jmtpfs, fuse.s3fs, fuse.obexfs).
+                # Since this list seems to evolve too fast for a fixed list to work in practice, we just accept fuse.*
+                # See https://github.com/libfuse/libfuse/wiki/Filesystems and, https://doc.ubuntu-fr.org/fuse
+                if it.startswith('fuse.') and len(it) > 5:
+                    continue
+
+                it = AARE(it, is_path=False)
+                found = False
+                for fs in valid_fs:
+                    if self._is_covered_aare(it, self.all_fstype, AARE(fs, False), self.all_fstype, 'fstype'):
+                        found = True
+                        break
+                if not found:
+                    raise AppArmorException(_('Passed unknown fstype keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
+
         self.is_fstype_equal = fstype[0] if not self.all_fstype else None
 
         self.options, self.all_options, unknown_items = check_and_split_list(options[1] if options != self.ALL else options, flags_keywords, self.ALL, type(self).__name__, 'options')
@@ -213,8 +238,14 @@ class MountRule(BaseRule):
             return False
         if self.is_options_equal != other_rule.is_options_equal:
             return False
-        if not self._is_covered_list(self.fstype, self.all_fstype, other_rule.fstype, other_rule.all_fstype, 'fstype'):
-            return False
+        for o_it in other_rule.fstype:
+            found = False
+            for s_it in self.fstype:
+                if self._is_covered_aare(AARE(s_it, False), self.all_fstype, AARE(o_it, False), other_rule.all_fstype, 'fstype'):
+                    found = True
+
+            if not found:
+                return False
         if not self._is_covered_list(self.options, self.all_options, other_rule.options, other_rule.all_options, 'options'):
             return False
         if not self._is_covered_aare(self.source, self.all_source, other_rule.source, other_rule.all_source, 'source'):
