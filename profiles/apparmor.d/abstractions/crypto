@@ -24,4 +24,8 @@
   /etc/crypto-policies/*/*.txt r,
   /usr/share/crypto-policies/*/*.txt r,
 
+  # Global gnutls config
+  @{etc_ro}/gnutls/config r,
+  @{etc_ro}/gnutls/pkcs11.conf r,
+
   include if exists <abstractions/crypto.d>
