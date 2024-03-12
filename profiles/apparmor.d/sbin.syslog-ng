@@ -22,7 +22,6 @@ profile syslog-ng /{usr/,}{bin,sbin}/syslog-ng {
   include <abstractions/consoles>
   include <abstractions/nameservice>
   include <abstractions/mysql>
-  include <abstractions/openssl>
   include <abstractions/python>
   include <abstractions/hosts_access>
 

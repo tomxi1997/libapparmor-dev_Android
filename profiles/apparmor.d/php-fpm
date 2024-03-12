@@ -11,8 +11,6 @@ profile php-fpm /usr/sbin/php-fpm* flags=(attach_disconnected) {
   include <abstractions/nameservice>
   # common php files and support files that php needs
   include <abstractions/php>
-  # read openssl configuration
-  include <abstractions/openssl>
   # read the system certificates
   include <abstractions/ssl_certs>
 

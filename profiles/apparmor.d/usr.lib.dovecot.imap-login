@@ -17,7 +17,6 @@ include <tunables/global>
 profile dovecot-imap-login /usr/lib*/dovecot/imap-login {
   include <abstractions/base>
   include <abstractions/dovecot-common>
-  include <abstractions/openssl>
 
   capability setuid,
   capability sys_chroot,

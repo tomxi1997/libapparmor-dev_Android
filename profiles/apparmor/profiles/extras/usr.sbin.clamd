@@ -13,7 +13,6 @@ include <tunables/global>
 profile clamd /usr/sbin/clamd {
   include <abstractions/base>
   include <abstractions/nameservice>
-  include <abstractions/openssl>
 
   capability setgid,
   capability setuid,

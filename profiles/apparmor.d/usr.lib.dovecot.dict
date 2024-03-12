@@ -17,7 +17,6 @@ profile dovecot-dict /usr/lib*/dovecot/dict {
   include <abstractions/base>
   include <abstractions/mysql>
   include <abstractions/nameservice>
-  include <abstractions/openssl>
   include <abstractions/dovecot-common>
 
   capability setuid,
