@@ -18,7 +18,6 @@ profile postfix-smtp /usr/lib/postfix/{bin/,sbin/,}smtp {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/postfix-common>
-  include <abstractions/openssl>
 
   capability dac_override,
   capability dac_read_search,

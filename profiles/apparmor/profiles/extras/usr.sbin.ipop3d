@@ -17,7 +17,6 @@ include <tunables/global>
   include <abstractions/nameservice>
   include <abstractions/authentication>
   include <abstractions/user-mail>
-  include <abstractions/openssl>
 
   /dev/urandom                           r     ,
   /tmp/.*                                rwl   ,

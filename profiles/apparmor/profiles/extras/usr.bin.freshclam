@@ -17,7 +17,6 @@ include <tunables/global>
   include <abstractions/base>
   include <abstractions/consoles>
   include <abstractions/nameservice>
-  include <abstractions/openssl>
 
   capability setgid,
   capability setuid,

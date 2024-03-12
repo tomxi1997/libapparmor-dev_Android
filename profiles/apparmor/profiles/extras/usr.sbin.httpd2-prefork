@@ -20,7 +20,6 @@ include <tunables/global>
   include <abstractions/kerberosclient>
   include <abstractions/nameservice>
   include <abstractions/perl>
-  include <abstractions/openssl>
 
   capability kill,
   capability net_bind_service,

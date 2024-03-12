@@ -18,7 +18,6 @@ profile dovecot-lmtp /usr/lib*/dovecot/lmtp {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/dovecot-common>
-  include <abstractions/openssl>
   include <abstractions/ssl_certs>
   include <abstractions/ssl_keys>
 

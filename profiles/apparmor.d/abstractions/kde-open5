@@ -50,7 +50,6 @@
   include <abstractions/kde-icon-cache-write>
   include <abstractions/kde>
   include <abstractions/nameservice> # for IceProcessMessages () from libICE.so (called by libQtCore.so)
-  include <abstractions/openssl>
   include <abstractions/qt5>
   include <abstractions/recent-documents-write>
   include <abstractions/X>

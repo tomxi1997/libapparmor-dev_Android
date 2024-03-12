@@ -19,7 +19,6 @@ include <tunables/global>
 profile dovecot-managesieve-login /usr/lib*/dovecot/managesieve-login {
   include <abstractions/base>
   include <abstractions/dovecot-common>
-  include <abstractions/openssl>
 
   capability setuid,
   capability sys_chroot,

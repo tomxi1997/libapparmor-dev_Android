@@ -26,7 +26,6 @@ include <tunables/global>
 profile dhclient /{usr/,}sbin/dhclient {
   include <abstractions/base>
   include <abstractions/bash>
-  include <abstractions/openssl>
   include <abstractions/nameservice>
 
   capability net_raw,

@@ -17,7 +17,6 @@ include <tunables/global>
 profile postfix-proxymap /usr/lib/postfix/{bin/,sbin/,}proxymap {
   include <abstractions/base>
   include <abstractions/nameservice>
-  include <abstractions/openssl>
   include <abstractions/postfix-common>
 
   /etc/my.cnf r,
