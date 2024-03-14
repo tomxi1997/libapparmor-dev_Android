@@ -49,7 +49,6 @@ profile smbd /usr/{bin,sbin}/smbd {
   /usr/share/samba/** r,
   /usr/{bin,sbin}/smbd mr,
   /usr/{bin,sbin}/smbldap-useradd Px,
-  /usr/sbin/unix_chkpwd Px,
   /var/cache/samba/** rwk,
   /var/{cache,lib}/samba/printing/printers.tdb mrw,
   /var/lib/nscd/netgroup r,
@@ -61,8 +60,6 @@ profile smbd /usr/{bin,sbin}/smbd {
   @{run}/samba/ncalrpc/ rw,
   @{run}/samba/ncalrpc/** rw,
   /var/spool/samba/** rw,
-
-  owner /proc/@{pid}/loginuid r,
 
   @{HOMEDIRS}/** lrwk,
   /var/lib/samba/usershares/{,**} lrwk,
