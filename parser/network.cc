@@ -360,6 +360,10 @@ bool network_rule::parse_port(ip_conds &entry)
 
 bool network_rule::parse_address(ip_conds &entry)
 {
+	if (strcmp(entry.sip, "anon") == 0) {
+		entry.is_anonymous = true;
+		return true;
+	}
 	entry.is_ip = true;
 	return parse_ip(entry.sip, &entry.ip);
 }
@@ -616,14 +620,14 @@ std::list<std::ostringstream> copy_streams_list(std::list<std::ostringstream> &s
 	return streams_copy;
 }
 
-bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds entry, bool is_peer, bool is_cmd)
+bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd)
 {
 	std::string buf;
 	perms_t cond_perms;
 	std::list<std::ostringstream> ip_streams;
 
 	for (auto &oss : streams) {
-		if (entry.is_port) {
+		if (entry.is_port && !(entry.is_ip && entry.is_anonymous)) {
 			/* encode port type (privileged - 1, remote - 2, unprivileged - 0) */
 			if (!is_peer && perms & AA_NET_BIND && entry.port < IPPORT_RESERVED)
 				oss << "\\x01";
@@ -646,6 +650,9 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 		if (entry.is_ip) {
 			oss << gen_ip_cond(entry.ip);
 			streams.push_back(std::move(oss));
+		} else if (entry.is_anonymous) {
+			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ANON_SIZE;
+			streams.push_back(std::move(oss));
 		} else {
 			streams.splice(streams.end(), gen_all_ip_options(oss));
 		}
@@ -665,9 +672,9 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 						 parseopts))
 			return false;
 
-		if (label) {
-			if (is_peer)
-				cond_perms = (AA_CONT_MATCH << 1);
+		if (label || is_peer) {
+			if (!is_peer)
+				cond_perms = map_perms(perms);
 
 			oss << default_match_pattern; /* label - not used for now */
 			oss << "\\x00"; /* null transition */

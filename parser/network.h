@@ -132,6 +132,8 @@ public:
 	uint16_t port;
 	struct ip_address ip;
 
+	bool is_anonymous = false;
+
 	void free_conds() {
 		if (sip)
 			free(sip);
@@ -184,7 +186,7 @@ public:
 		}
 	};
 
-	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds entry, bool is_peer, bool is_cmd);
+	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd);
 	bool gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol);
 	void set_netperm(unsigned int family, unsigned int type, unsigned int protocol);
 	void update_compat_net(void);
