@@ -890,6 +890,17 @@ void network_rule::update_compat_net(void)
 	}
 }
 
+static int cmp_ip_conds(ip_conds const &lhs, ip_conds const &rhs)
+{
+	int res = null_strcmp(lhs.sip, rhs.sip);
+	if (res)
+		return res;
+	res = null_strcmp(lhs.sport, rhs.sport);
+	if (res)
+		return res;
+	return lhs.is_anonymous - rhs.is_anonymous;
+}
+
 static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> lhs,
 			   std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> rhs)
 {
@@ -912,5 +923,14 @@ int network_rule::cmp(rule_t const &rhs) const
 	if (res)
 		return res;
 	network_rule const &nrhs = rule_cast<network_rule const &>(rhs);
-	return cmp_network_map(network_perms, nrhs.network_perms);
+	res = cmp_network_map(network_perms, nrhs.network_perms);
+	if (res)
+		return res;
+	res = cmp_ip_conds(local, nrhs.local);
+	if (res)
+		return res;
+	res = cmp_ip_conds(peer, nrhs.peer);
+	if (res)
+		return res;
+	return null_strcmp(label, nrhs.label);
 };
