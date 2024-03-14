@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <list>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -183,7 +184,7 @@ public:
 		}
 	};
 
-	void gen_ip_conds(std::ostringstream &oss, ip_conds entry, bool is_peer, bool is_cmd);
+	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds entry, bool is_peer, bool is_cmd);
 	bool gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol);
 	void set_netperm(unsigned int family, unsigned int type, unsigned int protocol);
 	void update_compat_net(void);
