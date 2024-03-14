@@ -552,14 +552,14 @@ std::string gen_ip_cond(const struct ip_address ip)
 	int i;
 	if (ip.family == AF_INET) {
 		/* add a byte containing the size of the following ip */
-		oss << "\\x04";
+		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV4_SIZE;
 
 		u8 *byte = (u8 *) &ip.address.address_v4; /* in network byte order */
 		for (i = 0; i < 4; i++)
 			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(byte[i]);
 	} else {
 		/* add a byte containing the size of the following ip */
-		oss << "\\x10";
+		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV6_SIZE;
 		for (i = 0; i < 16; ++i)
 			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(ip.address.address_v6[i]);
 	}
@@ -601,7 +601,7 @@ void network_rule::gen_ip_conds(std::ostringstream &oss, ip_conds entry, bool is
 		oss << gen_ip_cond(entry.ip);
 	} else {
 		/* encode 0 to indicate there's no ip (ip size) */
-		oss << "\\x00";
+		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ANON_SIZE;
 	}
 
 	oss << "\\-x01"; /* oob separator */

@@ -79,6 +79,10 @@
 #define CMD_LISTEN	2
 #define CMD_OPT		4
 
+#define ANON_SIZE	0
+#define IPV4_SIZE	1
+#define IPV6_SIZE	2
+
 struct network_tuple {
 	const char *family_name;
 	unsigned int family;
