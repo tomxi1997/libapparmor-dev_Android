@@ -243,6 +243,12 @@ class MountIsCoveredTest(AATest):
         self.assertFalse(obj.is_covered(MountRule(*test)))
         self.assertFalse(obj.is_equal(MountRule(*test)))
 
+    def test_is_not_covered_fs_options(self):
+        obj = MountRule('mount', MountRule.ALL, ('=', ('ro')), 'tmpfs', MountRule.ALL)
+        test = ('mount', MountRule.ALL, ('=', ('rw')), 'procfs', MountRule.ALL)
+        self.assertFalse(obj.is_covered(MountRule(*test)))
+        self.assertFalse(obj.is_equal(MountRule(*test)))
+
 
 setup_all_loops(__name__)
 if __name__ == '__main__':
