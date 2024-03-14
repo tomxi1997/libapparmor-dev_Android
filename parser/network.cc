@@ -399,7 +399,7 @@ void network_rule::set_netperm(unsigned int family, unsigned int type, unsigned 
 
 network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
-	dedup_perms_rule_t(AA_CLASS_NETV8)
+	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
@@ -426,7 +426,7 @@ network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
 network_rule::network_rule(perms_t perms_p, const char *family, const char *type,
 			   const char *protocol, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
-	dedup_perms_rule_t(AA_CLASS_NETV8)
+	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
 	const struct network_tuple *mapping = NULL;
 	while ((mapping = net_find_mapping(mapping, family, type, protocol))) {
@@ -461,7 +461,7 @@ network_rule::network_rule(perms_t perms_p, const char *family, const char *type
 }
 
 network_rule::network_rule(perms_t perms_p, unsigned int family, unsigned int type):
-	dedup_perms_rule_t(AA_CLASS_NETV8)
+	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
 	set_netperm(family, type, 0xFFFFFFFF);

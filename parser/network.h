@@ -147,6 +147,7 @@ public:
 
 	ip_conds peer;
 	ip_conds local;
+	char *label;
 
 	bool has_local_conds(void) { return local.sip || local.sport; }
 	bool has_peer_conds(void) { return peer.sip || peer.sport; }
