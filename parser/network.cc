@@ -632,6 +632,14 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 		return true;
 	}
 
+	buf = buffer.str();
+	/* create perms need to be generated excluding the rest of the perms */
+	if (perms & AA_NET_CREATE) {
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms & AA_NET_CREATE) | (AA_CONT_MATCH << 1),
+						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms & AA_NET_CREATE) : 0,
+						 parseopts))
+			return false;
+	}
 
 	/* encode protocol */
 	if (protocol > 0xffff) {
