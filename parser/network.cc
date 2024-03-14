@@ -252,6 +252,19 @@ const char *net_find_af_name(unsigned int af)
 	return NULL;
 }
 
+const char *net_find_protocol_name(unsigned int protocol)
+{
+	size_t i;
+
+	for (i = 0; i < sizeof(network_mappings) / sizeof(*network_mappings); i++) {
+		if (network_mappings[i].protocol == protocol) {
+			return network_mappings[i].protocol_name;
+		}
+	}
+
+	return NULL;
+}
+
 const struct network_tuple *net_find_mapping(const struct network_tuple *map,
 					     const char *family,
 					     const char *type,
@@ -374,13 +387,14 @@ void network_rule::move_conditionals(struct cond_entry *conds, ip_conds &ip_cond
 	}
 }
 
-void network_rule::set_netperm(unsigned int family, unsigned int type)
+void network_rule::set_netperm(unsigned int family, unsigned int type, unsigned int protocol)
 {
 	if (type > SOCK_PACKET) {
 		/* setting mask instead of a bit */
-		network_perms[family] |= type;
+		network_perms[family].first |= type;
 	} else
-		network_perms[family] |= 1 << type;
+		network_perms[family].first |= 1 << type;
+	network_perms[family].second |= protocol;
 }
 
 network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
@@ -390,7 +404,7 @@ network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
 		network_map[family_index].push_back({ family_index, 0xFFFFFFFF, 0xFFFFFFFF });
-		set_netperm(family_index, 0xFFFFFFFF);
+		set_netperm(family_index, 0xFFFFFFFF, 0xFFFFFFFF);
 	}
 
 	move_conditionals(conds, local);
@@ -417,13 +431,13 @@ network_rule::network_rule(perms_t perms_p, const char *family, const char *type
 	const struct network_tuple *mapping = NULL;
 	while ((mapping = net_find_mapping(mapping, family, type, protocol))) {
 		network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
-		set_netperm(mapping->family, mapping->type);
+		set_netperm(mapping->family, mapping->type, mapping->protocol);
 	}
 
 	if (type == NULL && network_map.empty()) {
 		while ((mapping = net_find_mapping(mapping, type, family, protocol))) {
 			network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
-			set_netperm(mapping->family, mapping->type);
+			set_netperm(mapping->family, mapping->type, mapping->protocol);
 		}
 	}
 
@@ -450,7 +464,7 @@ network_rule::network_rule(perms_t perms_p, unsigned int family, unsigned int ty
 	dedup_perms_rule_t(AA_CLASS_NETV8)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
-	set_netperm(family, type);
+	set_netperm(family, type, 0xFFFFFFFF);
 
 	if (perms_p) {
 		perms = perms_p;
@@ -479,7 +493,8 @@ ostream &network_rule::dump(ostream &os)
 
 	for (const auto& perm : network_perms) {
 		unsigned int family = perm.first;
-		unsigned int type = perm.second;
+		unsigned int type = perm.second.first;
+		unsigned int protocol = perm.second.second;
 
 		const char *family_name = net_find_af_name(family);
 		if (family_name)
@@ -507,6 +522,12 @@ ostream &network_rule::dump(ostream &os)
 			os << " #" << std::hex << (type & mask);
 
 		printf(" }");
+
+		const char *protocol_name = net_find_protocol_name(protocol);
+		if (protocol_name)
+			os << " " << protocol_name;
+		else
+			os << " #" << protocol;
 	}
 
 	os << ",\n";
@@ -559,16 +580,6 @@ std::string gen_port_cond(uint16_t port)
 
 void network_rule::gen_ip_conds(std::ostringstream &oss, ip_conds entry, bool is_peer, bool is_cmd)
 {
-	/* encode protocol */
-	if (!is_cmd) {
-		if (entry.is_ip) {
-			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((entry.ip.family & 0xff00) >> 8);
-			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (entry.ip.family & 0xff);
-		} else {
-			oss << "..";
-		}
-	}
-
 	if (entry.is_port) {
 		/* encode port type (privileged - 1, remote - 2, unprivileged - 0) */
 		if (!is_peer && perms & AA_NET_BIND && entry.port < IPPORT_RESERVED)
@@ -598,7 +609,7 @@ void network_rule::gen_ip_conds(std::ostringstream &oss, ip_conds entry, bool is
 	oss << "\\x00"; /* null transition */
 }
 
-bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mask) {
+bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol) {
 	std::ostringstream buffer;
 	std::string buf;
 
@@ -619,6 +630,15 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 						 parseopts))
 			return false;
 		return true;
+	}
+
+
+	/* encode protocol */
+	if (protocol > 0xffff) {
+		buffer << "..";
+	} else {
+		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((protocol & 0xff00) >> 8);
+		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (protocol & 0xff);
 	}
 
 	if (perms & AA_PEER_NET_PERMS) {
@@ -679,17 +699,18 @@ int network_rule::gen_policy_re(Profile &prof)
 
 	for (const auto& perm : network_perms) {
 		unsigned int family = perm.first;
-		unsigned int type = perm.second;
+		unsigned int type = perm.second.first;
+		unsigned int protocol = perm.second.second;
 
 		if (type > 0xffff) {
-			if (!gen_net_rule(prof, family, type))
+			if (!gen_net_rule(prof, family, type, protocol))
 				goto fail;
 		} else {
 			int t;
 			/* generate rules for types that are set */
 			for (t = 0; t < 16; t++) {
 				if (type & (1 << t)) {
-					if (!gen_net_rule(prof, family, t))
+					if (!gen_net_rule(prof, family, t, protocol))
 						goto fail;
 				}
 			}
@@ -760,13 +781,16 @@ void network_rule::update_compat_net(void)
 	}
 }
 
-static int cmp_network_map(std::unordered_map<unsigned int, perms_t> lhs,
-			   std::unordered_map<unsigned int, perms_t> rhs)
+static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> lhs,
+			   std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> rhs)
 {
 	int res;
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
-		res = lhs[family_index] - rhs[family_index];
+		res = lhs[family_index].first - rhs[family_index].first;
+		if (res)
+			return res;
+		res = lhs[family_index].second - rhs[family_index].second;
 		if (res)
 			return res;
 	}
