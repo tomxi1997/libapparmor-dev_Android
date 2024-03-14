@@ -238,9 +238,10 @@ class MountRule(BaseRule):
             return False
         if self.is_options_equal != other_rule.is_options_equal:
             return False
-        for o_it in other_rule.fstype:
+
+        for o_it in other_rule.fstype or []:
             found = False
-            for s_it in self.fstype:
+            for s_it in self.fstype or []:
                 if self._is_covered_aare(AARE(s_it, False), self.all_fstype, AARE(o_it, False), other_rule.all_fstype, 'fstype'):
                     found = True
 
