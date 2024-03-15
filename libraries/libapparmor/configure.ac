@@ -93,7 +93,7 @@ if test "$ac_cv_prog_cc_c99" = "no"; then
 fi
 
 m4_ifndef([AX_CHECK_COMPILE_FLAG], [AC_MSG_ERROR(['autoconf-archive' missing])])
-EXTRA_CFLAGS="-Wall $(EXTRA_WARNINGS) -fPIC"
+EXTRA_CFLAGS="-Wall $EXTRA_WARNINGS -fPIC"
 AX_CHECK_COMPILE_FLAG([-flto-partition=none], , , [-Werror])
 AS_VAR_IF([ax_cv_check_cflags__Werror__flto_partition_none], [yes],
 	[EXTRA_CFLAGS="$EXTRA_CFLAGS -flto-partition=none"]
