@@ -921,7 +921,7 @@ void set_supported_features()
 							 "network_v8");
 	features_supports_inet = features_intersect(kernel_features,
 						    policy_features,
-						    "network/af_inet");
+						    "network_v8/af_inet");
 	features_supports_unix = features_intersect(kernel_features,
 						    policy_features,
 						    "network/af_unix");
