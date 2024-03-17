@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <list>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -79,6 +80,10 @@
 #define CMD_LISTEN	2
 #define CMD_OPT		4
 
+#define ANON_SIZE	0
+#define IPV4_SIZE	1
+#define IPV6_SIZE	2
+
 struct network_tuple {
 	const char *family_name;
 	unsigned int family;
@@ -127,6 +132,8 @@ public:
 	uint16_t port;
 	struct ip_address ip;
 
+	bool is_anonymous = false;
+
 	void free_conds() {
 		if (sip)
 			free(sip);
@@ -139,10 +146,11 @@ class network_rule: public dedup_perms_rule_t {
 	void move_conditionals(struct cond_entry *conds, ip_conds &ip_cond);
 public:
 	std::unordered_map<unsigned int, std::vector<struct aa_network_entry>> network_map;
-	std::unordered_map<unsigned int, perms_t> network_perms;
+	std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> network_perms;
 
 	ip_conds peer;
 	ip_conds local;
+	char *label;
 
 	bool has_local_conds(void) { return local.sip || local.sport; }
 	bool has_peer_conds(void) { return peer.sip || peer.sport; }
@@ -178,9 +186,9 @@ public:
 		}
 	};
 
-	void gen_ip_conds(std::ostringstream &oss, ip_conds entry, bool is_peer, bool is_cmd);
-	bool gen_net_rule(Profile &prof, u16 family, unsigned int type_mask);
-	void set_netperm(unsigned int family, unsigned int type);
+	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd);
+	bool gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol);
+	void set_netperm(unsigned int family, unsigned int type, unsigned int protocol);
 	void update_compat_net(void);
 	bool parse_address(ip_conds &entry);
 	bool parse_port(ip_conds &entry);

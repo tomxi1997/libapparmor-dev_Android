@@ -252,6 +252,19 @@ const char *net_find_af_name(unsigned int af)
 	return NULL;
 }
 
+const char *net_find_protocol_name(unsigned int protocol)
+{
+	size_t i;
+
+	for (i = 0; i < sizeof(network_mappings) / sizeof(*network_mappings); i++) {
+		if (network_mappings[i].protocol == protocol) {
+			return network_mappings[i].protocol_name;
+		}
+	}
+
+	return NULL;
+}
+
 const struct network_tuple *net_find_mapping(const struct network_tuple *map,
 					     const char *family,
 					     const char *type,
@@ -347,6 +360,10 @@ bool network_rule::parse_port(ip_conds &entry)
 
 bool network_rule::parse_address(ip_conds &entry)
 {
+	if (strcmp(entry.sip, "anon") == 0) {
+		entry.is_anonymous = true;
+		return true;
+	}
 	entry.is_ip = true;
 	return parse_ip(entry.sip, &entry.ip);
 }
@@ -374,23 +391,24 @@ void network_rule::move_conditionals(struct cond_entry *conds, ip_conds &ip_cond
 	}
 }
 
-void network_rule::set_netperm(unsigned int family, unsigned int type)
+void network_rule::set_netperm(unsigned int family, unsigned int type, unsigned int protocol)
 {
 	if (type > SOCK_PACKET) {
 		/* setting mask instead of a bit */
-		network_perms[family] |= type;
+		network_perms[family].first |= type;
 	} else
-		network_perms[family] |= 1 << type;
+		network_perms[family].first |= 1 << type;
+	network_perms[family].second |= protocol;
 }
 
 network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
-	dedup_perms_rule_t(AA_CLASS_NETV8)
+	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
 		network_map[family_index].push_back({ family_index, 0xFFFFFFFF, 0xFFFFFFFF });
-		set_netperm(family_index, 0xFFFFFFFF);
+		set_netperm(family_index, 0xFFFFFFFF, 0xFFFFFFFF);
 	}
 
 	move_conditionals(conds, local);
@@ -412,18 +430,18 @@ network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
 network_rule::network_rule(perms_t perms_p, const char *family, const char *type,
 			   const char *protocol, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
-	dedup_perms_rule_t(AA_CLASS_NETV8)
+	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
 	const struct network_tuple *mapping = NULL;
 	while ((mapping = net_find_mapping(mapping, family, type, protocol))) {
 		network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
-		set_netperm(mapping->family, mapping->type);
+		set_netperm(mapping->family, mapping->type, mapping->protocol);
 	}
 
 	if (type == NULL && network_map.empty()) {
 		while ((mapping = net_find_mapping(mapping, type, family, protocol))) {
 			network_map[mapping->family].push_back({ mapping->family, mapping->type, mapping->protocol });
-			set_netperm(mapping->family, mapping->type);
+			set_netperm(mapping->family, mapping->type, mapping->protocol);
 		}
 	}
 
@@ -447,10 +465,10 @@ network_rule::network_rule(perms_t perms_p, const char *family, const char *type
 }
 
 network_rule::network_rule(perms_t perms_p, unsigned int family, unsigned int type):
-	dedup_perms_rule_t(AA_CLASS_NETV8)
+	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
-	set_netperm(family, type);
+	set_netperm(family, type, 0xFFFFFFFF);
 
 	if (perms_p) {
 		perms = perms_p;
@@ -479,7 +497,8 @@ ostream &network_rule::dump(ostream &os)
 
 	for (const auto& perm : network_perms) {
 		unsigned int family = perm.first;
-		unsigned int type = perm.second;
+		unsigned int type = perm.second.first;
+		unsigned int protocol = perm.second.second;
 
 		const char *family_name = net_find_af_name(family);
 		if (family_name)
@@ -507,6 +526,12 @@ ostream &network_rule::dump(ostream &os)
 			os << " #" << std::hex << (type & mask);
 
 		printf(" }");
+
+		const char *protocol_name = net_find_protocol_name(protocol);
+		if (protocol_name)
+			os << " " << protocol_name;
+		else
+			os << " #" << protocol;
 	}
 
 	os << ",\n";
@@ -531,14 +556,14 @@ std::string gen_ip_cond(const struct ip_address ip)
 	int i;
 	if (ip.family == AF_INET) {
 		/* add a byte containing the size of the following ip */
-		oss << "\\x04";
+		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV4_SIZE;
 
 		u8 *byte = (u8 *) &ip.address.address_v4; /* in network byte order */
 		for (i = 0; i < 4; i++)
 			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(byte[i]);
 	} else {
 		/* add a byte containing the size of the following ip */
-		oss << "\\x10";
+		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV6_SIZE;
 		for (i = 0; i < 16; ++i)
 			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(ip.address.address_v6[i]);
 	}
@@ -557,48 +582,114 @@ std::string gen_port_cond(uint16_t port)
 	return oss.str();
 }
 
-void network_rule::gen_ip_conds(std::ostringstream &oss, ip_conds entry, bool is_peer, bool is_cmd)
+std::list<std::ostringstream> gen_all_ip_options(std::ostringstream &oss) {
+
+	std::list<std::ostringstream> all_streams;
+	std::ostringstream anon, ipv4, ipv6;
+	int i;
+	anon << oss.str();
+	ipv4 << oss.str();
+	ipv6 << oss.str();
+
+	anon << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ANON_SIZE;
+
+	/* add a byte containing the size of the following ip */
+	ipv4 << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV4_SIZE;
+	for (i = 0; i < 4; i++)
+		ipv4 << ".";
+
+	/* add a byte containing the size of the following ip */
+	ipv6 << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV6_SIZE;
+	for (i = 0; i < 16; ++i)
+		ipv6 << ".";
+
+	all_streams.push_back(std::move(anon));
+	all_streams.push_back(std::move(ipv4));
+	all_streams.push_back(std::move(ipv6));
+
+	return all_streams;
+}
+
+std::list<std::ostringstream> copy_streams_list(std::list<std::ostringstream> &streams)
 {
-	/* encode protocol */
-	if (!is_cmd) {
-		if (entry.is_ip) {
-			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((entry.ip.family & 0xff00) >> 8);
-			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (entry.ip.family & 0xff);
+	std::list<std::ostringstream> streams_copy;
+	for (auto &oss : streams) {
+		std::ostringstream oss_copy(oss.str());
+		streams_copy.push_back(std::move(oss_copy));
+	}
+	return streams_copy;
+}
+
+bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd)
+{
+	std::string buf;
+	perms_t cond_perms;
+	std::list<std::ostringstream> ip_streams;
+
+	for (auto &oss : streams) {
+		if (entry.is_port && !(entry.is_ip && entry.is_anonymous)) {
+			/* encode port type (privileged - 1, remote - 2, unprivileged - 0) */
+			if (!is_peer && perms & AA_NET_BIND && entry.port < IPPORT_RESERVED)
+				oss << "\\x01";
+			else if (is_peer)
+				oss << "\\x02";
+			else
+				oss << "\\x00";
+
+			oss << gen_port_cond(entry.port);
 		} else {
-			oss << "..";
+			/* port type + port number */
+			oss << "...";
 		}
 	}
 
-	if (entry.is_port) {
-		/* encode port type (privileged - 1, remote - 2, unprivileged - 0) */
-		if (!is_peer && perms & AA_NET_BIND && entry.port < IPPORT_RESERVED)
-			oss << "\\x01";
-		else if (is_peer)
-			oss << "\\x02";
-		else
-			oss << "\\x00";
+	ip_streams = std::move(streams);
+	streams.clear();
 
-		oss << gen_port_cond(entry.port);
-	} else {
-		/* port type + port number */
-		if (!is_cmd)
-			oss << ".";
-		oss << "..";
+	for (auto &oss : ip_streams) {
+		if (entry.is_ip) {
+			oss << gen_ip_cond(entry.ip);
+			streams.push_back(std::move(oss));
+		} else if (entry.is_anonymous) {
+			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ANON_SIZE;
+			streams.push_back(std::move(oss));
+		} else {
+			streams.splice(streams.end(), gen_all_ip_options(oss));
+		}
 	}
 
-	if (entry.is_ip) {
-		oss << gen_ip_cond(entry.ip);
-	} else {
-		/* encode 0 to indicate there's no ip (ip size) */
-		oss << "\\x00";
-	}
+	cond_perms = map_perms(perms);
+	if (!is_cmd && (label || is_peer))
+		cond_perms = (AA_CONT_MATCH << 1);
 
-	oss << "\\-x01"; /* oob separator */
-	oss << default_match_pattern; /* label - not used for now */
-	oss << "\\x00"; /* null transition */
+	for (auto &oss : streams) {
+		oss << "\\x00"; /* null transition */
+
+		buf = oss.str();
+		/* AA_CONT_MATCH mapping (cond_perms) only applies to perms, not audit */
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, cond_perms,
+						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+						 parseopts))
+			return false;
+
+		if (label || is_peer) {
+			if (!is_peer)
+				cond_perms = map_perms(perms);
+
+			oss << default_match_pattern; /* label - not used for now */
+			oss << "\\x00"; /* null transition */
+
+			buf = oss.str();
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, cond_perms,
+							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+							 parseopts))
+				return false;
+		}
+	}
+	return true;
 }
 
-bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mask) {
+bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol) {
 	std::ostringstream buffer;
 	std::string buf;
 
@@ -621,49 +712,87 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 		return true;
 	}
 
-	if (perms & AA_PEER_NET_PERMS) {
-		gen_ip_conds(buffer, peer, true, false);
-
-		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_ADDR;
-
-		gen_ip_conds(buffer, local, false, true);
-
-		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
-						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+	buf = buffer.str();
+	/* create perms need to be generated excluding the rest of the perms */
+	if (perms & AA_NET_CREATE) {
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms & AA_NET_CREATE) | (AA_CONT_MATCH << 1),
+						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms & AA_NET_CREATE) : 0,
 						 parseopts))
 			return false;
 	}
-	if ((perms & AA_NET_LISTEN) || (perms & AA_NET_OPT)) {
-		gen_ip_conds(buffer, local, false, false);
 
-		if (perms & AA_NET_LISTEN) {
-			std::ostringstream cmd_buffer;
-			cmd_buffer << buffer.str();
-			cmd_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_LISTEN;
-			/* length of queue allowed - not used for now */
-			cmd_buffer << "..";
-			buf = cmd_buffer.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
-							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
-							 parseopts))
-				return false;
+	/* encode protocol */
+	if (protocol > 0xffff) {
+		buffer << "..";
+	} else {
+		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((protocol & 0xff00) >> 8);
+		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (protocol & 0xff);
+	}
+
+	if (perms & AA_PEER_NET_PERMS) {
+		std::list<std::ostringstream> streams;
+		std::ostringstream cmd_buffer;
+
+		cmd_buffer << buffer.str();
+		streams.push_back(std::move(cmd_buffer));
+
+		if (!gen_ip_conds(prof, streams, peer, true, false))
+			return false;
+
+		for (auto &oss : streams) {
+			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_ADDR;
 		}
-		if (perms & AA_NET_OPT) {
-			std::ostringstream cmd_buffer;
-			cmd_buffer << buffer.str();
-			cmd_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_OPT;
-			/* level - not used for now */
-			cmd_buffer << "..";
-			/* socket mapping - not used for now */
-			cmd_buffer << "..";
-			buf = cmd_buffer.str();
+
+		if (!gen_ip_conds(prof, streams, local, false, true))
+			return false;
+	}
+
+	std::list<std::ostringstream> streams;
+	std::ostringstream common_buffer;
+
+	common_buffer << buffer.str();
+	streams.push_back(std::move(common_buffer));
+
+	if (!gen_ip_conds(prof, streams, local, false, false))
+		return false;
+
+	if (perms & AA_NET_LISTEN) {
+		std::list<std::ostringstream> cmd_streams;
+		cmd_streams = copy_streams_list(streams);
+
+		for (auto &cmd_buffer : streams) {
+			std::ostringstream listen_buffer;
+			listen_buffer << cmd_buffer.str();
+			listen_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_LISTEN;
+			/* length of queue allowed - not used for now */
+			listen_buffer << "..";
+			buf = listen_buffer.str();
 			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
 							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 							 parseopts))
 				return false;
 		}
 	}
+	if (perms & AA_NET_OPT) {
+		std::list<std::ostringstream> cmd_streams;
+		cmd_streams = copy_streams_list(streams);
+
+		for (auto &cmd_buffer : streams) {
+			std::ostringstream opt_buffer;
+			opt_buffer << cmd_buffer.str();
+			opt_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_OPT;
+			/* level - not used for now */
+			opt_buffer << "..";
+			/* socket mapping - not used for now */
+			opt_buffer << "..";
+			buf = opt_buffer.str();
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
+							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+							 parseopts))
+				return false;
+		}
+	}
+
 	return true;
 }
 
@@ -679,17 +808,18 @@ int network_rule::gen_policy_re(Profile &prof)
 
 	for (const auto& perm : network_perms) {
 		unsigned int family = perm.first;
-		unsigned int type = perm.second;
+		unsigned int type = perm.second.first;
+		unsigned int protocol = perm.second.second;
 
 		if (type > 0xffff) {
-			if (!gen_net_rule(prof, family, type))
+			if (!gen_net_rule(prof, family, type, protocol))
 				goto fail;
 		} else {
 			int t;
 			/* generate rules for types that are set */
 			for (t = 0; t < 16; t++) {
 				if (type & (1 << t)) {
-					if (!gen_net_rule(prof, family, t))
+					if (!gen_net_rule(prof, family, t, protocol))
 						goto fail;
 				}
 			}
@@ -760,13 +890,27 @@ void network_rule::update_compat_net(void)
 	}
 }
 
-static int cmp_network_map(std::unordered_map<unsigned int, perms_t> lhs,
-			   std::unordered_map<unsigned int, perms_t> rhs)
+static int cmp_ip_conds(ip_conds const &lhs, ip_conds const &rhs)
+{
+	int res = null_strcmp(lhs.sip, rhs.sip);
+	if (res)
+		return res;
+	res = null_strcmp(lhs.sport, rhs.sport);
+	if (res)
+		return res;
+	return lhs.is_anonymous - rhs.is_anonymous;
+}
+
+static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> lhs,
+			   std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> rhs)
 {
 	int res;
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
-		res = lhs[family_index] - rhs[family_index];
+		res = lhs[family_index].first - rhs[family_index].first;
+		if (res)
+			return res;
+		res = lhs[family_index].second - rhs[family_index].second;
 		if (res)
 			return res;
 	}
@@ -779,5 +923,14 @@ int network_rule::cmp(rule_t const &rhs) const
 	if (res)
 		return res;
 	network_rule const &nrhs = rule_cast<network_rule const &>(rhs);
-	return cmp_network_map(network_perms, nrhs.network_perms);
+	res = cmp_network_map(network_perms, nrhs.network_perms);
+	if (res)
+		return res;
+	res = cmp_ip_conds(local, nrhs.local);
+	if (res)
+		return res;
+	res = cmp_ip_conds(peer, nrhs.peer);
+	if (res)
+		return res;
+	return null_strcmp(label, nrhs.label);
 };
