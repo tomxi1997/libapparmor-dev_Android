@@ -344,8 +344,8 @@ bool parse_port_number(const char *port_entry, uint16_t *port) {
 	char *eptr;
 	unsigned long port_tmp = strtoul(port_entry, &eptr, 10);
 
-	if (port_tmp >= 0 && port_entry != eptr &&
-	    *eptr == '\0' && port_tmp <= UINT16_MAX) {
+	if (port_entry != eptr && *eptr == '\0' &&
+	    port_tmp <= UINT16_MAX) {
 		*port = port_tmp;
 		return true;
 	}
