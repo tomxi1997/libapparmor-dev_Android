@@ -29,8 +29,6 @@
 class all_rule: public prefix_rule_t {
 	void move_conditionals(struct cond_entry *conds);
 public:
-	char *label;
-
 	all_rule(void): prefix_rule_t(RULE_TYPE_ALL) { }
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) {
