@@ -11,41 +11,55 @@
 #include <sys/stat.h>
 #include "net_inet.h"
 
+enum protocol {
+	UDP,
+	TCP,
+	ICMP
+};
+
 struct connection_info {
 	char *bind_ip;
 	char *bind_port;
 	char *remote_ip;
 	char *remote_port;
 	char *protocol;
+	enum protocol prot;
 	int timeout;
 } net_info;
 
-
-int receive_udp()
+int receive_bind()
 {
-
 	int sock;
-	char *buf;
 	struct sockaddr_in local;
 	struct sockaddr_in6 local6;
-	int ret = -1;
-	int select_return;
-
-	fd_set read_set, err_set;
-	struct timeval timeout;
-
-	buf = (char *) malloc(255);
-	memset(buf, '\0', 255);
 
 	struct ip_address bind_addr;
+
 	if (!parse_ip(net_info.bind_ip, net_info.bind_port, &bind_addr)) {
 		fprintf(stderr, "FAIL - could not parse bind ip address\n");
 		return -1;
 	}
 
-	if ((sock = socket(bind_addr.family, SOCK_DGRAM, 0)) < 0) {
-		perror("FAIL - Socket error: ");
-		return(-1);
+	switch(net_info.prot) {
+	case UDP:
+		if ((sock = socket(bind_addr.family, SOCK_DGRAM, 0)) < 0) {
+			perror("FAIL - Socket error: ");
+			return(-1);
+		}
+		break;
+	case TCP:
+		if ((sock = socket(bind_addr.family, SOCK_STREAM, 0)) < 0) {
+			perror("FAIL - Socket error: ");
+			return(-1);
+		}
+		break;
+	case ICMP:
+		if ((sock = socket(bind_addr.family, SOCK_DGRAM, IPPROTO_ICMP)) < 0) {
+			perror("FAIL - Socket error: ");
+			return(-1);
+		}
+		break;
+
 	}
 
 	const int enable = 1;
@@ -63,11 +77,34 @@ int receive_udp()
 		local6 = convert_to_sockaddr_in6(bind_addr);
 		if (bind(sock, (struct sockaddr *) &local6, sizeof(local6)) < 0)
 		{
-			printf("errno %d\n", errno);
 			perror("FAIL - Bind error: ");
 			return(-1);
 		}
 	}
+
+	if (net_info.prot == TCP) {
+		if (listen(sock, 5) == -1)
+		{
+			perror("FAIL - Could not listen: ");
+			return(-1);
+		}
+	}
+
+	return sock;
+}
+
+int receive_udp(int sock)
+{
+
+	char *buf;
+	int ret = -1;
+	int select_return;
+
+	fd_set read_set, err_set;
+	struct timeval timeout;
+
+	buf = (char *) malloc(255);
+	memset(buf, '\0', 255);
 
 	FD_ZERO(&read_set);
 	FD_SET(sock, &read_set);
@@ -83,8 +120,6 @@ int receive_udp()
 		ret = -1;
 	}
 
-
-
 	if ((select_return > 0) && (FD_ISSET(sock, &read_set)) && (!FD_ISSET(sock, &err_set)))
 	{
 
@@ -99,17 +134,19 @@ int receive_udp()
 			ret = -1;
 		}
 	}
+
+	if (select_return == 0)
+		printf("FAIL - select timedout\n");
+
 	free(buf);
 	return(ret);
 
 }
 
-int receive_tcp()
+int receive_tcp(int sock)
 {
-	int sock, cli_sock;
+	int cli_sock;
 	char *buf;
-	struct sockaddr_in local;
-	struct sockaddr_in6 local6;
 	int ret = -1;
 	int select_return;
 
@@ -118,44 +155,6 @@ int receive_tcp()
 
 	buf = (char *) malloc(255);
 	memset(buf, '\0', 255);
-
-	struct ip_address bind_addr;
-	if (!parse_ip(net_info.bind_ip, net_info.bind_port, &bind_addr)) {
-		fprintf(stderr, "FAIL - could not parse bind ip address\n");
-		return -1;
-	}
-
-	if ((sock = socket(bind_addr.family, SOCK_STREAM, 0)) < 0)
-	{
-		perror("FAIL - Socket error:");
-		return(-1);
-	}
-
-	const int enable = 1;
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &enable, sizeof(int)) < 0)
-		perror("FAIL - setsockopt(SO_REUSEADDR) failed");
-
-	if (bind_addr.family == AF_INET) {
-		local = convert_to_sockaddr_in(bind_addr);
-		if (bind(sock, (struct sockaddr *) &local, sizeof(local)) < 0)
-		{
-			perror("FAIL - Bind error: ");
-			return(-1);
-		}
-	} else {
-		local6 = convert_to_sockaddr_in6(bind_addr);
-		if (bind(sock, (struct sockaddr *) &local6, sizeof(local6)) < 0)
-		{
-			perror("FAIL - Bind error: ");
-			return(-1);
-		}
-	}
-
-	if (listen(sock, 5) == -1)
-	{
-		perror("FAIL - Could not listen: ");
-		return(-1);
-	}
 
 	FD_ZERO(&read_set);
 	FD_SET(sock, &read_set);
@@ -201,12 +200,9 @@ int receive_tcp()
 	return(ret);
 }
 
-int receive_icmp()
+int receive_icmp(int sock)
 {
-
-	int sock;
 	char *buf;
-	struct sockaddr_in local;
 	int ret = -1;
 	int select_return;
 
@@ -215,25 +211,6 @@ int receive_icmp()
 
 	buf = (char *) malloc(255);
 	memset(buf, '\0', 255);
-	if ((sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP)) < 0)
-	{
-		perror("FAIL - Socket error: ");
-		return(-1);
-	}
-
-	const int enable = 1;
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &enable, sizeof(int)) < 0)
-		perror("FAIL - setsockopt(SO_REUSEADDR) failed");
-
-	local.sin_family  = AF_INET;
-	local.sin_port = htons(atoi(net_info.bind_port));
-	inet_aton(net_info.bind_ip, &local.sin_addr);
-
-	if (bind(sock, (struct sockaddr *) &local, sizeof(local)) < 0)
-	{
-		perror("FAIL - Bind error: ");
-		return(-1);
-	}
 
 	FD_ZERO(&read_set);
 	FD_SET(sock, &read_set);
@@ -248,8 +225,6 @@ int receive_icmp()
 		perror("FAIL - Select error: ");
 		ret = -1;
 	}
-
-
 
 	if ((select_return > 0) && (FD_ISSET(sock, &read_set)) && (!FD_ISSET(sock, &err_set)))
 	{
@@ -321,6 +296,14 @@ int main(int argc, char *argv[])
 			break;
 		case 'p':
 			net_info.protocol = optarg;
+			if (strcmp(net_info.protocol, "udp") == 0)
+				net_info.prot = UDP;
+			else if (strcmp(net_info.protocol, "tcp") == 0)
+				net_info.prot = TCP;
+			else if (strcmp(net_info.protocol, "icmp") == 0)
+				net_info.prot = ICMP;
+			else
+				printf("FAIL - Unknown protocol.\n");
 			break;
 		case 't':
 			net_info.timeout = atoi(optarg);
@@ -331,6 +314,13 @@ int main(int argc, char *argv[])
 		default:
 			usage(argv[0], "Unrecognized option\n");
 		}
+	}
+
+	/* get the server to bind/listen, so the child has something
+	 * to connect to if it wins the race. */
+	int sockfd = receive_bind();
+	if (sockfd == -1) {
+		exit(1);
 	}
 
 	/* exec the sender */
@@ -357,14 +347,17 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (strcmp(net_info.protocol, "udp") == 0)
-		ret = receive_udp(net_info);
-	else if (strcmp(net_info.protocol, "tcp") == 0)
-		ret = receive_tcp(net_info);
-	else if (strcmp(net_info.protocol, "icmp") == 0)
-		ret = receive_icmp(net_info);
-	else
-		printf("FAIL - Unknown protocol.\n");
+	switch(net_info.prot) {
+	case UDP:
+		ret = receive_udp(sockfd);
+		break;
+	case TCP:
+		ret = receive_tcp(sockfd);
+		break;
+	case ICMP:
+		ret = receive_icmp(sockfd);
+		break;
+	}
 
 	if (ret == -1)
 	{
