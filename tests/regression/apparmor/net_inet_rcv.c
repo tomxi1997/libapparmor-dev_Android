@@ -42,24 +42,19 @@ int receive_bind()
 
 	switch(net_info.prot) {
 	case UDP:
-		if ((sock = socket(bind_addr.family, SOCK_DGRAM, 0)) < 0) {
-			perror("FAIL - Socket error: ");
-			return(-1);
-		}
+		sock = socket(bind_addr.family, SOCK_DGRAM, 0);
 		break;
 	case TCP:
-		if ((sock = socket(bind_addr.family, SOCK_STREAM, 0)) < 0) {
-			perror("FAIL - Socket error: ");
-			return(-1);
-		}
+		sock = socket(bind_addr.family, SOCK_STREAM, 0);
 		break;
 	case ICMP:
-		if ((sock = socket(bind_addr.family, SOCK_DGRAM, IPPROTO_ICMP)) < 0) {
-			perror("FAIL - Socket error: ");
-			return(-1);
-		}
+		sock = socket(bind_addr.family, SOCK_DGRAM, IPPROTO_ICMP);
 		break;
+	}
 
+	if (sock < 0) {
+		perror("FAIL - Socket error: ");
+		return -1;
 	}
 
 	const int enable = 1;
@@ -68,25 +63,22 @@ int receive_bind()
 
 	if (bind_addr.family == AF_INET) {
 		local = convert_to_sockaddr_in(bind_addr);
-		if (bind(sock, (struct sockaddr *) &local, sizeof(local)) < 0)
-		{
+		if (bind(sock, (struct sockaddr *) &local, sizeof(local)) < 0) {
 			perror("FAIL - Bind error: ");
-			return(-1);
+			return -1;
 		}
 	} else {
 		local6 = convert_to_sockaddr_in6(bind_addr);
-		if (bind(sock, (struct sockaddr *) &local6, sizeof(local6)) < 0)
-		{
+		if (bind(sock, (struct sockaddr *) &local6, sizeof(local6)) < 0) {
 			perror("FAIL - Bind error: ");
-			return(-1);
+			return -1;
 		}
 	}
 
 	if (net_info.prot == TCP) {
-		if (listen(sock, 5) == -1)
-		{
+		if (listen(sock, 5) == -1) {
 			perror("FAIL - Could not listen: ");
-			return(-1);
+			return -1;
 		}
 	}
 
@@ -114,29 +106,20 @@ int receive_udp(int sock)
 	timeout.tv_usec = 0;
 
 	select_return = select(sock + 1, &read_set, NULL, &err_set, &timeout);
-	if (select_return < 0)
-	{
+	if (select_return < 0) {
 		perror("FAIL - Select error: ");
 		ret = -1;
-	}
-
-	if ((select_return > 0) && (FD_ISSET(sock, &read_set)) && (!FD_ISSET(sock, &err_set)))
-	{
-
-		if (recvfrom(sock, buf, 255, 0, (struct sockaddr *)0, (unsigned int *)0) >= 1)
-		{
+	} else if (select_return == 0) {
+		printf("FAIL - select timeout\n");
+	} else if (select_return > 0 && FD_ISSET(sock, &read_set) && !FD_ISSET(sock, &err_set)) {
+		if (recvfrom(sock, buf, 255, 0, NULL, NULL) >= 1) {
 			//printf("MESSAGE: %s\n", buf);
 			ret = 0;
-		}
-		else
-		{
+		} else {
 			printf("FAIL - recvfrom failed\n");
 			ret = -1;
 		}
 	}
-
-	if (select_return == 0)
-		printf("FAIL - select timedout\n");
 
 	free(buf);
 	return(ret);
@@ -164,38 +147,26 @@ int receive_tcp(int sock)
 	timeout.tv_usec = 0;
 
 	select_return = select(sock + 1, &read_set, NULL, &err_set, &timeout);
-	if (select_return < 0)
-	{
+	if (select_return < 0) {
 		perror("FAIL - Select failed: ");
 		ret = -1;
-	}
-
-	if ((select_return > 0) && (FD_ISSET(sock, &read_set)) && (!FD_ISSET(sock, &err_set)))
-	{
-		if ((cli_sock = accept(sock, NULL, NULL)) < 0)
-		{
+	} else if (select_return == 0) {
+		printf("FAIL - select timeout\n");
+	} else if (select_return > 0 && FD_ISSET(sock, &read_set) && !FD_ISSET(sock, &err_set)) {
+		if ((cli_sock = accept(sock, NULL, NULL)) < 0) {
 			perror("FAIL - Accept failed: ");
 			ret = -1;
-		}
-		else
-		{
-			if (recv(cli_sock, buf, 255, 0) >= 1)
-			{
+		} else {
+			if (recv(cli_sock, buf, 255, 0) >= 1) {
 				//printf("MESSAGE: %s\n", buf);
 				ret = 0;
-			}
-			else
-			{
+			} else {
 				perror("FAIL - recv failure: ");
 				ret = -1;
 			}
 		}
 	}
-	else
-	{
-		perror("FAIL - There were select failures: ");
-		ret = -1;
-	}
+
 	free(buf);
 	return(ret);
 }
@@ -220,26 +191,21 @@ int receive_icmp(int sock)
 	timeout.tv_usec = 0;
 
 	select_return = select(sock + 1, &read_set, NULL, &err_set, &timeout);
-	if (select_return < 0)
-	{
+	if (select_return < 0) {
 		perror("FAIL - Select error: ");
 		ret = -1;
-	}
-
-	if ((select_return > 0) && (FD_ISSET(sock, &read_set)) && (!FD_ISSET(sock, &err_set)))
-	{
-
-		if (recvfrom(sock, buf, 255, 0, (struct sockaddr *)0, (unsigned int *)0) >= 1)
-		{
+	} else if (select_return == 0) {
+		printf("FAIL - select timeout\n");
+	} else if (select_return > 0 && FD_ISSET(sock, &read_set) && !FD_ISSET(sock, &err_set)) {
+		if (recvfrom(sock, buf, 255, 0, NULL, NULL) >= 1) {
 			//printf("MESSAGE: %s\n", buf);
 			ret = 0;
-		}
-		else
-		{
+		} else {
 			printf("FAIL - recvfrom failed\n");
 			ret = -1;
 		}
 	}
+
 	free(buf);
 	return(ret);
 
@@ -277,7 +243,7 @@ int main(int argc, char *argv[])
 		{"protocol",    required_argument, 0,  'p' },
 		{"timeout",     required_argument, 0,  't' },
 		{"sender",      required_argument, 0,  's' },
-		{0,           0,                 0,  0   }
+		{0,             0,                 0,  0   }
 	};
 
 	while ((opt = getopt_long(argc, argv,"i:o:r:e:p:t:s:", long_options, 0)) != -1) {
@@ -359,13 +325,11 @@ int main(int argc, char *argv[])
 		break;
 	}
 
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		printf("FAIL - Receive message failed.\n");
 		exit(1);
 	}
 
 	printf("PASS\n");
-
 	return 0;
 }
