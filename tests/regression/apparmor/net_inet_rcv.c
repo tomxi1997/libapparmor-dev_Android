@@ -9,7 +9,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <sys/stat.h>
-#include "net_finegrained.h"
+#include "net_inet.h"
 
 struct connection_info {
 	char *bind_ip;

@@ -12,7 +12,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
-#include "net_finegrained.h"
+#include "net_inet.h"
 
 struct connection_info {
 	char *bind_ip;
