@@ -34,7 +34,7 @@ valid_fs = [
     'securityfs', 'sockfs', 'bpf', 'npipefs', 'ramfs', 'hugetlbfs', 'devpts', 'ext3', 'ext2', 'ext4', 'squashfs',
     'vfat', 'ecryptfs', 'fuseblk', 'fuse', 'fusectl', 'efivarfs', 'mqueue', 'store', 'autofs', 'binfmt_misc', 'overlay',
     'none', 'bdev', 'proc', 'pipefs', 'pstore', 'btrfs', 'xfs', '9p', 'resctrl', 'zfs', 'iso9660', 'udf', 'ntfs3',
-    'nfs', 'cifs',
+    'nfs', 'cifs', 'overlayfs', 'aufs', 'rpc_pipefs', 'msdos', 'nfs4',
 ]
 
 flags_keywords = [
