@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <mqueue.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -6,9 +7,11 @@
 #include <time.h>
 
 #include "posix_mq.h"
+#include "pipe_helper.h"
 
 int timeout = 5; //seconds
 char *queuename = QNAME;
+char *pipepath = PIPENAME;
 
 enum notify_options {
 	DO_NOT_NOTIFY,
@@ -18,10 +21,13 @@ enum notify_options {
 	EPOLL
 };
 
+enum notify_options notify = DO_NOT_NOTIFY;
+
 int receive_message(mqd_t mqd, char needs_timeout) {
 	ssize_t nbytes;
 	struct mq_attr attr;
 	char *buf = NULL;
+	int ret = EXIT_FAILURE;
 
 	if (mq_getattr(mqd, &attr) == -1) {
 		perror("FAIL - could not mq_getattr");
@@ -62,20 +68,24 @@ int receive_message(mqd_t mqd, char needs_timeout) {
 	}
 
 	printf("PASS\n");
+	ret = EXIT_SUCCESS;
 
 out:
 	free(buf);
 
 	if (mq_close(mqd) == (mqd_t) -1) {
 		perror("FAIL - could not close mq");
-		exit(EXIT_FAILURE);
+		ret = EXIT_FAILURE;
 	}
 	if (mq_unlink(queuename) == (mqd_t) -1) {
-		perror("FAIL - could unlink mq");
-		exit(EXIT_FAILURE);
+		perror("FAIL - could not unlink mq");
+		ret = EXIT_FAILURE;
 	}
-
-	exit(EXIT_SUCCESS);
+	if (notify == MQ_NOTIFY && unlink(pipepath) == -1) {
+		perror("FAIL - could not remove pipe");
+		ret = EXIT_FAILURE;
+	}
+	exit(ret);
 }
 
 static void handle_signal(union sigval sv) {
@@ -96,6 +106,7 @@ static void usage(char *prog_name, char *msg)
 	fprintf(stderr, "-c        path of the client binary\n");
 	fprintf(stderr, "-u        run test as specified UID\n");
 	fprintf(stderr, "-t        timeout in seconds\n");
+	fprintf(stderr, "-p        named pipe path. used by mq_notify\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -108,9 +119,15 @@ void receive_mq_notify(mqd_t mqd)
 	sev.sigev_value.sival_ptr = &mqd;
 
 	if (mq_notify(mqd, &sev) == -1) {
-		perror(" FAIL - could not mq_notify");
+		perror("FAIL - could not mq_notify");
 		exit(EXIT_FAILURE);
 	}
+
+	if (write_to_pipe(pipepath) == -1) { // let sender know mq_notify is ready
+		fprintf(stderr, "FAIL - could not write to pipe\n");
+		exit(EXIT_FAILURE);
+	}
+
 	sleep(timeout);
 	fprintf(stderr, "FAIL - could not mq_notify: Connection timed out\n");
 }
@@ -198,17 +215,17 @@ void receive(enum notify_options notify, mqd_t mqd)
 int main(int argc, char *argv[])
 {
 	int opt = 0;
-	enum notify_options notify = DO_NOT_NOTIFY;
 	mqd_t mqd;
 	char *client = NULL;
 	int uid;
+	int pipefd;
 	struct mq_attr attr;
 	attr.mq_flags = 0;
 	attr.mq_maxmsg = 10;
 	attr.mq_msgsize = BUF_SIZE;
 	attr.mq_curmsgs = 0;
 
-	while ((opt = getopt(argc, argv, "n:k:c:u:t:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:k:c:u:t:p:")) != -1) {
 		switch (opt) {
 		case 'n':
 			if (strcmp(optarg, "mq_notify") == 0)
@@ -258,6 +275,9 @@ int main(int argc, char *argv[])
 		case 't':
 			timeout = atoi(optarg);
 			break;
+		case 'p':
+			pipepath = optarg;
+			break;
 		default:
 			usage(argv[0], "Unrecognized option\n");
 		}
@@ -267,6 +287,19 @@ int main(int argc, char *argv[])
 	if (mqd == (mqd_t) -1) {
 		perror("FAIL - could not open mq");
 		exit(EXIT_FAILURE);
+	}
+
+	if (notify == MQ_NOTIFY) {
+		if (mkfifo(pipepath, 0666) == -1) {
+			perror("FAIL - could not mkfifo");
+			goto nopipeout;
+		}
+
+		pipefd = open_read_pipe(pipepath);
+		if (pipefd == -1) {
+			fprintf(stderr, "FAIL - couldn't open pipe\n");
+			goto out;
+		}
 	}
 
 	/* exec the client */
@@ -282,25 +315,30 @@ int main(int argc, char *argv[])
 			 * in case the client will be manually executed
 			 */
 		}
-		execl(client, client, queuename, NULL);
-		printf("FAIL %d - execlp %s %s- %m\n", getuid(), client, queuename);
+		if (notify == MQ_NOTIFY) {
+			char strpipefd[12];
+			sprintf(strpipefd, "%d", pipefd);
+			execl(client, client, queuename, strpipefd, NULL);
+			printf("FAIL %d - execlp %s %s %s- %m\n", getuid(), client, queuename, strpipefd);
+		} else {
+			execl(client, client, queuename, NULL);
+			printf("FAIL %d - execlp %s %s- %m\n", getuid(), client, queuename);
+		}
 		exit(EXIT_FAILURE);
 	}
 
 	receive(notify, mqd);
 
 	/* when the notification fails because of timeout, it ends up here
-	 * so, clean up the mqueue
+	 * so, clean up the mqueue and exit_failure
 	 */
-
-	if (mq_close(mqd) == (mqd_t) -1) {
+out:
+	if (notify == MQ_NOTIFY && unlink(pipepath) == -1)
+		perror("FAIL - could not remove pipe");
+nopipeout:
+	if (mq_close(mqd) == (mqd_t) -1)
 		perror("FAIL - could not close mq");
-		exit(EXIT_FAILURE);
-	}
-	if (mq_unlink(queuename) == (mqd_t) -1) {
+	if (mq_unlink(queuename) == (mqd_t) -1)
 		perror("FAIL - could unlink mq");
-		exit(EXIT_FAILURE);
-	}
-
-	return 0;
+	return EXIT_FAILURE;
 }
