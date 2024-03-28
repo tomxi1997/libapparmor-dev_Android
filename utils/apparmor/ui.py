@@ -75,6 +75,11 @@ def set_text_mode():
     UI_mode = 'text'
 
 
+def set_allow_all_mode():
+    global UI_mode
+    UI_mode = 'allow_all'
+
+
 # reads the response on command line for json and verifies the response
 # for the dialog type
 def json_response(dialog_type):
@@ -151,7 +156,10 @@ def UI_YesNo(text, default):
                 sys.stdout.write('\n[%s] / %s\n' % (yes, no))
             else:
                 sys.stdout.write('\n%s / [%s]\n' % (yes, no))
-            ans = getkey()
+            if UI_mode == 'allow_all':
+                ans = nokey
+            else:
+                ans = getkey()
             if ans:
                 # Get back to english from localised answer
                 ans = ans.lower()
@@ -197,7 +205,10 @@ def UI_YesNoCancel(text, default):
                 sys.stdout.write('\n%s / [%s] / %s\n' % (yes, no, cancel))
             else:
                 sys.stdout.write('\n%s / %s / [%s]\n' % (yes, no, cancel))
-            ans = getkey()
+            if UI_mode == 'allow_all':
+                ans = nokey
+            else:
+                ans = getkey()
             if ans:
                 # Get back to english from localised answer
                 ans = ans.lower()
@@ -377,6 +388,7 @@ class PromptQuestion:
     default = None
     selected = None
     helptext = None
+    already_have_profile = False
 
     def __init__(self):
         self.headers = []
@@ -502,6 +514,17 @@ class PromptQuestion:
                 hm = json_response('promptuser')
                 ans = hm["response_key"]
                 selected = hm["selected"]
+
+            elif UI_mode == 'allow_all':
+                if self.already_have_profile:
+                    expected_keys = ['CMD_px', 'CMD_ix', 'CMD_ALLOW', 'CMD_SAVE_CHANGES']
+                else:
+                    expected_keys = ['CMD_ix', 'CMD_ALLOW', 'CMD_SAVE_CHANGES']
+                for exp in expected_keys:
+                    if exp in functions:
+                        ans = get_translated_hotkey(CMDS[exp])
+                        break
+
             else:  # text mode
                 sys.stdout.write(prompt + '\n')
                 ans = getkey().lower()
@@ -516,6 +539,7 @@ class PromptQuestion:
                     if options and selected < len(options) - 1:
                         selected += 1
                     ans = 'XXXINVALIDXXX'
+
 
     #             elif keys.get(ans, False) == 'CMD_HELP':
     #                 sys.stdout.write('\n%s\n' %helptext)

@@ -40,13 +40,13 @@ class TestLogprof(AATest):
     def AATeardown(self):
         self._terminate()
 
-    def _startLogprof(self, auditlog):
+    def _startLogprof(self, auditlog, mode):
         exe = [sys.executable]
 
         if 'coverage' in sys.modules:
             exe = exe + ['-m', 'coverage', 'run', '--branch', '-p']
 
-        exe = exe + ['../aa-logprof', '--json', '--configdir', './', '-f', auditlog, '-d', self.profile_dir, '--no-check-mountpoint']
+        exe = exe + ['../aa-logprof', '--' + mode, '--configdir', './', '-f', auditlog, '-d', self.profile_dir, '--no-check-mountpoint', '--output-dir', self.tmpdir]
 
         process = subprocess.Popen(
             exe,
@@ -76,7 +76,7 @@ class TestLogprof(AATest):
         jlog = jlog.replace('/var/log/audit/audit.log', auditlog)
         jlog = jlog.strip().split('\n')
 
-        self.process = self._startLogprof(auditlog)
+        self.process = self._startLogprof(auditlog, 'json')
 
         for line in jlog:
             if line.startswith('o '):  # read from stdout
@@ -101,7 +101,7 @@ class TestLogprof(AATest):
 
         for file in expected:
             exp = read_file('./logprof/%s.%s' % (params, file))
-            actual = read_file(os.path.join(self.profile_dir, file))
+            actual = read_file(os.path.join(self.tmpdir, file))
 
             # remove '# Last Modified:' line from updated profile
             actual = actual.split('\n')
@@ -111,6 +111,23 @@ class TestLogprof(AATest):
 
             self.assertEqual(actual, exp)
 
+    def test_allow_all(self):
+        auditlog = './logprof/%s.auditlog' % 'ping'
+        allowlog = './logprof/%s.allowlog' % 'ping'
+
+        slog = read_file(allowlog)
+        slog = slog.replace('/etc/apparmor.d', self.profile_dir)
+        slog = slog.replace('/var/log/audit/audit.log', auditlog)
+        slog = slog.strip().split('\n')
+
+        self.process = self._startLogprof(auditlog, 'allow-all')
+
+        for line in slog:
+            output = self.process.stdout.readline().decode("utf-8").strip()
+            self.assertEqual(output, line)
+        # give logprof some time to write the updated profile and terminate
+        self.process.wait(timeout=0.3)
+        self.assertEqual(self.process.returncode, 0)
 
 # if you import apparmor.aa and call init_aa() in your tests, uncomment this
 # setup_aa(aa)
