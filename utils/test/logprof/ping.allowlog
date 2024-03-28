@@ -1,0 +1,6 @@
+Updating AppArmor profiles in /etc/apparmor.d.
+Reading log entries from /var/log/audit/audit.log.
+Complain-mode changes:
+Enforce-mode changes:
+Adding owner /proc/*/cmdline r, to profile ping.
+Writing updated profile for ping.

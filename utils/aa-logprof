@@ -28,9 +28,13 @@ parser.add_argument('-d', '--dir', type=str, help=_('path to profiles'))
 parser.add_argument('-f', '--file', type=str, help=_('path to logfile'))
 parser.add_argument('-m', '--mark', type=str, help=_('mark in the log to start processing after'))
 parser.add_argument('-j', '--json', action='store_true', help=_('Input and Output in JSON'))
+parser.add_argument('-a', '--allow-all', action='store_true', help=_('Accept silently all rules'))
+parser.add_argument('--no-abstraction', action='store_true', help=_('Do not use any abstractions in profiles'))
+parser.add_argument('-o', '--output-dir', type=str, help=_('Output Directory for profiles'))
 parser.add_argument('--configdir', type=str, help=argparse.SUPPRESS)
 parser.add_argument('--no-check-mountpoint', action='store_true', help=argparse.SUPPRESS)
 args = parser.parse_args()
+
 
 logmark = args.mark or ''
 
@@ -38,6 +42,12 @@ apparmor.init_aa(confdir=args.configdir, profiledir=args.dir)
 
 if args.json:
     aaui.set_json_mode(apparmor.cfg)
+if args.allow_all:
+    aaui.set_allow_all_mode()
+if args.no_abstraction:
+    apparmor.disable_abstractions()
+if args.output_dir:
+    apparmor.check_output_dir(args.output_dir)
 
 apparmor.set_logfile(args.file)
 
@@ -48,4 +58,4 @@ if not aa_mountpoint and not args.no_check_mountpoint:
 apparmor.loadincludes()
 
 apparmor.read_profiles(True)
-apparmor.do_logprof_pass(logmark)
+apparmor.do_logprof_pass(logmark, out_dir=args.output_dir)

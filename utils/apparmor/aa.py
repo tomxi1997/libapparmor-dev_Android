@@ -74,6 +74,8 @@ cfg = None
 parser = None
 profile_dir = None
 extra_profile_dir = None
+
+use_abstractions = True
 ### end our
 # To keep track of previously included profile fragments
 include = dict()
@@ -294,6 +296,11 @@ def set_enforce(filename, program):
     change_profile_flags(filename, program, ['complain', 'kill', 'unconfined', 'prompt','default_allow'], False)  # remove conflicting and complain mode flags
 
 
+def disable_abstractions():
+    global use_abstractions
+    use_abstractions = False
+
+
 def delete_symlink(subdir, filename):
     path = filename
     link = re.sub('^%s' % profile_dir, '%s/%s' % (profile_dir, subdir), path)
@@ -336,6 +343,20 @@ def head(file):
             return first
     else:
         raise AppArmorException(_('Unable to read first line from %s: File Not Found') % file)
+
+
+def check_output_dir(output_dir):
+    if os.path.isdir(output_dir):
+        return True
+    elif os.path.exists(output_dir):
+        raise AppArmorException(_("%(dir) exists and is not a directory") % {'dir': output_dir})
+    try:
+        os.mkdir(output_dir, mode=0o700)
+    except OSError as e:
+        raise AppArmorException(
+            _("Unable to create output directory %(dir)s\n\t%(error)s")
+            % {'dir': output_dir, 'error': str(e)}
+        )
 
 
 def get_output(params):
@@ -898,6 +919,7 @@ def ask_exec(hashlog):
 
                     exec_toggle = False
                     q.functions.extend(build_x_functions(default, options, exec_toggle))
+                    q.already_have_profile = get_profile_filename_from_attachment(exec_target)
 
                     # ask user about the exec mode to use
                     ans = ''
@@ -1202,7 +1224,8 @@ def ask_rule_questions(prof_events, profile_name, the_profile, r_types):
             newincludes = match_includes(the_profile, ruletype, rule_obj)
             q = aaui.PromptQuestion()
             if newincludes:
-                options.extend(map(lambda inc: 'include <%s>' % inc, sorted(set(newincludes))))
+                if use_abstractions:
+                    options.extend(map(lambda inc: 'include <%s>' % inc, sorted(set(newincludes))))
 
             if ruletype == 'file' and rule_obj.path:
                 options += propose_file_rules(the_profile, rule_obj)
@@ -1270,15 +1293,20 @@ def ask_rule_questions(prof_events, profile_name, the_profile, r_types):
 
                         the_profile['inc_ie'].add(IncludeRule.create_instance(selection))
 
-                        aaui.UI_Info(_('Adding %s to profile.') % selection)
+                        if aaui.UI_mode == 'allow_all':
+                            aaui.UI_Info(_('Adding %s to profile %s.') % (selection, profile_name))
+                        else:
+                            aaui.UI_Info(_('Adding %s to profile.') % selection)
                         if deleted:
                             aaui.UI_Info(_('Deleted %s previous matching profile entries.') % deleted)
 
                     else:
                         rule_obj = rule_obj.create_instance(selection)
                         deleted = the_profile[ruletype].add(rule_obj, cleanup=True)
-
-                        aaui.UI_Info(_('Adding %s to profile.') % rule_obj.get_clean())
+                        if aaui.UI_mode == 'allow_all':
+                            aaui.UI_Info(_('Adding %s to profile %s.') % (rule_obj.get_clean(), profile_name))
+                        else:
+                            aaui.UI_Info(_('Adding %s to profile.') % rule_obj.get_clean())
                         if deleted:
                             aaui.UI_Info(_('Deleted %s previous matching profile entries.') % deleted)
 
@@ -1539,7 +1567,7 @@ def set_logfile(filename):
         raise AppArmorException(_('%s is a directory. Please specify a file as logfile') % logfile)
 
 
-def do_logprof_pass(logmark=''):
+def do_logprof_pass(logmark='', out_dir=None):
     # set up variables for this pass
     global active_profiles
     global sev_db
@@ -1563,10 +1591,10 @@ def do_logprof_pass(logmark=''):
 
     ask_the_questions(log_dict)
 
-    save_profiles()
+    save_profiles(out_dir=out_dir)
 
 
-def save_profiles(is_mergeprof=False):
+def save_profiles(is_mergeprof=False, out_dir=None):
     # Ensure the changed profiles are actual active profiles
     for prof_name in changed.keys():
         if not aa.get(prof_name, False):
@@ -1600,7 +1628,7 @@ def save_profiles(is_mergeprof=False):
             profile_name = options[arg]
 
             if ans == 'CMD_SAVE_SELECTED':
-                write_profile_ui_feedback(profile_name)
+                write_profile_ui_feedback(profile_name, out_dir=out_dir)
                 reload_base(profile_name)
                 q.selected = 0  # saving the selected profile removes it from the list, therefore reset selection
 
@@ -1626,7 +1654,7 @@ def save_profiles(is_mergeprof=False):
                 changed.pop(options[arg])
 
         for profile_name in sorted(changed.keys()):
-            write_profile_ui_feedback(profile_name)
+            write_profile_ui_feedback(profile_name, out_dir=out_dir)
             reload_base(profile_name)
 
 
@@ -2281,12 +2309,12 @@ def serialize_profile(profile_data, name, options):
     return string + '\n'
 
 
-def write_profile_ui_feedback(profile, is_attachment=False):
+def write_profile_ui_feedback(profile, is_attachment=False, out_dir=None):
     aaui.UI_Info(_('Writing updated profile for %s.') % profile)
-    write_profile(profile, is_attachment)
+    write_profile(profile, is_attachment, out_dir=out_dir)
 
 
-def write_profile(profile, is_attachment=False):
+def write_profile(profile, is_attachment=False, out_dir=None):
     if aa[profile][profile].get('filename', False):
         prof_filename = aa[profile][profile]['filename']
     elif is_attachment:
@@ -2296,8 +2324,9 @@ def write_profile(profile, is_attachment=False):
 
     serialize_options = {'METADATA': True, 'is_attachment': is_attachment}
     profile_string = serialize_profile(split_to_merged(aa), profile, serialize_options)
+
     try:
-        with NamedTemporaryFile('w', suffix='~', delete=False, dir=profile_dir) as newprof:
+        with NamedTemporaryFile('w', suffix='~', delete=False, dir=out_dir or profile_dir) as newprof:
             if os.path.exists(prof_filename):
                 shutil.copymode(prof_filename, newprof.name)
             else:
@@ -2308,7 +2337,11 @@ def write_profile(profile, is_attachment=False):
     except PermissionError as e:
         raise AppArmorException(e)
 
-    os.rename(newprof.name, prof_filename)
+    if out_dir is None:
+        os.rename(newprof.name, prof_filename)
+    else:
+        out_filename = out_dir + "/" + prof_filename.split('/')[-1]
+        os.rename(newprof.name, out_filename)
 
     if profile in changed:
         changed.pop(profile)
