@@ -120,12 +120,12 @@ void receive_mq_notify(mqd_t mqd)
 
 	if (mq_notify(mqd, &sev) == -1) {
 		perror("FAIL - could not mq_notify");
-		exit(EXIT_FAILURE);
+		return;
 	}
 
 	if (write_to_pipe(pipepath) == -1) { // let sender know mq_notify is ready
 		fprintf(stderr, "FAIL - could not write to pipe\n");
-		exit(EXIT_FAILURE);
+		return;
 	}
 
 	sleep(timeout);
@@ -144,7 +144,7 @@ void receive_select(mqd_t mqd)
 
 	if (select(mqd + 1, &read_fds, NULL, NULL, &tv) == -1) {
 		perror("FAIL - could not select");
-		exit(EXIT_FAILURE);
+		return;
 	} else {
 		if (FD_ISSET(mqd, &read_fds))
 			receive_message(mqd, 0);
@@ -159,7 +159,7 @@ void receive_poll(mqd_t mqd)
 
 	if (poll(fds, 1, timeout * 1000) == -1) {
 		perror("FAIL - could not poll");
-		exit(EXIT_FAILURE);
+		return;
 	} else {
 		if (fds[0].revents & POLLIN)
 			receive_message(mqd, 0);
@@ -171,7 +171,7 @@ void receive_epoll(mqd_t mqd)
 	int epfd = epoll_create(1);
 	if (epfd == -1) {
 		perror("FAIL - could not create epoll");
-		exit(EXIT_FAILURE);
+		return;
 	}
 
 	struct epoll_event ev, rev[1];
@@ -179,12 +179,12 @@ void receive_epoll(mqd_t mqd)
 	ev.data.fd = mqd;
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, mqd, &ev) == -1) {
 		perror("FAIL - could not add mqd to epoll");
-		exit(EXIT_FAILURE);
+		return;
 	}
 
 	if (epoll_wait(epfd, rev, 1, timeout * 1000) == -1) {
 		perror("FAIL - could not epoll_wait");
-		exit(EXIT_FAILURE);
+		return;
 	} else {
 		if (rev[0].data.fd == mqd && rev[0].events & EPOLLIN)
 			receive_message(mqd, 0);
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
 	int pid = fork();
 	if (pid == -1) {
 		perror("FAIL - could not fork");
-		exit(EXIT_FAILURE);
+		goto out;
 	} else if (!pid) {
 		if (client == NULL) {
 			usage(argv[0], "client not specified");
