@@ -148,7 +148,7 @@ or to set it on boot add:
 
 as a kernel boot parameter.
 
-B<Warning> Setting complain mode gloabally disables all apparmor
+B<Warning> Setting complain mode globally disables all apparmor
 security protections. It can be useful during debugging or profile
 development, but setting it selectively on a per profile basis is
 safer.
