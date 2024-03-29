@@ -451,7 +451,7 @@ Eg.
 
 would result in Optimize=minimize being set.
 
-The Include, Dump, and Optimize options accululate except for the inversion
+The Include, Dump, and Optimize options accumulate except for the inversion
 option (no-X vs. X), and a couple options that work by setting/clearing
 multiple options (compress-small).  In that case the option will override
 the flags it sets but will may accumulate with others.
