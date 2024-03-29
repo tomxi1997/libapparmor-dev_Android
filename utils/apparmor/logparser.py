@@ -61,6 +61,7 @@ class ReadLog:
             'mqueue':       hasher(),
             'io_uring':     hasher(),
             'mount':        hasher(),
+            'unix':         hasher(),
         }
 
     def prefetch_next_log_entry(self):
@@ -124,6 +125,12 @@ class ReadLog:
         elif ev['operation'] and (ev['operation'] == 'umount'):
             ev['flags'] = event.flags
             ev['fs_type'] = event.fs_type
+        elif ev['class'] and ev['class'] == 'net' and ev['family'] and ev['family'] == 'unix':
+            ev['peer'] = event.peer
+            ev['peer_profile'] = event.peer_profile
+            ev['accesses'] = event.requested_mask
+            ev['addr'] = event.net_addr
+            ev['peer_addr'] = event.peer_addr
         elif ev['operation'] and ev['operation'].startswith('dbus_'):
             ev['peer_profile'] = event.peer_profile
             ev['bus'] = event.dbus_bus
@@ -218,11 +225,17 @@ class ReadLog:
             if e['fs_type'] != None:
                 e['fs_type'] = ('=', e['fs_type'])
 
-
             if e['operation'] == 'mount':
                 self.hashlog[aamode][full_profile]['mount'][e['operation']][e['flags']][e['fs_type']][e['name']][e['src_name']] = True
             else:  # Umount
                 self.hashlog[aamode][full_profile]['mount'][e['operation']][e['flags']][e['fs_type']][e['name']][None] = True
+            return
+
+        elif e['class'] and e['class'] == 'net' and e['family'] and e['family'] == 'unix':
+            rule  = (e['sock_type'], None) # Protocol is not supported yet.
+            local = (e['addr'], None, e['attr'], None)
+            peer  = (e['peer_addr'], e['peer_profile'])
+            self.hashlog[aamode][full_profile]['unix'][e['denied_mask']][rule][local][peer] = True
             return
 
         elif self.op_type(e) == 'file':

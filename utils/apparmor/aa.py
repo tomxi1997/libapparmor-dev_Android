@@ -40,7 +40,7 @@ from apparmor.regex import (
     RE_HAS_COMMENT_SPLIT, RE_PROFILE_CHANGE_HAT, RE_PROFILE_CONDITIONAL,
     RE_PROFILE_CONDITIONAL_BOOLEAN, RE_PROFILE_CONDITIONAL_VARIABLE, RE_PROFILE_END,
     RE_PROFILE_HAT_DEF, RE_PROFILE_PIVOT_ROOT, RE_PROFILE_START,
-    RE_PROFILE_UNIX, RE_RULE_HAS_COMMA, parse_profile_start_line, re_match_include)
+    RE_RULE_HAS_COMMA, parse_profile_start_line, re_match_include)
 from apparmor.rule.abi import AbiRule
 from apparmor.rule.capability import CapabilityRule
 from apparmor.rule.change_profile import ChangeProfileRule
@@ -54,6 +54,7 @@ from apparmor.rule.userns import UserNamespaceRule
 from apparmor.rule.mqueue import MessageQueueRule
 from apparmor.rule.io_uring import IOUringRule
 from apparmor.rule.mount import MountRule
+from apparmor.rule.unix import UnixRule
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -1786,6 +1787,15 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                     if not hat_exists or not is_known_rule(aa[profile][hat], 'io_uring', io_uring_event):
                         log_dict[aamode][final_name]['io_uring'].add(io_uring_event)
 
+            unix = hashlog[aamode][full_profile]['unix']
+            for unix_access in unix.keys():
+                for unix_rule in unix[unix_access]:
+                    for unix_local in unix[unix_access][unix_rule]:
+                        for unix_peer in unix[unix_access][unix_rule][unix_local]:
+                            unix_event = UnixRule(unix_access, unix_rule, unix_local, unix_peer)
+                            if not hat_exists or not is_known_rule(aa[profile][hat], 'unix', unix_event):
+                                log_dict[aamode][final_name]['unix'].add(unix_event)
+
             mount = hashlog[aamode][full_profile]['mount']
             for operation, operation_val in mount.items():
                 for options, options_val in operation_val.items():
@@ -2046,29 +2056,6 @@ def parse_profile_data(data, file, do_include, in_preamble):
             pivot_root_rules.append(pivot_root_rule)
             profile_data[profname][allow]['pivot_root'] = pivot_root_rules
 
-        elif RE_PROFILE_UNIX.search(line):
-            matches = RE_PROFILE_UNIX.search(line).groups()
-
-            if not profile:
-                raise AppArmorException(_('Syntax Error: Unexpected unix entry found in file: %(file)s line: %(line)s')
-                                        % {'file': file, 'line': lineno + 1})
-
-            audit = False
-            if matches[0]:
-                audit = True
-            allow = 'allow'
-            if matches[1] and matches[1].strip() == 'deny':
-                allow = 'deny'
-            unix = matches[2].strip()
-
-            unix_rule = parse_unix_rule(unix)
-            unix_rule.audit = audit
-            unix_rule.deny = (allow == 'deny')
-
-            unix_rules = profile_data[profname][allow].get('unix', [])
-            unix_rules.append(unix_rule)
-            profile_data[profname][allow]['unix'] = unix_rules
-
         elif RE_PROFILE_CHANGE_HAT.search(line):
             matches = RE_PROFILE_CHANGE_HAT.search(line).groups()
 
@@ -2156,6 +2143,7 @@ def match_line_against_rule_classes(line, profile, file, lineno, in_preamble):
             'mqueue',
             'io_uring',
             'mount',
+            'unix',
     ):
 
         if rule_name in ruletypes:
@@ -2211,10 +2199,6 @@ def parse_pivot_root_rule(line):
     # XXX Do real parsing here
     return aarules.Raw_Pivot_Root_Rule(line)
 
-
-def parse_unix_rule(line):
-    # XXX Do real parsing here
-    return aarules.Raw_Unix_Rule(line)
 
 
 def write_piece(profile_data, depth, name, nhat):

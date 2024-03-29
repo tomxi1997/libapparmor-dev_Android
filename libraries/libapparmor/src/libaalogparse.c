@@ -103,6 +103,11 @@ void free_record(aa_log_record *record)
 			free(record->flags);
 		if (record->src_name != NULL)
 			free(record->src_name);
+		if (record->net_addr != NULL)
+			free(record->net_addr);
+		if (record->peer_addr != NULL)
+			free(record->peer_addr);
+
 		if (record->class != NULL)
 			free(record->class);
 

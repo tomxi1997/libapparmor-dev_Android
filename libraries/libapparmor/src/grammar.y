@@ -114,6 +114,7 @@ aa_record_event_type lookup_aa_event(unsigned int type)
 %token TOK_PERIOD
 %token TOK_QUESTION_MARK
 %token TOK_SINGLE_QUOTE
+%token TOK_NONE
 
 %token TOK_TYPE_REJECT
 %token TOK_TYPE_AUDIT
@@ -187,6 +188,7 @@ aa_record_event_type lookup_aa_event(unsigned int type)
 %token TOK_KEY_FSTYPE
 %token TOK_KEY_FLAGS
 %token TOK_KEY_SRCNAME
+%token TOK_KEY_UNIX_PEER_ADDR
 %token TOK_KEY_CLASS
 
 %token TOK_SOCKLOGD_KERNEL
@@ -354,6 +356,13 @@ key: TOK_KEY_OPERATION TOK_EQUALS TOK_QUOTED_STRING
 	{ ret_record->fsuid = $3;}
 	| TOK_KEY_OUID TOK_EQUALS TOK_DIGITS
 	{ ret_record->ouid = $3;}
+	| TOK_KEY_ADDR TOK_EQUALS TOK_QUESTION_MARK
+	| TOK_KEY_ADDR TOK_EQUALS TOK_NONE
+	| TOK_KEY_ADDR TOK_EQUALS safe_string
+	{ ret_record->net_addr = $3; }
+	| TOK_KEY_UNIX_PEER_ADDR TOK_EQUALS TOK_NONE
+	| TOK_KEY_UNIX_PEER_ADDR TOK_EQUALS safe_string
+	{ ret_record->peer_addr = $3; }
 	| TOK_KEY_FSUID_UPPER TOK_EQUALS TOK_QUOTED_STRING
 	{ free($3);} /* Ignore - fsuid username */
 	| TOK_KEY_OUID_UPPER TOK_EQUALS TOK_QUOTED_STRING
@@ -363,10 +372,7 @@ key: TOK_KEY_OPERATION TOK_EQUALS TOK_QUOTED_STRING
 	| TOK_KEY_HOSTNAME TOK_EQUALS safe_string
 	{ free($3); /* Ignore - hostname from user AVC messages */ }
 	| TOK_KEY_HOSTNAME TOK_EQUALS TOK_QUESTION_MARK
-	| TOK_KEY_ADDR TOK_EQUALS TOK_QUESTION_MARK
 	| TOK_KEY_TERMINAL TOK_EQUALS TOK_QUESTION_MARK
-	| TOK_KEY_ADDR TOK_EQUALS safe_string
-	{ free($3); /* Ignore - IP address from user AVC messages */ }
 	| TOK_KEY_TERMINAL TOK_EQUALS safe_string
 	{ free($3); /* Ignore - TTY from user AVC messages */ }
 	| TOK_KEY_EXE TOK_EQUALS safe_string
@@ -419,14 +425,12 @@ key: TOK_KEY_OPERATION TOK_EQUALS TOK_QUOTED_STRING
 	{ ret_record->dbus_member = $3; }
 	| TOK_KEY_SIGNAL TOK_EQUALS TOK_ID
 	{ ret_record->signal = $3; }
-
 	| TOK_KEY_FSTYPE TOK_EQUALS TOK_QUOTED_STRING
 	{ ret_record->fs_type = $3; }
 	| TOK_KEY_FLAGS TOK_EQUALS TOK_QUOTED_STRING
 	{ ret_record->flags = $3; }
 	| TOK_KEY_SRCNAME TOK_EQUALS TOK_QUOTED_STRING
 	{ ret_record->src_name = $3; }
-
 	| TOK_MSG_REST
 	{
 		ret_record->event = AA_RECORD_INVALID;

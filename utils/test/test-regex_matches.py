@@ -15,7 +15,7 @@ import apparmor.aa as aa
 from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.regex import (
     RE_PROFILE_CAP, RE_PROFILE_DBUS, RE_PROFILE_MOUNT, RE_PROFILE_PTRACE, RE_PROFILE_SIGNAL,
-    RE_PROFILE_START, parse_profile_start_line, re_match_include,
+    RE_PROFILE_START, parse_profile_start_line, re_match_include, RE_PROFILE_UNIX,
     re_match_include_parse, strip_parenthesis, strip_quotes)
 from common_test import AATest, setup_aa, setup_all_loops
 
@@ -337,19 +337,21 @@ class AARegexUnix(AARegexTest):
     """Tests for RE_PROFILE_UNIX"""
 
     def AASetup(self):
-        self.regex = aa.RE_PROFILE_UNIX
+        self.regex = RE_PROFILE_UNIX
 
     tests = (
-        ('   unix,',                                                                               (None,    None,    'unix,',                                                                                 None)),
-        ('   audit unix,',                                                                         ('audit', None,    'unix,',                                                                                 None)),
-        ('   unix accept,',                                                                        (None,    None,    'unix accept,',                                                                          None)),
-        ('   allow unix connect,',                                                                 (None,    'allow', 'unix connect,',                                                                         None)),
-        ('   audit allow unix bind,',                                                              ('audit', 'allow', 'unix bind,',                                                                            None)),
-        ('   deny unix bind,',                                                                     (None,    'deny',  'unix bind,',                                                                            None)),
-        ('unix peer=(label=@{profile_name}),',                                                     (None,    None,    'unix peer=(label=@{profile_name}),',                                                    None)),
-        ('unix (receive) peer=(label=unconfined),',                                                (None,    None,    'unix (receive) peer=(label=unconfined),',                                               None)),
-        (' unix (getattr, shutdown) peer=(addr=none),',                                            (None,    None,    'unix (getattr, shutdown) peer=(addr=none),',                                            None)),
-        ('unix (connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*"),', (None,    None,    'unix (connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*"),', None)),
+        ('   unix,',                                                                               (None,    None,    'unix,',                                      None,                                   None)),
+        ('   audit unix,',                                                                         ('audit', None,    'unix,',                                      None,                                   None)),
+        ('   unix accept,',                                                                        (None,    None,    'unix accept,',                               'accept',                               None)),
+        ('   allow unix connect,',                                                                 (None,    'allow', 'unix connect,',                              'connect',                              None)),
+        ('   audit allow unix bind,',                                                              ('audit', 'allow', 'unix bind,',                                 'bind',                                 None)),
+        ('   deny unix bind,',                                                                     (None,    'deny',  'unix bind,',                                 'bind',                                 None)),
+        ('unix peer=(label=@{profile_name}),',                                                     (None,    None,    'unix peer=(label=@{profile_name}),',         'peer=(label=@{profile_name})',         None)),
+        ('unix (receive) peer=(label=unconfined),',                                                (None,    None,    'unix (receive) peer=(label=unconfined),',    '(receive) peer=(label=unconfined)',    None)),
+        (' unix (getattr, shutdown) peer=(addr=none),',                                            (None,    None,    'unix (getattr, shutdown) peer=(addr=none),', '(getattr, shutdown) peer=(addr=none)', None)),
+        ('unix (connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*"),', (None,    None,    'unix (connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*"),',
+                                                                                                                                                                    '(connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*")',
+                                                                                                                                                                                                            None)),
         ('unixlike', False),
         ('deny unixlike,', False),
     )

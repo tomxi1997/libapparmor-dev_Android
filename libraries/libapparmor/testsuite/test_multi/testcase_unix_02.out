@@ -1,0 +1,18 @@
+START
+File: testcase_unix_02.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1711214183.107:298
+Operation: connect
+Mask: send receive accept
+Denied Mask: send accept
+Profile: /home/user/test/client.py
+Peer: unconfined
+Command: server.py
+PID: 65262
+Net Addr: @test_abstract_socket
+Network family: unix
+Socket type: stream
+Protocol: ip
+Class: net
+Epoch: 1711214183
+Audit subid: 298

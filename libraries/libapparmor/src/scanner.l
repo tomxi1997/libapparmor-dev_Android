@@ -90,6 +90,7 @@ question_mark	"?"
 single_quote	"'"
 mode_chars      ([RrWwaLlMmkXx])|([Pp][Xx])|([Uu][Xx])|([Ii][Xx])|([Pp][Ii][Xx])
 modes		({mode_chars}+)|({mode_chars}+::{mode_chars}*)|(::{mode_chars}*)
+none		"none"
 /* New message types */
 
 aa_reject_type		"APPARMOR_DENIED"
@@ -173,6 +174,7 @@ key_flags		"flags"
 key_srcname		"srcname"
 key_class		"class"
 key_tcontext		"tcontext"
+key_unix_peer_addr	"peer_addr"
 audit			"audit"
 
 /* network addrs */
@@ -303,6 +305,8 @@ yy_flex_debug = 0;
 {period}		{ return(TOK_PERIOD); }
 {question_mark}		{ return(TOK_QUESTION_MARK); }
 {single_quote}		{ return(TOK_SINGLE_QUOTE); }
+{none}			{ return(TOK_NONE); }
+
 
 {key_apparmor}		{ BEGIN(audit_types); return(TOK_KEY_APPARMOR); }
 {key_type}		{ BEGIN(audit_types); return(TOK_KEY_TYPE); }
@@ -342,7 +346,7 @@ yy_flex_debug = 0;
 {key_sauid}		{ return(TOK_KEY_SAUID); }
 {key_ses}		{ return(TOK_KEY_SES); }
 {key_hostname}		{ return(TOK_KEY_HOSTNAME); }
-{key_addr}		{ return(TOK_KEY_ADDR); }
+{key_addr}		{ BEGIN(safe_string); return(TOK_KEY_ADDR); }
 {key_terminal}		{ return(TOK_KEY_TERMINAL); }
 {key_exe}		{ BEGIN(safe_string); return(TOK_KEY_EXE); }
 {key_comm}		{ BEGIN(safe_string); return(TOK_KEY_COMM); }
@@ -364,6 +368,7 @@ yy_flex_debug = 0;
 {key_fstype}		{ return(TOK_KEY_FSTYPE); }
 {key_flags}		{ BEGIN(safe_string); return(TOK_KEY_FLAGS); }
 {key_srcname}		{ BEGIN(safe_string); return(TOK_KEY_SRCNAME); }
+{key_unix_peer_addr}    { BEGIN(safe_string); return(TOK_KEY_UNIX_PEER_ADDR); }
 {key_class}		{ BEGIN(safe_string); return(TOK_KEY_CLASS); }
 
 {socklogd_kernel}	{ BEGIN(dmesg_timestamp); return(TOK_SOCKLOGD_KERNEL); }
