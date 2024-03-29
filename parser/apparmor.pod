@@ -146,7 +146,7 @@ or to set it on boot add:
 
 	apparmor.mode=complain
 
-as a kernel boot paramenter.
+as a kernel boot parameter.
 
 B<Warning> Setting complain mode gloabally disables all apparmor
 security protections. It can be useful during debugging or profile
@@ -217,7 +217,7 @@ or to set it on boot add:
 
 	apparmor.debug=1
 
-as a kernel boot paramenter.
+as a kernel boot parameter.
 
 =head2 Turn off deny audit quieting
 
@@ -232,7 +232,7 @@ or to set it on boot add:
 
 	apparmor.audit=noquiet
 
-as a kernel boot paramenter.
+as a kernel boot parameter.
 
 =head2 Force audit mode
 
@@ -254,7 +254,7 @@ or to set it on boot add:
 
 	apparmor.audit=all
 
-as a kernel boot paramenter.
+as a kernel boot parameter.
 
 B<Audit Rate Limiting>
 
