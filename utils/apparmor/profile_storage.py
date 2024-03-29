@@ -32,6 +32,7 @@ from apparmor.rule.userns import UserNamespaceRule, UserNamespaceRuleset
 from apparmor.rule.mqueue import MessageQueueRule, MessageQueueRuleset
 from apparmor.rule.io_uring import IOUringRule, IOUringRuleset
 from apparmor.rule.mount import MountRule, MountRuleset
+from apparmor.rule.unix import UnixRule, UnixRuleset
 
 from apparmor.translations import init_translation
 
@@ -53,6 +54,7 @@ ruletypes = {
     'mqueue':         {'rule': MessageQueueRule,  'ruleset': MessageQueueRuleset},
     'io_uring':       {'rule': IOUringRule,       'ruleset': IOUringRuleset},
     'mount':          {'rule': MountRule,         'ruleset': MountRuleset},
+    'unix':           {'rule': UnixRule,          'ruleset': UnixRuleset},
 
 }
 
@@ -88,11 +90,9 @@ class ProfileStorage:
         data['allow'] = dict()
         data['deny'] = dict()
 
-        # pivot_root, unix have a .get() fallback to list() - initialize them nevertheless
+        # pivot_root has a .get() fallback to list() - initialize it nevertheless
         data['allow']['pivot_root'] = []
         data['deny']['pivot_root'] = []
-        data['allow']['unix'] = []
-        data['deny']['unix'] = []
 
         self.data = data
 
@@ -184,7 +184,6 @@ class ProfileStorage:
         # "old" write functions for rule types not implemented as *Rule class yet
         write_functions = {
             'pivot_root': write_pivot_root,
-            'unix': write_unix,
         }
 
         write_order = [
@@ -326,24 +325,4 @@ def write_pivot_root_rules(prof_data, depth, allow):
 def write_pivot_root(prof_data, depth):
     data = write_pivot_root_rules(prof_data, depth, 'deny')
     data.extend(write_pivot_root_rules(prof_data, depth, 'allow'))
-    return data
-
-
-def write_unix(prof_data, depth):
-    data = write_unix_rules(prof_data, depth, 'deny')
-    data.extend(write_unix_rules(prof_data, depth, 'allow'))
-    return data
-
-
-def write_unix_rules(prof_data, depth, allow):
-    pre = '  ' * depth
-    data = []
-
-    # no unix rules, so return
-    if not prof_data[allow].get('unix', False):
-        return data
-
-    for unix_rule in prof_data[allow]['unix']:
-        data.append('%s%s' % (pre, unix_rule.serialize()))
-    data.append('')
     return data

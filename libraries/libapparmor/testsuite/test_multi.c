@@ -115,6 +115,8 @@ int print_results(aa_log_record *record)
 		print_long("Peer PID", record->peer_pid, 0);
 		print_string("Active hat", record->active_hat);
 
+		print_string("Net Addr", record->net_addr);
+		print_string("Peer Addr", record->peer_addr);
 		print_string("Network family", record->net_family);
 		print_string("Socket type", record->net_sock_type);
 		print_string("Protocol", record->net_protocol);

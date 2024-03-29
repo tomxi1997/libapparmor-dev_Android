@@ -171,35 +171,16 @@ exception_not_raised = (
     'profile/profile_ns_bad8.sd',  # 'profile :ns/t' without terminating ':'
     'ptrace/bad_10.sd',  # peer with invalid regex
     'signal/bad_21.sd',  # invalid regex
-    'unix/bad_attr_1.sd',
-    'unix/bad_attr_2.sd',
-    'unix/bad_attr_3.sd',
-    'unix/bad_attr_4.sd',
-    'unix/bad_bind_1.sd',
-    'unix/bad_bind_2.sd',
-    'unix/bad_create_1.sd',
-    'unix/bad_create_2.sd',
-    'unix/bad_listen_1.sd',
-    'unix/bad_listen_2.sd',
-    'unix/bad_modifier_1.sd',
-    'unix/bad_modifier_2.sd',
-    'unix/bad_modifier_3.sd',
-    'unix/bad_modifier_4.sd',
-    'unix/bad_opt_1.sd',
-    'unix/bad_opt_2.sd',
-    'unix/bad_opt_3.sd',
-    'unix/bad_opt_4.sd',
-    'unix/bad_peer_1.sd',
+
+    # Invalid regexes
     'unix/bad_regex_01.sd',
     'unix/bad_regex_02.sd',
     'unix/bad_regex_03.sd',
     'unix/bad_regex_04.sd',
-    'unix/bad_shutdown_1.sd',
-    'unix/bad_shutdown_2.sd',
-    'unix/bad_peer_2.sd',
-    'unix/bad_attr_5.sd',
-    'unix/bad_opt_5.sd',
-    'unix/bad_shutdown_3.sd',
+
+    'unix/bad_modifier_2.sd',  # We do not check for duplicated keywords
+    'unix/bad_bind_2.sd',  # We do not check bind coherency
+
     'vars/vars_bad_3.sd',
     'vars/vars_bad_4.sd',
     'vars/vars_bad_5.sd',
@@ -348,6 +329,13 @@ unknown_line = (
 
     # Options should be comma separated
     'mount/in_4.sd',  # also order option then fstype is invalid
+
+    # Unsupported \\" in unix AARE
+    'unix/ok_regex_03.sd',
+    'unix/ok_regex_09.sd',
+    'unix/ok_regex_13.sd',
+    'unix/ok_regex_19.sd',
+
 )
 
 # testcases with various unexpected failures

@@ -161,6 +161,9 @@ typedef struct
 	char *src_name;
 
 	char *class;
+
+	char *net_addr;
+	char *peer_addr;
 } aa_log_record;
 
 /**

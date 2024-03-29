@@ -65,6 +65,8 @@ class TestLibapparmorTestMulti(AATest):
                         'src_name',  # pivotroot
                         'dbus_bus', 'dbus_interface', 'dbus_member', 'dbus_path',  # dbus
                         'peer_pid', 'peer_profile',  # dbus
+                        'net_addr', 'peer_addr',  # unix
+
                 ):
                     pass
                 elif parsed_items['operation'] == 'exec' and label in ('sock_type', 'family', 'protocol'):

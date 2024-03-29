@@ -35,7 +35,6 @@ $bar = true
   pivot_root oldroot=/mnt/root/old/,
 
   unix (receive) type=dgram,
-  unix shutdown addr=@HypotheticalServiceDaemon,
 
   deny owner link /some/thing -> /foo/bar,
 

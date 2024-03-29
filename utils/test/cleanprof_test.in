@@ -76,7 +76,7 @@ $foo = false
 	pivot_root oldroot=/mnt/root/old/,
 
 	deny    owner       link       /some/thing    ->     /foo/bar    ,
-	unix shutdown addr=@HypotheticalServiceDaemon,
+	unix shutdown addr=@HypotheticalServiceDaemon, # covered in abstractions/base, will be removed
 
 	link subset /alpha/beta -> /tmp/**,
 

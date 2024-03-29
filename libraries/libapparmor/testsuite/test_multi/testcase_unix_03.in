@@ -1,0 +1,1 @@
+type=AVC msg=audit(1711214069.931:292): apparmor="DENIED" operation="bind" class="net" profile="/home/user/test/client.py" pid=64952 comm="client.py" family="unix" sock_type="stream" protocol=0 requested="bind" denied="bind" addr="@test_abstract_socket"
