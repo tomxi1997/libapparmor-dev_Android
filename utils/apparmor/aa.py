@@ -17,7 +17,6 @@ import atexit
 import os
 import re
 import shutil
-import subprocess  # nosec
 import sys
 import time
 import traceback
@@ -360,81 +359,6 @@ def check_output_dir(output_dir):
         )
 
 
-def get_output(params):
-    """Runs the program with the given args and returns the return code and stdout (as list of lines)"""
-    try:
-        # Get the output of the program
-        output = subprocess.check_output(params)  # nosec
-        ret = 0
-    except OSError as e:
-        raise AppArmorException(
-            _("Unable to fork: %(program)s\n\t%(error)s")
-            % {'program': params[0], 'error': str(e)})
-    except subprocess.CalledProcessError as e:  # If exit code != 0
-        output = e.output
-        ret = e.returncode
-
-    output = output.decode('utf-8').split('\n')
-
-    # Remove the extra empty string caused due to \n if present
-    if not output[-1]:
-        output.pop()
-
-    return (ret, output)
-
-
-def get_reqs(file):
-    """Returns a list of paths from ldd output"""
-    pattern1 = re.compile(r'^\s*\S+ => (/\S+)')
-    pattern2 = re.compile(r'^\s*(/\S+)')
-    reqs = []
-
-    ldd = conf.find_first_file(cfg['settings'].get('ldd')) or '/usr/bin/ldd'
-    if not os.path.isfile(ldd) or not os.access(ldd, os.EX_OK):
-        raise AppArmorException("Can't find ldd")
-
-    ret, ldd_out = get_output((ldd, file))
-    if ret == 0 or ret == 1:
-        for line in ldd_out:
-            if 'not a dynamic executable' in line:  # comes with ret == 1
-                break
-            if 'cannot read header' in line:
-                break
-            if 'statically linked' in line:
-                break
-            match = pattern1.search(line)
-            if match:
-                reqs.append(match.groups()[0])
-            else:
-                match = pattern2.search(line)
-                if match:
-                    reqs.append(match.groups()[0])
-    return reqs
-
-
-def handle_binfmt(profile, path):
-    """Modifies the profile to add the requirements"""
-    reqs_processed = dict()
-    reqs = get_reqs(path)
-    while reqs:
-        library = reqs.pop()
-        library = get_full_path(library)  # resolve symlinks
-        if not reqs_processed.get(library, False):
-            if get_reqs(library):
-                reqs.extend(get_reqs(library))
-            reqs_processed[library] = True
-
-        library_rule = FileRule(library, 'mr', None, FileRule.ALL, owner=False, log_event=True)
-
-        if not is_known_rule(profile, 'file', library_rule):
-            globbed_library = glob_common(library)
-            if globbed_library:
-                # glob_common returns a list, just use the first element (typically '/lib/libfoo.so.*')
-                library_rule = FileRule(globbed_library[0], 'mr', None, FileRule.ALL, owner=False)
-
-            profile['file'].add(library_rule)
-
-
 def get_interpreter_and_abstraction(exec_target):
     """Check if exec_target is a script.
        If a hashbang is found, check if we have an abstraction for it.
@@ -497,11 +421,9 @@ def create_new_profile(localfile, is_stub=False):
                 else:
                     aaui.UI_Important(_("WARNING: Can't find %s, therefore not adding it to the new profile.") % abstraction)
 
-            handle_binfmt(local_profile[localfile], interpreter_path)
         else:
             local_profile[localfile]['file'].add(FileRule(localfile,        'mr', None, FileRule.ALL, owner=False))
 
-            handle_binfmt(local_profile[localfile], localfile)
     # Add required hats to the profile if they match the localfile
     for hatglob in cfg['required_hats'].keys():
         if re.search(hatglob, localfile):
@@ -1041,8 +963,6 @@ def ask_exec(hashlog):
 
                                     if not aa[profile][hat]['inc_ie'].is_covered(abstraction_rule):
                                         aa[profile][hat]['inc_ie'].add(abstraction_rule)
-
-                                handle_binfmt(aa[profile][hat], interpreter_path)
 
                     # Update tracking info based on kind of change
 
