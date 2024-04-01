@@ -24,7 +24,7 @@ class Test(unittest.TestCase):
         conf = ini_config.read_config('logprof.conf')
         logprof_sections = ['settings', 'qualifiers', 'required_hats', 'defaulthat', 'globs']
         logprof_sections_options = [
-            'profiledir', 'inactive_profiledir', 'logfiles', 'parser', 'ldd',
+            'profiledir', 'inactive_profiledir', 'logfiles', 'parser',
             'logger', 'default_owner_prompt', 'custom_includes']
         logprof_settings_parser = '../../parser/apparmor_parser ../parser/apparmor_parser'
 

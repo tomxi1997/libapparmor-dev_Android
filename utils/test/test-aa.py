@@ -15,7 +15,7 @@ import unittest
 
 import apparmor.aa  # needed to set global vars in some tests
 from apparmor.aa import (
-    change_profile_flags, check_for_apparmor, create_new_profile, get_file_perms, get_interpreter_and_abstraction, get_output, get_profile_flags, get_reqs,
+    change_profile_flags, check_for_apparmor, create_new_profile, get_file_perms, get_interpreter_and_abstraction, get_profile_flags,
     merged_to_split, parse_profile_data, propose_file_rules, set_options_audit_mode, set_options_owner_mode, split_to_merged)
 from apparmor.aare import AARE
 from apparmor.common import AppArmorBug, AppArmorException, is_skippable_file
@@ -78,32 +78,6 @@ class AaTest_check_for_apparmor(AaTestWithTempdir):
         self.assertEqual(self.tmpdir + '/security/apparmor', check_for_apparmor(filesystems, mounts))
 
 
-class AATest_get_output(AATest):
-    tests = (
-        (('./fake_ldd', '/AATest/lib64/libc-2.22.so'), (0, ['        /AATest/lib64/ld-linux-x86-64.so.2 (0x0000556858473000)', '        linux-vdso.so.1 (0x00007ffe98912000)'])),
-        (('./fake_ldd', '/tmp/aa-test-foo'),           (0, ['        not a dynamic executable'])),
-        (('./fake_ldd', 'invalid'),                    (1, [])),  # stderr is not part of output
-    )
-
-    def _run_test(self, params, expected):
-        self.assertEqual(get_output(params), expected)
-
-    def test_get_output_nonexisting(self):
-        with self.assertRaises(AppArmorException):
-            ret, output = get_output(('./_file_/_not_/_found_',))
-
-
-class AATest_get_reqs(AATest):
-    tests = (
-        ('/AATest/bin/bash',    ['/AATest/lib64/libreadline.so.6', '/AATest/lib64/libtinfo.so.6', '/AATest/lib64/libdl.so.2', '/AATest/lib64/libc.so.6', '/AATest/lib64/ld-linux-x86-64.so.2']),
-        ('/tmp/aa-test-foo',    []),
-        ('/AATest/sbin/ldconfig', []),  # comes with $? == 1
-    )
-
-    def _run_test(self, params, expected):
-        apparmor.aa.cfg['settings']['ldd'] = './fake_ldd'
-        self.assertEqual(get_reqs(params), expected)
-
 
 class AaTest_create_new_profile(AATest):
     tests = (
@@ -114,8 +88,6 @@ class AaTest_create_new_profile(AATest):
     )
 
     def _run_test(self, params, expected):
-        apparmor.aa.cfg['settings']['ldd'] = './fake_ldd'
-
         self.createTmpdir()
 
         # copy the local profiles to the test directory
@@ -146,10 +118,7 @@ class AaTest_create_new_profile(AATest):
         if exp_interpreter_path:
             self.assertEqual(
                 set(profile[program]['file'].get_clean()),
-                {'{} ix,'.format(exp_interpreter_path), '{} r,'.format(program), '',
-                 '/AATest/lib64/libtinfo.so.* mr,', '/AATest/lib64/libc.so.* mr,',
-                 '/AATest/lib64/libdl.so.* mr,', '/AATest/lib64/libreadline.so.* mr,',
-                 '/AATest/lib64/ld-linux-x86-64.so.* mr,'})
+                {'{} ix,'.format(exp_interpreter_path), '{} r,'.format(program), '' })
         else:
             self.assertEqual(set(profile[program]['file'].get_clean()), {'{} mr,'.format(program), ''})
 
