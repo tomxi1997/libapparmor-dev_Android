@@ -1,0 +1,11 @@
+#
+#=DESCRIPTION network anon ip conditional test
+#=EXRESULT PASS
+#
+/usr/bin/foo {
+  network ip=anon,
+  network peer=(ip=anon),
+  network inet ip=anon peer=(ip=anon),
+  network inet tcp ip=anon peer=(ip=anon),
+
+}
