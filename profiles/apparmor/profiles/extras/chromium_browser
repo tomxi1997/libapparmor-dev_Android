@@ -81,7 +81,6 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /tmp/.X[0-9]*-lock r,
 
   @{PROC}/self/exe ixr,
-  @{PROC}/@{pid}/fd/ r,
   @{PROC}/filesystems r,
   @{PROC}/vmstat r,
   @{PROC}/ r,
@@ -197,12 +196,15 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   owner @{HOME}/.config/chromium/Dictionaries/*.bdic mr,
   owner @{HOME}/.config/chromium/**/Dictionaries/*.bdic mr,
 
-  # Allow transitions to ourself and our sandbox
+  # Allow transitions to ourself, our sandbox, and crash handler
   /usr/lib/@{chromium}/@{chromium} ix,
   /usr/lib/@{chromium}/chrome-sandbox cx -> sandbox,
+  /usr/lib/@{chromium}/chrome_crashpad_handler Cxr -> crashpad_handler,
 
-  # Allow communicating with sandbox
+  # Allow communicating with sandbox and crash handler
   unix (receive, send) peer=(label=@{profile_name}//sandbox),
+  unix (receive, send) peer=(label=@{profile_name}//crashpad_handler),
+  signal (receive) set=(cont) peer=@{profile_name}//crashpad_handler,
 
   /{usr/,}bin/ps Uxr,
   /usr/lib/@{chromium}/xdg-settings Cxr -> xdgsettings,
@@ -324,6 +326,32 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
     /dev/null rw,
 
     owner /tmp/** rw,
+  }
+
+  profile crashpad_handler {
+    include <abstractions/base>
+
+    capability sys_ptrace,
+
+    ptrace (read, trace) peer=chromium_browser,
+
+    signal (send) set=(cont) peer=chromium_browser,
+
+    unix (receive, send) peer=(label=chromium_browser),
+
+    /usr/lib/@{chromium}/chrome_crashpad_handler ixr,
+
+    /sys/devices/system/cpu/cpufreq/policy[0-9]*/scaling_{cur,max}_freq r,
+
+    @{PROC}/sys/kernel/yama/ptrace_scope r,
+
+    owner @{PROC}/@{pid}/fd/ r,
+    owner @{PROC}/@{pid}/mem r,
+    owner @{PROC}/@{pid}/stat r,
+    owner @{PROC}/@{pid}/task/ r,
+    owner @{PROC}/@{pid}/task/@{tid}/comm r,
+
+    owner @{HOME}/.config/chromium/Crash?Reports/** rwk,
   }
 
   # Site-specific additions and overrides. See local/README for details.
