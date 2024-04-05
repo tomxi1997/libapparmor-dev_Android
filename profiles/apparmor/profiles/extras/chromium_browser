@@ -12,7 +12,7 @@
 
 abi <abi/4.0>,
 
-#include <tunables/global>
+include <tunables/global>
 
 @{chromium} = chromium{,-browser}
 
@@ -60,8 +60,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
        member={EnumerateDevices,GetDisplayDevice}
        peer=(label=unconfined),
 
-  # ???
-  deny dbus (send)
+  dbus (send)
        bus=system
        path=/org/freedesktop/hostname1
        interface=org.freedesktop.DBus.Properties
@@ -125,17 +124,17 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   @{PROC}/pressure/{cpu,io,memory} r,
   @{PROC}/vmstat r,
   @{PROC}/ r,
-  @{PROC}/@{pid}/task/@{tid}/stat r,
+  owner @{PROC}/@{pid}/task/@{tid}/stat r,
   owner @{PROC}/@{pid}/clear_refs w,
   owner @{PROC}/@{pid}/cmdline r,
   owner @{PROC}/@{pid}/io r,
   owner @{PROC}/@{pid}/mountinfo r,
   owner @{PROC}/@{pid}/setgroups w,
   owner @{PROC}/@{pid}/{uid,gid}_map w,
-  @{PROC}/@{pid}/smaps r,
+  owner @{PROC}/@{pid}/smaps r,
   @{PROC}/@{pid}/stat r,
   @{PROC}/@{pid}/statm r,
-  @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/status r,
   owner @{PROC}/@{pid}/task/@{tid}/status r,
   deny @{PROC}/@{pid}/oom_{,score_}adj w,
   @{PROC}/sys/fs/inotify/max_user_watches r,
@@ -165,6 +164,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /sys/devices/pci[0-9]*/**/product r,
   /sys/devices/pci[0-9]*/**/resource r,
   /sys/devices/pci[0-9]*/**/revision r,
+  /sys/devices/pci[0-9]*/**/serial r,
   /sys/devices/pci[0-9]*/**/subsystem_device r,
   /sys/devices/pci[0-9]*/**/subsystem_vendor r,
   /sys/devices/pci[0-9]*/**/vendor r,
@@ -292,7 +292,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
     /etc/ld.so.cache r,
     /etc/xdg/** r,
     /usr/bin/xdg-settings r,
-    /{usr/,}lib{,32,64}/@{chromium}/xdg-settings r,
+    /usr/lib/@{chromium}/xdg-settings r,
     /usr/share/applications/*.desktop r,
     /usr/share/applications/*.list r,
 
