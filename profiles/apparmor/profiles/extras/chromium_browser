@@ -22,10 +22,13 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   include <abstractions/cups-client>
   include <abstractions/dbus-session>
   include <abstractions/dbus-strict>
+  include <abstractions/fonts>
   include <abstractions/gnome>
   include <abstractions/ibus>
+  include <abstractions/mesa>
   include <abstractions/nameservice>
   include <abstractions/user-tmp>
+  include <abstractions/vulkan>
 
   # This include specifies which ubuntu-browsers.d abstractions to use. Eg, if
   # you want access to productivity applications, adjust the following file
@@ -65,6 +68,41 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
        member=GetAll
        peer=(label=unconfined),
 
+  dbus (receive)
+       bus=system
+       path=/org/freedesktop/login1
+       interface=org.freedesktop.login1.Manager
+       member={SessionNew,SessionRemoved}
+       peer=(label=unconfined),
+
+  dbus (send)
+       bus=session
+       path=/org/freedesktop/DBus
+       interface=org.freedesktop.DBus
+       member={AddMatch,GetNameOwner,Hello,NameHasOwner,RemoveMatch,StartServiceByName}
+       peer=(name=org.freedesktop.DBus),
+
+  dbus (send)
+       bus=session
+       path=/org/freedesktop/portal/desktop
+       interface=org.freedesktop.DBus.Properties
+       member=Get
+       peer=(name=org.freedesktop.portal.Desktop),
+
+  dbus (send)
+       bus=session
+       path=/org/freedesktop/Notifications
+       interface=org.freedesktop.Notifications
+       member={GetCapabilities,GetServerInformation}
+       peer=(name=org.freedesktop.Notifications),
+
+  dbus (send)
+       bus=session
+       path=/org/gtk/vfs/mounttracker
+       interface=org.gtk.vfs.MountTracker
+       member=ListMountableInfo
+       peer=(label=unconfined),
+
   # Networking
   network inet stream,
   network inet6 stream,
@@ -72,21 +110,26 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   @{PROC}/@{pid}/net/ipv6_route r,
 
   # Should maybe be in abstractions
+  /etc/fstab r,
   /etc/mime.types r,
   /etc/mailcap r,
   /etc/mtab r,
   /etc/xdg/xubuntu/applications/defaults.list r,
+  owner @{HOME}/.cache/thumbnails/** r,
   owner @{HOME}/.local/share/applications/defaults.list r,
   owner @{HOME}/.local/share/applications/mimeinfo.cache r,
   /tmp/.X[0-9]*-lock r,
 
   @{PROC}/self/exe ixr,
   @{PROC}/filesystems r,
+  @{PROC}/pressure/{cpu,io,memory} r,
   @{PROC}/vmstat r,
   @{PROC}/ r,
   @{PROC}/@{pid}/task/@{tid}/stat r,
+  owner @{PROC}/@{pid}/clear_refs w,
   owner @{PROC}/@{pid}/cmdline r,
   owner @{PROC}/@{pid}/io r,
+  owner @{PROC}/@{pid}/mountinfo r,
   owner @{PROC}/@{pid}/setgroups w,
   owner @{PROC}/@{pid}/{uid,gid}_map w,
   @{PROC}/@{pid}/smaps r,
@@ -95,6 +138,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   @{PROC}/@{pid}/status r,
   owner @{PROC}/@{pid}/task/@{tid}/status r,
   deny @{PROC}/@{pid}/oom_{,score_}adj w,
+  @{PROC}/sys/fs/inotify/max_user_watches r,
   @{PROC}/sys/kernel/yama/ptrace_scope r,
   @{PROC}/sys/net/ipv4/tcp_fastopen r,
 
@@ -104,11 +148,21 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /sys/devices/**/uevent r,
   /sys/devices/system/cpu/cpufreq/policy*/cpuinfo_max_freq r,
   /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq r,
+  /sys/devices/system/cpu/kernel_max r,
+  /sys/devices/system/cpu/possible r,
+  /sys/devices/system/cpu/present r,
   /sys/devices/system/node/node*/meminfo r,
+  /sys/devices/pci[0-9]*/**/bConfigurationValue r,
+  /sys/devices/pci[0-9]*/**/boot_vga r,
+  /sys/devices/pci[0-9]*/**/busnum r,
   /sys/devices/pci[0-9]*/**/class r,
   /sys/devices/pci[0-9]*/**/config r,
+  /sys/devices/pci[0-9]*/**/descriptors r,
   /sys/devices/pci[0-9]*/**/device r,
+  /sys/devices/pci[0-9]*/**/devnum r,
   /sys/devices/pci[0-9]*/**/irq r,
+  /sys/devices/pci[0-9]*/**/manufacturer r,
+  /sys/devices/pci[0-9]*/**/product r,
   /sys/devices/pci[0-9]*/**/resource r,
   /sys/devices/pci[0-9]*/**/revision r,
   /sys/devices/pci[0-9]*/**/subsystem_device r,
@@ -121,6 +175,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /sys/devices/virtual/tty/tty*/active r,
   # This is requested, but doesn't seem to actually be needed so deny for now
   deny /run/udev/data/** r,
+  deny /sys/devices/virtual/dmi/id/* r,
 
   # Needed for the crash reporter
   owner @{PROC}/@{pid}/auxv r,
@@ -131,13 +186,13 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /usr/share/fonts/**/*.pfb m,
   /usr/share/mime/mime.cache m,
   /usr/share/icons/**/*.cache m,
-  owner /{dev,run}/shm/pulse-shm* m,
+  owner /{dev,run,var/run}/shm/pulse-shm* m,
   owner @{HOME}/.local/share/mime/mime.cache m,
   owner /tmp/** m,
 
   @{PROC}/sys/kernel/shmmax r,
-  owner /{dev,run}/shm/{,.}org.chromium.* mrw,
-  owner /{,var/}run/shm/shmfd-* mrw,
+  owner /{dev,run,var/run}/shm/{,.}org.chromium.* mrw,
+  owner /{dev,run,var/run}/shm/shmfd-* mrw,
 
   /usr/lib/@{chromium}/*.pak mr,
   /usr/lib/@{chromium}/locales/* mr,
@@ -148,8 +203,8 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
 
   # Allow ptracing ourselves and our helpers
   ptrace (trace) peer=@{profile_name},
-  ptrace (trace) peer=@{profile_name}//xdgsettings,
-  ptrace (trace) peer=lsb_release,
+  ptrace (read, trace) peer=@{profile_name}//xdgsettings,
+  ptrace (read, trace) peer=lsb_release,
 
   # Make browsing directories work
   / r,
@@ -182,10 +237,9 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /etc/firefox/profile/bookmarks.html r,
   owner @{HOME}/.mozilla/** k,
 
-  # Chromium Policies
-  /etc/@{chromium}/policies/** r,
-
   # Chromium configuration
+  /etc/@{chromium}/** r,
+  # Note: "~/.pki/{,nssdb/} w" is denied by private-files abstraction
   owner @{HOME}/.pki/nssdb/* rwk,
   owner @{HOME}/.cache/chromium/ rw,
   owner @{HOME}/.cache/chromium/** rw,
@@ -195,6 +249,9 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   owner @{HOME}/.config/chromium/**/Cache/* mr,
   owner @{HOME}/.config/chromium/Dictionaries/*.bdic mr,
   owner @{HOME}/.config/chromium/**/Dictionaries/*.bdic mr,
+
+  # Widevine CDM plugin
+  owner @{HOME}/.config/chromium/WidevineCdm/*/_platform_specific/*/libwidevinecdm.so mr,
 
   # Allow transitions to ourself, our sandbox, and crash handler
   /usr/lib/@{chromium}/@{chromium} ix,
@@ -212,9 +269,12 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /usr/bin/lsb_release Pxr -> lsb_release,
 
   # GSettings
-  owner /{,var/}run/user/*/dconf/     rw,
-  owner /{,var/}run/user/*/dconf/user rw,
+  owner @{run}/user/[0-9]*/dconf/     rw,
+  owner @{run}/user/[0-9]*/dconf/user rw,
   owner @{HOME}/.config/dconf/user r,
+
+  # GVfs
+  owner @{run}/user/[0-9]*/gvfsd/socket-* rw,
 
   # Magnet links
   /usr/bin/gio ixr,
@@ -268,6 +328,8 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
     /{usr/,}lib/@{multiarch}/libpthread-*.so* mr,
     /{usr/,}lib{,32,64}/libatomic.so* mr,
     /{usr/,}lib/@{multiarch}/libatomic.so* mr,
+    /{usr/,}lib{,32,64}/libc.so.* mr,
+    /{usr/,}lib/@{multiarch}/libc.so.* mr,
     /{usr/,}lib{,32,64}/libc-*.so* mr,
     /{usr/,}lib/@{multiarch}/libc-*.so* mr,
     /{usr/,}lib{,32,64}/libdl-*.so* mr,
