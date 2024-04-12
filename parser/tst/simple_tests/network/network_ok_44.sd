@@ -1,11 +1,11 @@
 #
-#=DESCRIPTION network anon ip conditional test
+#=DESCRIPTION network none ip conditional test
 #=EXRESULT PASS
 #
 /usr/bin/foo {
-  network ip=anon,
-  network peer=(ip=anon),
-  network inet ip=anon peer=(ip=anon),
-  network inet tcp ip=anon peer=(ip=anon),
+  network ip=none,
+  network peer=(ip=none),
+  network inet ip=none peer=(ip=none),
+  network inet tcp ip=none peer=(ip=none),
 
 }

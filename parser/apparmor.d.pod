@@ -169,7 +169,7 @@ B<NETWORK LOCAL EXPR> = ( I<NETWORK IP COND> | I<NETWORK PORT COND> )*
 B<NETWORK PEER EXPR> = 'peer' '=' '(' ( I<NETWORK IP COND> | I<NETWORK PORT COND> )+ ')'
   Each cond can appear at most once.
 
-B<NETWORK IP COND> = 'ip' '=' ( 'anon' | I<NETWORK IPV4> | I<NETWORK IPV6> )
+B<NETWORK IP COND> = 'ip' '=' ( 'none' | I<NETWORK IPV4> | I<NETWORK IPV6> )
 
 B<NETWORK PORT COND> = 'port' '=' ( I<NETWORK PORT> )
 
@@ -978,10 +978,10 @@ octets separated by '.' for IPv4 and eight groups of four hexadecimal
 numbers separated by ':' for IPv6. Contiguous leading zeros can be
 replaced by '::' once. On a connected socket, the sender and receiver
 don't need to be specified in the recvfrom and sendto system calls. In
-that case, and with unbounded sockets, the IP address is anonymous, or
-unknown. Anonymous IP addresses are represented in policy by the
-'anon' keyword. When the ip conditional is omitted, then all IP
-addresses will be allowed: IPv4, IPv6 and anonymous. If INADDR_ANY or
+that case, and with unbounded sockets, the IP address is none, or
+unknown. Unknown or Unbound IP addresses are represented in policy by the
+'none' keyword. When the ip conditional is omitted, then all IP
+addresses will be allowed: IPv4, IPv6 and none. If INADDR_ANY or
 in6addr_any is used, then the ip conditional can be omitted or they
 can be represented by:
 
