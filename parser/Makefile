@@ -114,7 +114,7 @@ STATIC_HDRS = af_rule.h af_unix.h capability.h common_optarg.h dbus.h \
 
 SPECIAL_HDRS = parser_yacc.h unit_test.h base_cap_names.h
 GENERATED_HDRS = af_names.h generated_af_names.h \
-       cap_names.h generated_cap_names.h parser_version.h
+       cap_names.h generated_cap_names.h parser_version.h errnos.h
 LIBAA_HDRS = libapparmor_re/apparmor_re.h libapparmor_re/aare_rules.h
 
 TOOLS = apparmor_parser
@@ -366,6 +366,11 @@ tst_lib: lib.c parser.h $(filter-out lib.o, ${TEST_OBJECTS})
 	$(CXX) $(TEST_CFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
 tst_%: parser_%.c parser.h $(filter-out parser_%.o, ${TEST_OBJECTS})
 	$(CXX) $(TEST_CFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
+
+errnos.h:
+	echo '#include <errno.h>' > dump.c
+	$(CC) -E -dD dump.c | awk '/^#define E/ { printf "{ \"%s\", %s },\n", $$2, $$2 }' > errnos.h
+	rm -f dump.c
 
 .SILENT: check
 .PHONY: check

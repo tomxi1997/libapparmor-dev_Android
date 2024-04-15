@@ -357,6 +357,7 @@ extern int features_supports_sysv_mqueue;
 extern int features_supports_io_uring;
 extern int features_supports_flag_interruptible;
 extern int features_supports_flag_signal;
+extern int features_supports_flag_error;
 extern int kernel_supports_oob;
 extern int conf_verbose;
 extern int conf_quiet;

@@ -115,7 +115,9 @@ B<PROFILE FLAG CONDS> =  [ 'flags=' ] '(' comma or white space separated list of
 
 B<PROFILE FLAGS> = I<PROFILE MODE> | I<AUDIT_MODE> | 'mediate_deleted'
 | 'attach_disconnected' | 'attach_disconneced.path='I<ABS PATH> | 'chroot_relative'
-| 'debug' | 'interruptible' | 'kill.signal='I<SIGNAL>
+| 'debug' | 'interruptible' | 'kill.signal='I<SIGNAL> | 'error='I<ERROR CODE>
+
+B<ERROR CODE> = (case insensitive error code name starting with 'E'; see errno(3))
 
 B<PROFILE MODE> = 'enforce' | 'complain' | 'kill' | 'default_allow' | 'unconfined' | 'prompt'
 
@@ -569,6 +571,9 @@ to debug kernel or policy problems.
 
 =item B<kill.signal>=I<SIGNAL> This changes the signal that will be
 sent by AppArmor when in kill mode or a kill rule has been violated.
+
+=item B<error>=I<ERROR CODE> This changes the error code returned by
+AppArmor when a rule has been violated.
 
 =back
 

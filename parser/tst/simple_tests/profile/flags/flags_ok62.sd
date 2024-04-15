@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION Ensure valid error value works
+#=EXRESULT PASS
+#
+/does/not/exist flags=(error=EPERM) {
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}

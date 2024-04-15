@@ -426,6 +426,12 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 		sd_write_name(buf, "kill");
 		sd_write_uint32(buf, profile->flags.signal);
 	}
+
+	if (profile->flags.error && features_supports_flag_error) {
+		sd_write_name(buf, "error");
+		sd_write_uint32(buf, profile->flags.error);
+	}
+
 	sd_write_struct(buf, "flags");
 	/* used to be flags.debug, but that's no longer supported */
 	sd_write_uint32(buf, profile->flags.flags);
