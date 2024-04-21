@@ -2,7 +2,7 @@ from setuptools import setup, Extension
 import string
 
 setup(name          = 'LibAppArmor',
-      version       = '@VERSION@',
+      version       = '@VERSION@'.replace('~', '-'),
       author        = 'AppArmor Dev Team',
       author_email  = 'apparmor@lists.ubuntu.com',
       url           = 'https://wiki.apparmor.net',
