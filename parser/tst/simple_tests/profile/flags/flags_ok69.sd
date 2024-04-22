@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION Ensure error flag works with different flags
+#=EXRESULT PASS
+#
+/does/not/exist flags=(error=ENOANO audit) {
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}

@@ -16,6 +16,7 @@ parser/af_names.h
 parser/cap_names.h
 parser/generated_cap_names.h
 parser/generated_af_names.h
+parser/errnos.h
 parser/tst_lib
 parser/tst_misc
 parser/tst_regex

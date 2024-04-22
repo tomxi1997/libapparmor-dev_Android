@@ -340,6 +340,11 @@ void Profile::post_parse_profile(void)
 			warn_once(name, "kill.signal not supported. Ignoring");
 		}
 	}
+	if (flags.error) {
+		if (!features_supports_flag_error) {
+			warn_once(name, "error flag not supported. Ignoring");
+		}
+	}
 	post_process_file_entries(this);
 	post_process_rule_entries(this);
 }

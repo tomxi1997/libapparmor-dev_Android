@@ -116,6 +116,32 @@ static inline enum profile_mode str_to_mode(const char *str)
 	return MODE_UNSPECIFIED;
 };
 
+static struct {
+    const char *name;
+    int code;
+} errnos[] = {
+    #include "errnos.h"
+};
+static const int errnos_len = sizeof(errnos) / sizeof(errnos[0]);
+
+static int find_error_code_mapping(const char *name)
+{
+	for (int i = 0; i < errnos_len; i++) {
+		if (strcasecmp(errnos[i].name,  name) == 0)
+			return errnos[i].code;
+	}
+	return -1;
+}
+
+static const char *find_error_name_mapping(int code)
+{
+	for (int i = 0; i < errnos_len; i++) {
+		if (errnos[i].code == code)
+			return errnos[i].name;
+	}
+	return NULL;
+}
+
 #define FLAG_HAT 1
 #define FLAG_DEBUG1 2
 #define FLAG_DEBUG2 4
@@ -130,6 +156,7 @@ public:
 	int path;
 	char *disconnected_path;
 	int signal;
+	int error;
 
 	// stupid not constructor constructors
 	void init(void)
@@ -140,6 +167,7 @@ public:
 		path = 0;
 		disconnected_path = NULL;
 		signal = 0;
+		error = 0;
 	}
 	void init(const char *str)
 	{
@@ -178,6 +206,10 @@ public:
 			signal = find_signal_mapping(str + 12);
 			if (signal == -1)
 				yyerror("unknown signal specified for kill.signal=\'%s\'\n", str + 12);
+		} else if (strncmp(str, "error=", 6) == 0) {
+			error = find_error_code_mapping(str + 6);
+			if (error == -1)
+				yyerror("unknown error code specified for error=\'%s\'\n", str + 6);
 		} else if (strcmp(str, "interruptible") == 0) {
 				flags |= FLAG_INTERRUPTIBLE;
 		} else {
@@ -199,6 +231,8 @@ public:
 			os << ", attach_disconnected.path=" << disconnected_path;
 		if (signal)
 			os << ", kill.signal=" << signal;
+		if (error)
+			os << ", error=" << find_error_name_mapping(error);
 		os << "\n";
 
 		return os;
@@ -259,6 +293,17 @@ public:
 				signal = rhs.signal;
 			}
 		}
+		if (rhs.error) {
+			if (error) {
+				if (error != rhs.error) {
+					yyerror(_("Profile flag error set to conflicting values: '%s' and '%s'"), find_error_name_mapping(error), find_error_name_mapping(rhs.error));
+				}
+				// same so do nothing
+			} else {
+				error = rhs.error;
+			}
+		}
+
 
 		/* if we move to dupping disconnected_path will need to have
 		 * an assignment and copy constructor and a destructor

@@ -163,6 +163,11 @@ exception_not_raised = (
     'profile/flags/flags_bad84.sd',
     'profile/flags/flags_bad85.sd',
     'profile/flags/flags_bad86.sd',
+    # flags=(error=EXX)
+    'profile/flags/flags_bad87.sd',
+    'profile/flags/flags_bad88.sd',
+    'profile/flags/flags_bad89.sd',
+
     'profile/flags/flags_bad_disconnected_path1.sd',
     'profile/flags/flags_bad_disconnected_path2.sd',
     'profile/flags/flags_bad_disconnected_path3.sd',

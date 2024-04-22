@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION Ensure bad error value fails
+#=EXRESULT FAIL
+#
+/does/not/exist flags=(error=13) {
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
