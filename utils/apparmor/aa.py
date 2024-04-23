@@ -1657,11 +1657,15 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                                             log_dict[aamode][final_name]['dbus'].add(dbus_event)
 
             nd = hashlog[aamode][full_profile]['network']
-            for family in nd.keys():
-                for sock_type in nd[family].keys():
-                    net_event = NetworkRule(family, sock_type, log_event=True)
-                    if not hat_exists or not is_known_rule(aa[profile][hat], 'network', net_event):
-                        log_dict[aamode][final_name]['network'].add(net_event)
+            for access in nd.keys():
+                for family in nd[access].keys():
+                    for sock_type in nd[access][family].keys():
+                        for protocol in nd[access][family][sock_type].keys():
+                            for local_event in nd[access][family][sock_type][protocol].keys():
+                                for peer_event in nd[access][family][sock_type][protocol][local_event].keys():
+                                    net_event = NetworkRule(access, family, sock_type, local_event, peer_event, log_event=True)
+                                    if not hat_exists or not is_known_rule(aa[profile][hat], 'network', net_event):
+                                        log_dict[aamode][final_name]['network'].add(net_event)
 
             ptrace = hashlog[aamode][full_profile]['ptrace']
             for peer in ptrace.keys():

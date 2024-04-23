@@ -125,12 +125,19 @@ class ReadLog:
         elif ev['operation'] and (ev['operation'] == 'umount'):
             ev['flags'] = event.flags
             ev['fs_type'] = event.fs_type
-        elif ev['class'] and ev['class'] == 'net' and ev['family'] and ev['family'] == 'unix':
-            ev['peer'] = event.peer
-            ev['peer_profile'] = event.peer_profile
+        elif ev['class'] and ev['class'] == 'net' or self.op_type(ev) == 'net':
             ev['accesses'] = event.requested_mask
-            ev['addr'] = event.net_addr
-            ev['peer_addr'] = event.peer_addr
+            ev['port'] = event.net_local_port or None
+            ev['remote_port'] = event.net_foreign_port or None
+            if ev['family'] and ev['family'] == 'unix':
+                ev['addr'] = event.net_addr
+                ev['peer_addr'] = event.peer_addr
+                ev['peer'] = event.peer
+                ev['peer_profile'] = event.peer_profile
+            else:
+                ev['addr'] =  event.net_local_addr
+                ev['peer_addr'] = event.net_foreign_addr
+
         elif ev['operation'] and ev['operation'].startswith('dbus_'):
             ev['peer_profile'] = event.peer_profile
             ev['bus'] = event.dbus_bus
@@ -277,7 +284,9 @@ class ReadLog:
             return
 
         elif self.op_type(e) == 'net':
-            self.hashlog[aamode][full_profile]['network'][e['family']][e['sock_type']][e['protocol']] = True
+            local = (e['addr'], e['port'])
+            peer  = (e['peer_addr'], e['remote_port'])
+            self.hashlog[aamode][full_profile]['network'][e['accesses']][e['family']][e['sock_type']][e['protocol']][local][peer] = True
             return
 
         elif e['operation'] == 'change_hat':
@@ -397,7 +406,7 @@ class ReadLog:
             if event['family'] and event['protocol'] and event['sock_type']:
                 # 'unix' events also use keywords like 'connect', but protocol is 0 and should therefore be filtered out
                 return 'net'
-            elif event['denied_mask']:
+            elif event['denied_mask'] or event['operation'] == 'file_lock':
                 return 'file'
             else:
                 raise AppArmorException('unknown file or network event type')

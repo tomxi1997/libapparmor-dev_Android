@@ -561,3 +561,39 @@ def quote_if_needed(data):
     if ' ' in data:
         data = '"' + data + '"'
     return data
+
+
+def check_dict_keys(d, possible_keys, type_all):
+    """Check that all keys in dictionary are among possible keys"""
+    if d == type_all or d == {}:
+        return type_all
+    if not possible_keys >= d.keys():
+        raise AppArmorException(f'Incorrect key in dict {d}. Possible keys are {possible_keys},')
+    return d
+
+
+def initialize_cond_dict(d, keys, suffix, type_all):
+    out = {
+        key: d[f'{key}{suffix}']
+        for key in keys
+        if f'{key}{suffix}' in d and d[f'{key}{suffix}'] is not None
+    }
+    return out if out != {} else type_all
+
+
+def tuple_to_dict(t, keys):
+    d = {}
+    for idx, k in enumerate(keys):
+        if t[idx] is not None:
+            d[k] = t[idx]
+    return d
+
+
+def print_dict_values(d, type_all, prefix=None):
+    if d == type_all:
+        return ''
+    to_print = ' '.join(f'{k}={v}' for k, v in d.items())
+    if prefix:
+        return f' {prefix}=({to_print})'
+    else:
+        return f' {to_print}'

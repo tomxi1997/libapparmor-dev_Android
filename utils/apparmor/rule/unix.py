@@ -16,8 +16,8 @@ import re
 from apparmor.common import AppArmorException
 
 from apparmor.regex import RE_PROFILE_UNIX, strip_parenthesis
-from apparmor.rule import AARE
-from apparmor.rule import BaseRule, BaseRuleset, parse_modifiers, logprof_value_or_all, check_and_split_list
+from apparmor.rule import (BaseRule, BaseRuleset, parse_modifiers, logprof_value_or_all, check_and_split_list,
+                           check_dict_keys, tuple_to_dict, print_dict_values, initialize_cond_dict, AARE)
 
 from apparmor.translations import init_translation
 
@@ -74,18 +74,18 @@ class UnixRule(BaseRule):
 
         if type(rule_conds) is tuple:  # This comes from the logparser, we convert it to dicts
             accesses = strip_parenthesis(accesses).replace(',', ' ').split()
-            rule_conds = _tuple_to_dict(rule_conds, ['type', 'protocol'])
-            local_expr = _tuple_to_dict(local_expr, ['addr', 'label', 'attr', 'opt'])
-            peer_expr = _tuple_to_dict(peer_expr, ['addr', 'label'])
+            rule_conds = tuple_to_dict(rule_conds, ['type', 'protocol'])
+            local_expr = tuple_to_dict(local_expr, ['addr', 'label', 'attr', 'opt'])
+            peer_expr = tuple_to_dict(peer_expr, ['addr', 'label'])
 
         self.accesses, self.all_accesses, unknown_items = check_and_split_list(accesses, access_flags, self.ALL,  type(self).__name__, 'accesses')
 
         if unknown_items:
             raise AppArmorException(f'Invalid access in Unix rule: {unknown_items}')
 
-        self.rule_conds = _check_dict_keys(rule_conds, {'type', 'protocol'})
-        self.local_expr = _check_dict_keys(local_expr, {'addr', 'label', 'attr', 'opt'})
-        self.peer_expr = _check_dict_keys(peer_expr, {'addr', 'label'})
+        self.rule_conds = check_dict_keys(rule_conds, {'type', 'protocol'}, self.ALL)
+        self.local_expr = check_dict_keys(local_expr, {'addr', 'label', 'attr', 'opt'}, self.ALL)
+        self.peer_expr = check_dict_keys(peer_expr, {'addr', 'label'}, self.ALL)
 
         if not self.all_accesses and self.peer_expr != self.ALL and self.accesses & {'create', 'bind', 'listen', 'shutdown', 'getattr', 'setattr', 'getopt', 'setopt'}:
             raise AppArmorException('Cannot use a peer_expr and an access in {create, bind, listen, shutdown, getattr, setattr, getopt, setopt} simultaneously')
@@ -115,9 +115,9 @@ class UnixRule(BaseRule):
                 accesses = cls.ALL
 
 
-            rule_conds = _initialize_cond_dict(r, ['type', 'protocol'], '_cond_set')
-            local_expr = _initialize_cond_dict(r, ['addr', 'label', 'attr', 'opt'], '_cond')
-            peer_expr = _initialize_cond_dict(r, ['addr', 'label'], '_peer_cond')
+            rule_conds = initialize_cond_dict(r, ['type', 'protocol'], '_cond_set', cls.ALL)
+            local_expr = initialize_cond_dict(r, ['addr', 'label', 'attr', 'opt'], '_cond', cls.ALL)
+            peer_expr = initialize_cond_dict(r, ['addr', 'label'], '_peer_cond', cls.ALL)
 
         else:
             accesses = cls.ALL
@@ -131,9 +131,9 @@ class UnixRule(BaseRule):
         space = '  ' * depth
 
         accesses = ' (%s)' % (', '.join(sorted(self.accesses))) if not self.all_accesses else ''
-        rule_conds = _print_dict_values(self.rule_conds)
-        local_expr = _print_dict_values(self.local_expr)
-        peer_expr = _print_dict_values(self.peer_expr, 'peer')
+        rule_conds = print_dict_values(self.rule_conds, self.ALL)
+        local_expr = print_dict_values(self.local_expr, self.ALL)
+        peer_expr = print_dict_values(self.peer_expr, self.ALL, 'peer')
         return f'{space}unix{self.modifiers_str()}{accesses}{rule_conds}{local_expr}{peer_expr},{self.comment}'
 
     def _is_covered_localvars(self, other_rule):
@@ -201,40 +201,6 @@ class UnixRule(BaseRule):
                     return False
 
         return True
-
-
-def _print_dict_values(d, prefix=None):
-    if d == UnixRule.ALL:
-        return ''
-    to_print = ' '.join(f'{k}={v}' for k, v in d.items())
-    if prefix:
-        return f' {prefix}=({to_print})'
-    else:
-        return f' {to_print}'
-
-
-def _initialize_cond_dict(d, keys, suffix):
-    out = {
-        key: d[f'{key}{suffix}']
-        for key in keys
-        if f'{key}{suffix}' in d and d[f'{key}{suffix}'] is not None
-    }
-    return out if out != {} else UnixRule.ALL
-
-
-def _check_dict_keys(d, possible_keys):
-    if d == UnixRule.ALL or d == {}:
-        return UnixRule.ALL
-    if not possible_keys >= d.keys():
-        raise AppArmorException(f'Incorrect key in dict {d}. Possible keys are {possible_keys},')
-    return d
-
-def _tuple_to_dict(t, keys):
-    d = {}
-    for idx, k in enumerate(keys):
-        if t[idx] is not None:
-            d[k] = t[idx]
-    return d
 
 class UnixRuleset(BaseRuleset):
     '''Class to handle and store a collection of Unix rules'''

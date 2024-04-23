@@ -18,15 +18,16 @@ from collections import namedtuple
 
 from apparmor.common import AppArmorBug, AppArmorException, cmd
 from apparmor.logparser import ReadLog
-from apparmor.rule.network import NetworkRule, NetworkRuleset, network_domain_keywords
+from apparmor.rule.network import NetworkRule, NetworkRuleset, network_domain_keywords, network_ipv6
 from apparmor.translations import init_translation
 from common_test import AATest, setup_all_loops
+import re
 
 _ = init_translation()
 
 exp = namedtuple(
     'exp', ('audit', 'allow_keyword', 'deny', 'comment',
-            'domain', 'all_domains', 'type_or_protocol', 'all_type_or_protocols'))
+            'accesses' ,'domain', 'all_domains', 'type_or_protocol', 'all_type_or_protocols', 'local_expr', 'peer_expr'))
 
 # --- check if the keyword list is up to date --- #
 
@@ -56,6 +57,25 @@ class NetworkKeywordsTest(AATest):
             'on an newer kernel and will require updating the list of network domain keywords in '
             'utils/apparmor/rule/network.py')
 
+class NetworkPV6Test(AATest):
+    def test_ipv6(self):
+        tests = [
+            ("2001:0db8:85a3:0000:0000:8a2e:0370:7334", True),  # Standard IPv6
+            ("2001:db8::8a2e:370:7334", True),  # Zero Compression
+            ("::1", True),  # IPv6 Loopback
+            ("::", True),  # IPv6 Unspecified
+            ("::ffff:192.168.236.159", True),  # IPv6-mapped IPv4
+            ("fe80::1ff:fe23:4567:890a%eth0", True),  # IPv6 with Zone Identifier
+            ("1234:5678::abcd:ef12:3456", True),  # Mixed groups and zero compression
+            ("12345::6789", False),  # Erroneous IP (invalid hex group length)
+            ("192.168.1.1", False),  # IPv4 only
+        ]
+
+        for test in tests:
+            self.assertEqual(bool(re.match(network_ipv6, test[0])), test[1])
+
+
+
 # --- tests for single NetworkRule --- #
 
 
@@ -63,23 +83,30 @@ class NetworkTest(AATest):
     def _compare_obj(self, obj, expected):
         self.assertEqual(expected.allow_keyword, obj.allow_keyword)
         self.assertEqual(expected.audit, obj.audit)
+        self.assertEqual(expected.accesses, obj.accesses)
         self.assertEqual(expected.domain, obj.domain)
         self.assertEqual(expected.type_or_protocol, obj.type_or_protocol)
         self.assertEqual(expected.all_domains, obj.all_domains)
         self.assertEqual(expected.all_type_or_protocols, obj.all_type_or_protocols)
         self.assertEqual(expected.deny, obj.deny)
         self.assertEqual(expected.comment, obj.comment)
-
+        self.assertEqual(expected.local_expr, obj.local_expr)
+        self.assertEqual(expected.peer_expr, obj.peer_expr)
 
 class NetworkTestParse(NetworkTest):
     tests = (
-        # rawrule                                   audit  allow  deny   comment       domain  all?   type/proto  all?
-        ('network,',                            exp(False, False, False, '',           None,   True,  None,       True)),
-        ('network inet,',                       exp(False, False, False, '',           'inet', False, None,       True)),
-        ('network inet stream,',                exp(False, False, False, '',           'inet', False, 'stream',   False)),
-        ('deny network inet stream, # comment', exp(False, False, True,  ' # comment', 'inet', False, 'stream',   False)),
-        ('audit allow network tcp,',            exp(True,  True,  False, '',           None,   True,  'tcp',      False)),
-        ('network stream,',                     exp(False, False, False, '',           None,   True,  'stream',   False)),
+        # rawrule                                       audit  allow  deny   comment       access               domain  all?   type/proto  all?   local_expr                            peer_expr
+        ('network,',                                exp(False, False, False, '',           None,                None,   True,  None,       True,  NetworkRule.ALL,                      NetworkRule.ALL                     )),
+        ('network inet,',                           exp(False, False, False, '',           None,                'inet', False, None,       True,  NetworkRule.ALL,                      NetworkRule.ALL                     )),
+        ('network inet stream,',                    exp(False, False, False, '',           None,                'inet', False, 'stream',   False, NetworkRule.ALL,                      NetworkRule.ALL                     )),
+        ('deny network inet stream, # comment',     exp(False, False, True,  ' # comment', None,                'inet', False, 'stream',   False, NetworkRule.ALL,                      NetworkRule.ALL                     )),
+        ('audit allow network tcp,',                exp(True,  True,  False, '',           None,                None,   True,  'tcp',      False, NetworkRule.ALL,                      NetworkRule.ALL                     )),
+        ('network stream,',                         exp(False, False, False, '',           None,                None,   True,  'stream',   False, NetworkRule.ALL,                      NetworkRule.ALL                     )),
+        ('network stream peer=(ip=::1 port=22),',   exp(False, False, False, '',           None,                None,   True,  'stream',   False, NetworkRule.ALL,                      {"ip": "::1", 'port':'22'},         )),
+        ('network stream ip=::1 port=22,',          exp(False, False, False, '',           None,                None,   True,  'stream',   False, {"ip": "::1", 'port': '22'},          NetworkRule.ALL                     )),
+        ('network (bind,listen) stream,',           exp(False, False, False, '',           {'listen', 'bind'},  None,   True,  'stream',   False, NetworkRule.ALL,                      NetworkRule.ALL                     )),
+        ('network (connect, rw) stream ip=192.168.122.2 port=22 peer=(ip=192.168.122.3 port=22),',
+                                                    exp(False, False, False, '',           {'connect', 'rw'},   None,   True,  'stream',   False, {'ip': '192.168.122.2', 'port': '22'},{"ip": "192.168.122.3", 'port': '22'} )),
     )
 
     def _run_test(self, rawrule, expected):
@@ -91,10 +118,18 @@ class NetworkTestParse(NetworkTest):
 
 class NetworkTestParseInvalid(NetworkTest):
     tests = (
-        ('network foo,',      AppArmorException),
-        ('network foo bar,',  AppArmorException),
-        ('network foo tcp,',  AppArmorException),
-        ('network inet bar,', AppArmorException),
+        ('network foo,',                                    AppArmorException),
+        ('network foo bar,',                                AppArmorException),
+        ('network foo tcp,',                                AppArmorException),
+        ('network inet bar,',                               AppArmorException),
+        ('network ip=999.999.999.999,',                     AppArmorException),
+        ('network port=99999,',                             AppArmorException),
+        ('network inet ip=in:va::li:d0,',                   AppArmorException),
+        ('network inet ip=in:va::li:d0,',                   AppArmorException),
+        ('network inet ip=1:2:3:4:5:6:7:8:9:0:0:0,',        AppArmorException),  # too many segments
+        ('network inet peer=(ip=1:2:3:4:5:6:7:8:9:0:0:0),', AppArmorException),  # too many segments
+        ('network packet ip=1::,',                          AppArmorException),  # Only inet[6] domains can be used in conjunction with a local expression
+        ('network packet peer=(ip=1::),',                   AppArmorException),  # Only inet[6] domains can be used in conjunction with a peer expression
     )
 
     def _run_test(self, rawrule, expected):
@@ -106,7 +141,7 @@ class NetworkTestParseInvalid(NetworkTest):
 class NetworkTestParseFromLog(NetworkTest):
     def test_net_from_log(self):
         parser = ReadLog('', '', '')
-        event = 'type=AVC msg=audit(1428699242.551:386): apparmor="DENIED" operation="create" profile="/bin/ping" pid=10589 comm="ping" family="inet" sock_type="raw" protocol=1'
+        event = 'type=AVC msg=audit(1428699242.551:386): apparmor="DENIED" operation="create" profile="/bin/ping" pid=10589 comm="ping" family="inet" sock_type="raw" protocol=1 lport=1234'
 
         parsed_event = parser.parse_event(event)
 
@@ -124,6 +159,11 @@ class NetworkTestParseFromLog(NetworkTest):
             'resource': None,
             'info': None,
             'aamode': 'REJECTING',
+            'accesses': None,
+            'addr': None,
+            'peer_addr': None,
+            'port' : 1234,
+            'remote_port': None,
             'time': 1428699242,
             'active_hat': None,
             'pid': 10589,
@@ -134,10 +174,10 @@ class NetworkTestParseFromLog(NetworkTest):
             'class': None,
         })
 
-        obj = NetworkRule(parsed_event['family'], parsed_event['sock_type'], log_event=parsed_event)
+        obj = NetworkRule(NetworkRule.ALL, parsed_event['family'], parsed_event['sock_type'], NetworkRule.ALL, NetworkRule.ALL, log_event=parsed_event)
 
         #              audit  allow  deny   comment  domain  all?   type/proto  all?
-        expected = exp(False, False, False, '',      'inet', False, 'raw',      False)
+        expected = exp(False, False, False, '',     None, 'inet', False, 'raw',      False, NetworkRule.ALL, NetworkRule.ALL)
 
         self._compare_obj(obj, expected)
 
@@ -146,13 +186,17 @@ class NetworkTestParseFromLog(NetworkTest):
 
 class NetworkFromInit(NetworkTest):
     tests = (
-        # NetworkRule object                                audit  allow  deny   comment  domain  all?   type/proto  all?
-        (NetworkRule('inet', 'raw', deny=True),         exp(False, False, True,  '',      'inet', False, 'raw',     False)),
-        (NetworkRule('inet', 'raw'),                    exp(False, False, False, '',      'inet', False, 'raw',     False)),
-        (NetworkRule('inet', NetworkRule.ALL),          exp(False, False, False, '',      'inet', False, None,      True)),
-        (NetworkRule(NetworkRule.ALL, NetworkRule.ALL), exp(False, False, False, '',      None,   True,  None,      True)),
-        (NetworkRule(NetworkRule.ALL, 'tcp'),           exp(False, False, False, '',      None,   True,  'tcp',     False)),
-        (NetworkRule(NetworkRule.ALL, 'stream'),        exp(False, False, False, '',      None,   True,  'stream',  False)),
+        # NetworkRule object                                                                                                   audit  allow  deny   comment access              domain  all?   type/proto  all?     Local expr          Peer expr
+        (NetworkRule(NetworkRule.ALL,    'inet',           'raw',           NetworkRule.ALL, NetworkRule.ALL, deny=True),  exp(False, False, True,  '',      None,              'inet', False, 'raw',     False, NetworkRule.ALL,  NetworkRule.ALL)),
+        (NetworkRule(NetworkRule.ALL,    'inet',           'raw',           NetworkRule.ALL, NetworkRule.ALL),             exp(False, False, False, '',      None,              'inet', False, 'raw',     False, NetworkRule.ALL,  NetworkRule.ALL)),
+        (NetworkRule(NetworkRule.ALL,    'inet',           NetworkRule.ALL, NetworkRule.ALL, NetworkRule.ALL),             exp(False, False, False, '',      None,              'inet', False, None,      True,  NetworkRule.ALL,  NetworkRule.ALL)),
+        (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL,  NetworkRule.ALL, NetworkRule.ALL, NetworkRule.ALL),             exp(False, False, False, '',      None,              None,   True,  None,      True,  NetworkRule.ALL,  NetworkRule.ALL)),
+        (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL, 'tcp',            NetworkRule.ALL, NetworkRule.ALL),             exp(False, False, False, '',      None,              None,   True,  'tcp',     False, NetworkRule.ALL,  NetworkRule.ALL)),
+        (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL, 'stream',         NetworkRule.ALL, NetworkRule.ALL),             exp(False, False, False, '',      None,              None,   True,  'stream',  False, NetworkRule.ALL,  NetworkRule.ALL)),
+        (NetworkRule('bind',             NetworkRule.ALL, 'stream',         NetworkRule.ALL, NetworkRule.ALL),             exp(False, False, False, '',      {'bind'},          None,   True,  'stream',  False, NetworkRule.ALL,  NetworkRule.ALL)),
+        (NetworkRule({'bind', 'listen'}, NetworkRule.ALL, 'stream',         {'port': '22'},  NetworkRule.ALL),             exp(False, False, False, '',      {'bind', 'listen'},None,   True,  'stream',  False, {'port' : '22'},  NetworkRule.ALL)),
+        (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL, 'stream',         NetworkRule.ALL, {'port': '22'}),              exp(False, False, False, '',      None,              None,   True,  'stream',  False, NetworkRule.ALL,  {'port':'22'})),
+        (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL, 'stream',         NetworkRule.ALL, {'ip': '::1', 'port':'22'}),  exp(False, False, False, '',      None,              None,   True,  'stream',  False, NetworkRule.ALL,  {'ip': '::1', 'port':'22'})),
     )
 
     def _run_test(self, obj, expected):
@@ -161,17 +205,23 @@ class NetworkFromInit(NetworkTest):
 
 class InvalidNetworkInit(AATest):
     tests = (
-        # init params      expected exception
-        (('inet', ''),     AppArmorBug),  # empty type_or_protocol
-        (('',     'tcp'),  AppArmorBug),  # empty domain
-        (('    ', 'tcp'),  AppArmorBug),  # whitespace domain
-        (('inet', '   '),  AppArmorBug),  # whitespace type_or_protocol
-        (('xyxy', 'tcp'),  AppArmorBug),  # invalid domain
-        (('inet', 'xyxy'), AppArmorBug),  # invalid type_or_protocol
-        ((dict(), 'tcp'),  AppArmorBug),  # wrong type for domain
-        ((None,   'tcp'),  AppArmorBug),  # wrong type for domain
-        (('inet', dict()), AppArmorBug),  # wrong type for type_or_protocol
-        (('inet', None),   AppArmorBug),  # wrong type for type_or_protocol
+        # init params                                                           expected exception
+        ((NetworkRule.ALL,  'inet', '',     NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # empty type_or_protocol
+        ((NetworkRule.ALL,  '',     'tcp',  NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # empty domain
+        ((NetworkRule.ALL,  '    ', 'tcp',  NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # whitespace domain
+        ((NetworkRule.ALL,  'inet', '   ',  NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # whitespace type_or_protocol
+        ((NetworkRule.ALL,  'xyxy', 'tcp',  NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # invalid domain
+        ((NetworkRule.ALL,  'inet', 'xyxy', NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # invalid type_or_protocol
+        ((NetworkRule.ALL,  dict(), 'tcp',  NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # wrong type for domain
+        ((NetworkRule.ALL,  None,   'tcp',  NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # wrong type for domain
+        ((NetworkRule.ALL,  'inet', dict(), NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # wrong type for type_or_protocol
+        ((NetworkRule.ALL,  'inet', None,   NetworkRule.ALL, NetworkRule.ALL),  AppArmorBug),       # wrong type for type_or_protocol
+        (('invalid_access', 'inet', None,   NetworkRule.ALL, NetworkRule.ALL),  AppArmorException), # Invalid Access
+        (({'bind', 'invld'},'inet', None,   NetworkRule.ALL, NetworkRule.ALL),  AppArmorException), # Invalid Access
+        ((NetworkRule.ALL,  'inet', None,   {'ip': ':::::'}, NetworkRule.ALL),  AppArmorException), # Invalid ip in local expression
+        ((NetworkRule.ALL,  'inet', None,   NetworkRule.ALL, {'ip': ':::::'}),  AppArmorException), # Invalid ip in peer expression
+        ((NetworkRule.ALL,  'inet', None,   {'invld': '0'},  NetworkRule.ALL),  AppArmorException), # Invalid keyword in local expression
+        ((NetworkRule.ALL,  'inet', None,   NetworkRule.ALL, {'invld': '0'}),   AppArmorException), # Invalid keyword in peer expression
     )
 
     def _run_test(self, params, expected):
@@ -202,15 +252,16 @@ class InvalidNetworkTest(AATest):
     def test_invalid_net_non_NetworkRule(self):
         self._check_invalid_rawrule('dbus,')  # not a network rule
 
+
     def test_empty_net_data_1(self):
-        obj = NetworkRule('inet', 'stream')
+        obj = NetworkRule(NetworkRule.ALL, 'inet', 'stream', NetworkRule.ALL, NetworkRule.ALL)
         obj.domain = ''
         # no domain set, and ALL not set
         with self.assertRaises(AppArmorBug):
             obj.get_clean(1)
 
     def test_empty_net_data_2(self):
-        obj = NetworkRule('inet', 'stream')
+        obj = NetworkRule(NetworkRule.ALL, 'inet', 'stream',NetworkRule.ALL, NetworkRule.ALL)
         obj.type_or_protocol = ''
         # no type_or_protocol set, and ALL not set
         with self.assertRaises(AppArmorBug):
@@ -228,16 +279,20 @@ class WriteNetworkTestAATest(AATest):
         self.assertEqual(rawrule.strip(), raw, 'unexpected raw rule')
 
     tests = (
-        #  raw rule                                            clean rule
-        ('     network         ,    # foo        ',            'network, # foo'),
-        ('    audit     network inet,',                        'audit network inet,'),
-        ('   deny network         inet      stream,# foo bar', 'deny network inet stream, # foo bar'),
-        ('   deny network         inet      ,# foo bar',       'deny network inet, # foo bar'),
-        ('   allow network         tcp      ,# foo bar',       'allow network tcp, # foo bar'),
+        #  raw rule                                                         clean rule
+        ('     network         ,    # foo        ',                         'network, # foo'),
+        ('    audit     network inet,',                                     'audit network inet,'),
+        ('   deny network         inet      stream,# foo bar',              'deny network inet stream, # foo bar'),
+        ('   deny network         inet      ,# foo bar',                    'deny network inet, # foo bar'),
+        ('   allow network         tcp      ,# foo bar',                    'allow network tcp, # foo bar'),
+        ('   network     stream    peer  =  (  ip=::1  port=22  )  ,',      'network stream peer=(ip=::1 port=22),'),
+        ('   network   (  bind , listen  ) stream  ip  =  ::1 port  = 22 ,','network (bind, listen) stream ip=::1 port=22,'),
+        ('   allow network         tcp      ,# foo bar',                    'allow network tcp, # foo bar'),
+
     )
 
     def test_write_manually(self):
-        obj = NetworkRule('inet', 'stream', allow_keyword=True)
+        obj = NetworkRule(NetworkRule.ALL, 'inet', 'stream', NetworkRule.ALL, NetworkRule.ALL,  allow_keyword=True)
 
         expected = '    allow network inet stream,'
 
@@ -348,12 +403,29 @@ class NetworkCoveredTest_05(NetworkCoveredTest):
         (      'deny network,',      (False, False,        False,   False)),
     )
 
+class NetworkCoveredTest_06(NetworkCoveredTest):
+    rule = 'network (rw, connect) port=127 peer=(ip=192.168.122.3),'
+
+    tests = (
+        #   rule                                                                                     equal strict equal covered covered exact
+        ('network (rw, connect) port=127 peer=(ip=192.168.122.3),',                                 (True,  True,       True,   True)),
+        ('network (rw, connect) port=127 ip=192.168.122.2 peer=(ip=192.168.122.3),',                (False, False,      True,   True)),
+        ('network (rw, connect) inet port=127 ip=192.168.122.2 peer=(ip=192.168.122.3),',           (False, False,      True,   True)),
+        ('network (rw, connect) port=127 ip=192.168.122.2 peer=(ip=192.168.122.3 port=12345),',     (False, False,      True,   True)),
+        ('network (rw, connect) inet port=127 ip=192.168.122.2 peer=(ip=192.168.122.3 port=12345),',(False, False,      True,   True)),
+        ('network connect port=12345 ip=192.168.122.2 peer=(ip=192.168.122.3),',                    (False, False,      False,  False)),
+        ('network (r, connect) port=12345 ip=192.168.122.2 peer=(ip=192.168.122.3),',               (False, False,      False,  False)),
+        ('network (r, connect) port=128 peer=(ip=192.168.122.3),',                                  (False, False,      False,  False)),
+        ('network (rw, connect) port=127 peer=(ip=127.0.0.1),',                                     (False, False,      False,  False)),
+        ('network (rw, connect) port=127,',                                                         (False, False,      False,  False)),
+    )
+
 
 class NetworkCoveredTest_Invalid(AATest):
     def test_borked_obj_is_covered_1(self):
         obj = NetworkRule.create_instance('network inet,')
 
-        testobj = NetworkRule('inet', 'stream')
+        testobj = NetworkRule(NetworkRule.ALL, 'inet', 'stream', NetworkRule.ALL, NetworkRule.ALL)
         testobj.domain = ''
 
         with self.assertRaises(AppArmorBug):
@@ -362,7 +434,7 @@ class NetworkCoveredTest_Invalid(AATest):
     def test_borked_obj_is_covered_2(self):
         obj = NetworkRule.create_instance('network inet,')
 
-        testobj = NetworkRule('inet', 'stream')
+        testobj = NetworkRule( NetworkRule.ALL,'inet', 'stream', NetworkRule.ALL, NetworkRule.ALL)
         testobj.type_or_protocol = ''
 
         with self.assertRaises(AppArmorBug):
@@ -391,13 +463,15 @@ class NetworkCoveredTest_Invalid(AATest):
 
 class NetworkLogprofHeaderTest(AATest):
     tests = (
-        ('network,',                   [                              _('Network Family'), _('ALL'), _('Socket Type'), _('ALL')]),
-        ('network inet,',              [                              _('Network Family'), 'inet',   _('Socket Type'), _('ALL')]),
-        ('network inet stream,',       [                              _('Network Family'), 'inet',   _('Socket Type'), 'stream']),
-        ('deny network,',              [_('Qualifier'), 'deny',       _('Network Family'), _('ALL'), _('Socket Type'), _('ALL')]),
-        ('allow network inet,',        [_('Qualifier'), 'allow',      _('Network Family'), 'inet',   _('Socket Type'), _('ALL')]),
-        ('audit network inet stream,', [_('Qualifier'), 'audit',      _('Network Family'), 'inet',   _('Socket Type'), 'stream']),
-        ('audit deny network inet,',   [_('Qualifier'), 'audit deny', _('Network Family'), 'inet',   _('Socket Type'), _('ALL')]),
+        ('network,',                                        [                              _('Accesses'), _('ALL'),     _('Network Family'), _('ALL'), _('Socket Type'), _('ALL'), _('Local'), _('ALL'),                    _('Peer'), _('ALL')]),
+        ('network inet,',                                   [                              _('Accesses'), _('ALL'),     _('Network Family'), 'inet',   _('Socket Type'), _('ALL'), _('Local'), _('ALL'),                    _('Peer'), _('ALL')]),
+        ('network inet stream,',                            [                              _('Accesses'), _('ALL'),     _('Network Family'), 'inet',   _('Socket Type'), 'stream', _('Local'), _('ALL'),                    _('Peer'), _('ALL')]),
+        ('deny network,',                                   [_('Qualifier'), 'deny',       _('Accesses'), _('ALL'),     _('Network Family'), _('ALL'), _('Socket Type'), _('ALL'), _('Local'), _('ALL'),                    _('Peer'), _('ALL')]),
+        ('allow network inet,',                             [_('Qualifier'), 'allow',      _('Accesses'), _('ALL'),     _('Network Family'), 'inet',   _('Socket Type'), _('ALL'), _('Local'), _('ALL'),                    _('Peer'), _('ALL')]),
+        ('audit network inet stream,',                      [_('Qualifier'), 'audit',      _('Accesses'), _('ALL'),     _('Network Family'), 'inet',   _('Socket Type'), 'stream', _('Local'), _('ALL'),                    _('Peer'), _('ALL')]),
+        ('audit deny network inet,',                        [_('Qualifier'), 'audit deny', _('Accesses'), _('ALL'),     _('Network Family'), 'inet',   _('Socket Type'), _('ALL'), _('Local'), _('ALL'),                    _('Peer'), _('ALL')]),
+        ('network (bind, listen) stream ip=::1 port=22,',   [                              _('Accesses'), 'bind listen',_('Network Family'), _('ALL'), _('Socket Type'), 'stream', _('Local'), {'ip': '::1', 'port': '22'}, _('Peer'), _('ALL')]),
+        ('audit deny network inet peer=(ip=::1),',          [_('Qualifier'), 'audit deny', _('Accesses'), _('ALL'),     _('Network Family'), 'inet',   _('Socket Type'), _('ALL'), _('Local'), _('ALL'),                    _('Peer'), {'ip': '::1'}]),
     )
 
     def _run_test(self, params, expected):
@@ -407,7 +481,7 @@ class NetworkLogprofHeaderTest(AATest):
 
 class NetworkRuleReprTest(AATest):
     tests = (
-        (NetworkRule('inet', 'stream'),                                       '<NetworkRule> network inet stream,'),
+        (NetworkRule(NetworkRule.ALL, 'inet', 'stream', NetworkRule.ALL, NetworkRule.ALL),                                       '<NetworkRule> network inet stream,'),
         (NetworkRule.create_instance(' allow  network  inet  stream, # foo'), '<NetworkRule> allow  network  inet  stream, # foo'),
     )
 
@@ -506,7 +580,7 @@ class NetworkDeleteTestAATest(AATest):
 class NetworkRulesetReprTest(AATest):
     def test_network_ruleset_repr(self):
         obj = NetworkRuleset()
-        obj.add(NetworkRule('inet', 'stream'))
+        obj.add(NetworkRule(NetworkRule.ALL, 'inet', 'stream', NetworkRule.ALL, NetworkRule.ALL))
         obj.add(NetworkRule.create_instance(' allow  network  inet  stream, # foo'))
 
         expected = '<NetworkRuleset>\n  network inet stream,\n  allow  network  inet  stream, # foo\n</NetworkRuleset>'
