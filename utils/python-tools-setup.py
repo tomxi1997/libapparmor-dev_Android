@@ -63,7 +63,7 @@ shutil.copytree('apparmor', 'staging')
 # Support the --version=... since this will be part of a Makefile
 version = "unknown-version"
 if "--version=" in sys.argv[-1]:
-    version = sys.argv[-1].split('=')[1]
+    version = sys.argv[-1].split('=')[1].replace('~', '-')
     sys.argv = sys.argv[0:-1]
 
 setup(
