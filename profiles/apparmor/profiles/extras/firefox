@@ -45,6 +45,8 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   capability sys_chroot,
   capability sys_ptrace,
 
+  userns,
+
   include <abstractions/dbus-accessibility-strict>
   dbus (send)
        bus=session
@@ -187,11 +189,11 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   owner @{PROC}/@{pid}/{uid,gid}_map w,
   @{PROC}/filesystems r,
   @{PROC}/sys/vm/overcommit_memory r,
-  @{sys}/fs/cgroup/user.slice/user-[0-9]*.slice/session-[0-9]*.scope/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/user-[0-9]*.slice/session-{,c}[0-9]*.scope/cpu.max r,
   # prevent crash LP: #1931602
   /sys/devices/pci[0-9]*/**/{uevent,resource,irq,class} r,
   /sys/devices/platform/**/uevent r,
-  /sys/devices/pci*/**/{busnum,config,idVendor,idProduct,revision} r,
+  /sys/devices/pci*/**/{boot_vga,busnum,config,idVendor,idProduct,revision} r,
   /sys/devices/pci*/**/{,subsystem_}device r,
   /sys/devices/pci*/**/{,subsystem_}vendor r,
   /sys/devices/system/node/node[0-9]*/meminfo r,
@@ -391,7 +393,7 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   # MPRIS D-Bus Interface Specification
   dbus (bind)
        bus=session
-       name=org.mpris.MediaPlayer2.firefox.instance[0-9]*,
+       name=org.mpris.MediaPlayer2.firefox.instance{,_}[0-9]*,
   dbus (receive)
        bus=session
        path=/org/mpris/MediaPlayer2

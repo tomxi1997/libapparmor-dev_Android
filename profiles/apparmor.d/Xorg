@@ -89,7 +89,7 @@ profile Xorg /usr/lib/xorg/Xorg flags=(attach_disconnected, complain) {
 
   /etc/X11/** r,
 
-  owner /tmp/.tX[0-9]*-lock    w,
+  owner /tmp/.tX[0-9]*-lock    rw,
   owner /tmp/.X[0-9]*-lock     wl,
   owner /tmp/serverauth.*      r,    # startx(1)
   owner /tmp/server-[0-9]*.xkm rw,
