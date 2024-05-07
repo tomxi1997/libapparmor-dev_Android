@@ -5,7 +5,7 @@
 #   https://bugs.launchpad.net/bugs/1292324
 #   https://github.com/canonical/lightdm/issues/18
 
-abi <abi/3.0>,
+abi <abi/4.0>,
 
 include <tunables/global>
 
@@ -112,6 +112,11 @@ profile Xorg /usr/lib/xorg/Xorg flags=(attach_disconnected, complain) {
   owner /var/lib/gdm*/.cache/mesa_shader_cache/**              rwk,
   owner /var/lib/gdm*/.local/share/xorg/Xorg.pid-[1-9]*.log    rw,
   owner /var/lib/gdm*/.local/share/xorg/Xorg.[0-9]*.log{,.old} rw,
+
+  # When running without a kernel mode-setting (KMS) driver, Xorg may need
+  # these additional permissions. DO NOT enable these unless necessary!
+  #nokms#/dev/mem rw,
+  #nokms#@{sys}/devices/pci[0-9]*/*/*/resource[0-9] w,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/Xorg>
