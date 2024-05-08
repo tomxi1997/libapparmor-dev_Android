@@ -39,6 +39,8 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   capability sys_chroot,
   capability sys_ptrace,
 
+  userns,
+
   # UPower
   # Not sure why these are needed, so deny for now
   deny dbus (send)
