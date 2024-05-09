@@ -118,6 +118,8 @@ class ReadLog:
             ev['peer'] = event.peer
         elif ev['operation'] and ev['operation'] == 'ptrace':
             ev['peer'] = event.peer
+        elif ev['operation'] and ev['operation'] == 'pivotroot':
+            ev['src_name'] = event.src_name
         elif ev['operation'] and ev['operation'] == 'mount':
             ev['flags'] = event.flags
             ev['fs_type'] = event.fs_type
