@@ -29,13 +29,5 @@ class _Raw_Rule:
         print('%sraw rule = %s' % (tabs, self.rule))
 
 
-class Raw_Mount_Rule(_Raw_Rule):
-    pass
-
-
 class Raw_Pivot_Root_Rule(_Raw_Rule):
-    pass
-
-
-class Raw_Unix_Rule(_Raw_Rule):
     pass
