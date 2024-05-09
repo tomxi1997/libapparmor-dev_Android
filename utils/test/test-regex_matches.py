@@ -316,12 +316,12 @@ class AARegexPivotRoot(AARegexTest):
         self.regex = aa.RE_PROFILE_PIVOT_ROOT
 
     tests = (
-        ('   pivot_root,',                                      (None,    None, 'pivot_root,',                                None)),
-        ('   audit pivot_root,',                                ('audit', None, 'pivot_root,',                                None)),
-        ('   pivot_root oldroot=/new/old,',                     (None,    None, 'pivot_root oldroot=/new/old,',               None)),
-        ('   pivot_root oldroot=/new/old /new,',                (None,    None, 'pivot_root oldroot=/new/old /new,',          None)),
-        ('   pivot_root oldroot=/new/old /new -> child,',       (None,    None, 'pivot_root oldroot=/new/old /new -> child,', None)),
-        ('   audit pivot_root oldroot=/new/old /new -> child,', ('audit', None, 'pivot_root oldroot=/new/old /new -> child,', None)),
+        ('   pivot_root,',                                      (None,    None, 'pivot_root,',                                None,                                 None)),
+        ('   audit pivot_root,',                                ('audit', None, 'pivot_root,',                                None,                                 None)),
+        ('   pivot_root oldroot=/new/old,',                     (None,    None, 'pivot_root oldroot=/new/old,',               'oldroot=/new/old',                   None)),
+        ('   pivot_root oldroot=/new/old /new,',                (None,    None, 'pivot_root oldroot=/new/old /new,',          'oldroot=/new/old /new',              None)),
+        ('   pivot_root oldroot=/new/old /new -> child,',       (None,    None, 'pivot_root oldroot=/new/old /new -> child,', 'oldroot=/new/old /new -> child',     None)),
+        ('   audit pivot_root oldroot=/new/old /new -> child,', ('audit', None, 'pivot_root oldroot=/new/old /new -> child,', 'oldroot=/new/old /new -> child',     None)),
 
         ('pivot_root', False),  # comma missing
 
