@@ -55,6 +55,7 @@ class ReadLog:
             'exec':         hasher(),
             'network':      hasher(),
             'path':         hasher(),
+            'pivot_root':   hasher(),
             'ptrace':       hasher(),
             'signal':       hasher(),
             'userns':       hasher(),
@@ -239,6 +240,10 @@ class ReadLog:
             else:  # Umount
                 self.hashlog[aamode][full_profile]['mount'][e['operation']][e['flags']][e['fs_type']][e['name']][None] = True
             return
+
+        elif e['operation'] and e['operation'] == 'pivotroot':
+            # TODO: can the log contain the target profile?
+            self.hashlog[aamode][full_profile]['pivot_root'][e['src_name']][e['name']] = True
 
         elif e['class'] and e['class'] == 'net' and e['family'] and e['family'] == 'unix':
             rule = (e['sock_type'], None)  # Protocol is not supported yet.

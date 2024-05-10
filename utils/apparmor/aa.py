@@ -46,6 +46,7 @@ from apparmor.rule.dbus import DbusRule
 from apparmor.rule.file import FileRule
 from apparmor.rule.include import IncludeRule
 from apparmor.rule.network import NetworkRule
+from apparmor.rule.pivot_root import PivotRootRule
 from apparmor.rule.ptrace import PtraceRule
 from apparmor.rule.signal import SignalRule
 from apparmor.rule.userns import UserNamespaceRule
@@ -1730,6 +1731,14 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                                 mount_event = MountRule(operation=operation, fstype=_fstype, options=_options, source=_source, dest=_dest)
                                 if not hat_exists or not is_known_rule(aa[profile][hat], 'mount', mount_event):
                                     log_dict[aamode][final_name]['mount'].add(mount_event)
+
+            pivot_root = hashlog[aamode][full_profile]['pivot_root']
+            for oldroot in pivot_root.keys():
+                for newroot in pivot_root[oldroot]:
+                    pivot_root_event = PivotRootRule(oldroot, newroot, PivotRootRule.ALL, log_event=True)
+                    if not hat_exists or not is_known_rule(aa[profile][hat], 'pivot_root', pivot_root_event):
+                        log_dict[aamode][final_name]['pivot_root'].add(pivot_root_event)
+
     return log_dict
 
 
