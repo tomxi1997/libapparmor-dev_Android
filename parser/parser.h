@@ -114,6 +114,7 @@ struct cond_entry_list {
 };
 
 struct cod_entry {
+	int priority;
 	char *name;
 	union {
 		char *link_name;

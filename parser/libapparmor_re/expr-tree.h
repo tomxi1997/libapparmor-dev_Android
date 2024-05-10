@@ -886,19 +886,20 @@ public:
 
 class MatchFlag: public AcceptNode {
 public:
-	MatchFlag(perm32_t perms, perm32_t audit): perms(perms), audit(audit)
+	MatchFlag(int priority, perm32_t perms, perm32_t audit): priority(priority), perms(perms), audit(audit)
 	{
 		type_flags |= NODE_TYPE_MATCHFLAG;
 	}
 	ostream &dump(ostream &os) { return os << "< 0x" << hex << perms << '>'; }
 
+	int priority;
 	perm32_t perms;
 	perm32_t audit;
 };
 
 class ExactMatchFlag: public MatchFlag {
 public:
-	ExactMatchFlag(perm32_t perms, perm32_t audit): MatchFlag(perms, audit)
+	ExactMatchFlag(int priority, perm32_t perms, perm32_t audit): MatchFlag(priority, perms, audit)
 	{
 		type_flags |= NODE_TYPE_EXACTMATCHFLAG;
 	}
@@ -906,7 +907,7 @@ public:
 
 class DenyMatchFlag: public MatchFlag {
 public:
-	DenyMatchFlag(perm32_t perms, perm32_t quiet): MatchFlag(perms, quiet)
+	DenyMatchFlag(int priority, perm32_t perms, perm32_t quiet): MatchFlag(priority, perms, quiet)
 	{
 		type_flags |= NODE_TYPE_DENYMATCHFLAG;
 	}
@@ -914,7 +915,7 @@ public:
 
 class PromptMatchFlag: public MatchFlag {
 public:
-	PromptMatchFlag(perm32_t prompt, perm32_t audit): MatchFlag(prompt, audit) {}
+	PromptMatchFlag(int priority, perm32_t prompt, perm32_t audit): MatchFlag(priority, prompt, audit) {}
 };
 
 

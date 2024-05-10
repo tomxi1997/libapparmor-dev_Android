@@ -82,10 +82,11 @@ class rule_t {
 public:
 	int rule_type;
 	rule_flags_t flags;
+	int priority;
 
 	rule_t *removed_by;
 
-	rule_t(int t): rule_type(t), flags(RULE_FLAG_NONE), removed_by(NULL) { }
+	rule_t(int t): rule_type(t), flags(RULE_FLAG_NONE), priority(0), removed_by(NULL) { }
 	virtual ~rule_t() { };
 
 	bool is_type(int type) { return rule_type == type; }
@@ -113,6 +114,9 @@ public:
 	virtual int expand_variables(void) = 0;
 
 	virtual int cmp(rule_t const &rhs) const {
+		int tmp = priority - rhs.priority;
+		if (tmp != 0)
+			return tmp;
 		return rule_type - rhs.rule_type;
 	}
 	virtual bool operator<(rule_t const &rhs) const {
