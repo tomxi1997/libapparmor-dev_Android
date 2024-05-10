@@ -26,7 +26,6 @@ from tempfile import NamedTemporaryFile
 
 import apparmor.config
 import apparmor.logparser
-import apparmor.rules as aarules
 import apparmor.severity
 import apparmor.ui as aaui
 from apparmor.aare import AARE
@@ -38,7 +37,7 @@ from apparmor.profile_storage import ProfileStorage, add_or_remove_flag, ruletyp
 from apparmor.regex import (
     RE_HAS_COMMENT_SPLIT, RE_PROFILE_CHANGE_HAT, RE_PROFILE_CONDITIONAL,
     RE_PROFILE_CONDITIONAL_BOOLEAN, RE_PROFILE_CONDITIONAL_VARIABLE, RE_PROFILE_END,
-    RE_PROFILE_HAT_DEF, RE_PROFILE_PIVOT_ROOT, RE_PROFILE_START,
+    RE_PROFILE_HAT_DEF, RE_PROFILE_START,
     RE_RULE_HAS_COMMA, parse_profile_start_line, re_match_include)
 from apparmor.rule.abi import AbiRule
 from apparmor.rule.capability import CapabilityRule
@@ -1955,29 +1954,6 @@ def parse_profile_data(data, file, do_include, in_preamble):
             # Conditional Boolean defined
             pass
 
-        elif RE_PROFILE_PIVOT_ROOT.search(line):
-            matches = RE_PROFILE_PIVOT_ROOT.search(line).groups()
-
-            if not profile:
-                raise AppArmorException(_('Syntax Error: Unexpected pivot_root entry found in file: %(file)s line: %(line)s')
-                                        % {'file': file, 'line': lineno + 1})
-
-            audit = False
-            if matches[0]:
-                audit = True
-            allow = 'allow'
-            if matches[1] and matches[1].strip() == 'deny':
-                allow = 'deny'
-            pivot_root = matches[2].strip()
-
-            pivot_root_rule = parse_pivot_root_rule(pivot_root)
-            pivot_root_rule.audit = audit
-            pivot_root_rule.deny = (allow == 'deny')
-
-            pivot_root_rules = profile_data[profname][allow].get('pivot_root', [])
-            pivot_root_rules.append(pivot_root_rule)
-            profile_data[profname][allow]['pivot_root'] = pivot_root_rules
-
         elif RE_PROFILE_CHANGE_HAT.search(line):
             matches = RE_PROFILE_CHANGE_HAT.search(line).groups()
 
@@ -2065,6 +2041,7 @@ def match_line_against_rule_classes(line, profile, file, lineno, in_preamble):
             'mqueue',
             'io_uring',
             'mount',
+            'pivot_root',
             'unix',
     ):
 
@@ -2115,11 +2092,6 @@ def split_to_merged(profile_data):
             merged[merged_name] = profile_data[profile][hat]
 
     return merged
-
-
-def parse_pivot_root_rule(line):
-    # XXX Do real parsing here
-    return aarules.Raw_Pivot_Root_Rule(line)
 
 
 def write_piece(profile_data, depth, name, nhat):
