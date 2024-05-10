@@ -647,12 +647,11 @@ int DFA::apply_and_clear_deny(void)
 }
 
 
-typedef pair<uint64_t,uint64_t> uint128_t;
 
 /* minimize the number of dfa states */
 void DFA::minimize(optflags const &opts)
 {
-	map<uint128_t, Partition *> perm_map;
+	map<perms_t, Partition *> perm_map;
 	list<Partition *> partitions;
 
 	/* Set up the initial partitions
@@ -661,17 +660,14 @@ void DFA::minimize(optflags const &opts)
 	int accept_count = 0;
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
-		uint128_t group;
-		group.first = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32);
-		group.second = (uint64_t) (*i)->perms.allow | ((uint64_t) (*i)->perms.prompt << 32);
-		map<uint128_t, Partition *>::iterator p = perm_map.find(group);
+		map<perms_t, Partition *>::iterator p = perm_map.find((*i)->perms);
 		if (p == perm_map.end()) {
 			Partition *part = new Partition();
 			part->push_back(*i);
-			perm_map.insert(make_pair(group, part));
+			perm_map.insert(make_pair((*i)->perms, part));
 			partitions.push_back(part);
 			(*i)->partition = part;
-			if (group.first || group.second)
+			if ((*i)->perms.is_accept())
 				accept_count++;
 		} else {
 			(*i)->partition = p->second;

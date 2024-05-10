@@ -53,7 +53,7 @@ class perms_t {
 public:
 	perms_t(void): allow(0), deny(0), audit(0), quiet(0), exact(0) { };
 
-	bool is_accept(void) { return (allow | prompt | audit | quiet); }
+	bool is_accept(void) { return (allow | deny | prompt | audit | quiet); }
 
 	void dump_header(ostream &os)
 	{
