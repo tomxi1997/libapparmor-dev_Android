@@ -652,35 +652,26 @@ typedef pair<uint64_t,uint64_t> uint128_t;
 /* minimize the number of dfa states */
 void DFA::minimize(optflags const &opts)
 {
-	map<pair<uint128_t, size_t>, Partition *> perm_map;
+	map<uint128_t, Partition *> perm_map;
 	list<Partition *> partitions;
 
 	/* Set up the initial partitions
 	 * minimum of - 1 non accepting, and 1 accepting
-	 * if trans hashing is used the accepting and non-accepting partitions
-	 * can be further split based on the number and type of transitions
-	 * a state makes.
-	 * If permission hashing is enabled the accepting partitions can
-	 * be further divided by permissions.  This can result in not
-	 * obtaining a truly minimized dfa but comes close, and can speedup
-	 * minimization.
 	 */
 	int accept_count = 0;
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
-		size_t hash = 0;
-		uint128_t permtype;
-		permtype.first = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32);
-		permtype.second = (uint64_t) (*i)->perms.allow | ((uint64_t) (*i)->perms.prompt << 32);
-		pair<uint128_t, size_t> group = make_pair(permtype, hash);
-		map<pair<uint128_t, size_t>, Partition *>::iterator p = perm_map.find(group);
+		uint128_t group;
+		group.first = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32);
+		group.second = (uint64_t) (*i)->perms.allow | ((uint64_t) (*i)->perms.prompt << 32);
+		map<uint128_t, Partition *>::iterator p = perm_map.find(group);
 		if (p == perm_map.end()) {
 			Partition *part = new Partition();
 			part->push_back(*i);
 			perm_map.insert(make_pair(group, part));
 			partitions.push_back(part);
 			(*i)->partition = part;
-			if (permtype.first || permtype.second)
+			if (group.first || group.second)
 				accept_count++;
 		} else {
 			(*i)->partition = p->second;
