@@ -246,14 +246,12 @@ public:
 	}
 
 	int cmp(prefixes const &rhs) const {
-		if ((uint) audit < (uint) rhs.audit)
-			return -1;
-		if ((uint) audit > (uint) rhs.audit)
-			return 1;
-		if ((uint) rule_mode < (uint) rhs.rule_mode)
-			return -1;
-		if ((uint) rule_mode > (uint) rhs.rule_mode)
-			return 1;
+		int tmp = (int) audit - (int) rhs.audit;
+		if (tmp != 0)
+			return tmp;
+		tmp = (int) rule_mode - (int) rhs.rule_mode;
+		if (tmp != 0)
+			return tmp;
 		if ((uint) owner < (uint) rhs.owner)
 			return -1;
 		if ((uint) owner > (uint) rhs.owner)
@@ -262,11 +260,7 @@ public:
 	}
 
 	bool operator<(prefixes const &rhs) const {
-		if ((uint) audit < (uint) rhs.audit)
-			return true;
-		if ((uint) rule_mode < (uint) rhs.rule_mode)
-			return true;
-		if ((uint) owner < (uint) rhs.owner)
+		if (cmp(rhs) < 0)
 			return true;
 		return false;
 	}
