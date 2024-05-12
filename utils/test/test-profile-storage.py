@@ -13,6 +13,7 @@ import unittest
 
 from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.profile_storage import ProfileStorage, add_or_remove_flag, split_flags, var_transform
+from apparmor.rule.capability import CapabilityRule
 from common_test import AATest, setup_all_loops
 
 
@@ -120,6 +121,16 @@ class TestSetInvalid(AATest):
         self.storage = ProfileStorage('/test/foo', 'hat', 'TEST')
         with self.assertRaises(expected):
             self.storage[params[0]] = params[1]
+
+
+class AaTest_repr(AATest):
+    def testRepr(self):
+        prof_storage = ProfileStorage('/test/foo', 'hat', 'TEST')
+        prof_storage['name'] = 'foo'
+        prof_storage['xattrs'] = 'user.bar=bar'
+        prof_storage['capability'].add(CapabilityRule('dac_override'))
+
+        self.assertEqual(str(prof_storage), '\n<ProfileStorage>\nprofile foo xattrs=(user.bar=bar) {\n  capability dac_override,\n\n}\n</ProfileStorage>\n')
 
 
 class AaTest_parse_profile_start(AATest):

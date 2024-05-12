@@ -132,8 +132,11 @@ class ProfileStorage:
             raise AppArmorBug('Attempt to overwrite "%s" with %s, type %s' % (key, value, type(value)))
 
     def __repr__(self):
-        name = type(self).__name__
-        return '\n<%s>\n%s\n</%s>\n' % (name, '\n'.join(self.get_rules_clean(1)), name)
+        classname = type(self).__name__
+        header = '\n'.join(self.get_header(0, self['name'], False))
+        rules = '\n'.join(self.get_rules_clean(1))
+        endprofile = '}'
+        return f'\n<{classname}>\n{header}\n{rules}\n{endprofile}\n</{classname}>\n'
 
     def get(self, key, fallback=None):
         if key in self.data:
