@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION comma in pathname
+#=EXRESULT PASS
+#
+/usr/bin/foo {
+   priority=-1 /foo,bar r,
+}

@@ -35,6 +35,9 @@ skip_startswith = (
 
     # Pux and Cux (which actually mean PUx and CUx) get rejected by the tools
     'generated_x/exact-',
+
+    # don't handle rule priorities yet
+    'file/priority/',
 )
 
 # testcases that should raise an exception, but don't

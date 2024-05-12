@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION simple quoted quote expansion
+#=EXRESULT PASS
+#
+
+profile test {
+  priority=-1 "/bin/alpha\"beta" rix,
+}
+

@@ -131,7 +131,7 @@ static struct keyword_table keyword_table[] = {
 	{"override_creds",	TOK_OVERRIDE_CREDS},
 	{"sqpoll",		TOK_SQPOLL},
 	{"all",			TOK_ALL},
-
+	{"priority",		TOK_PRIORITY},
 	/* terminate */
 	{NULL, 0}
 };

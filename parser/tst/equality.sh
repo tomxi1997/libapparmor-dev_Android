@@ -122,169 +122,175 @@ verify_binary_inequality()
 	verify_binary "inequality" "$@"
 }
 
-printf "Equality Tests:\n"
 
-verify_binary_equality "dbus send" \
-	"/t { dbus send, }" \
-	"/t { dbus write, }" \
-	"/t { dbus w, }"
+##########################################################################
+### wrapper fn, should be indented but isn't to reduce wrap
+verify_set()
+{
+    local p1="$1"
+    local p2="$2"
+    echo -e "\n   equality $e of '$p1' vs '$p2'\n"
 
-verify_binary_equality "dbus receive" \
-	"/t { dbus receive, }" \
-	"/t { dbus read, }" \
-	"/t { dbus r, }"
+verify_binary_equality "'$p1'x'$p2' dbus send" \
+	"/t { $p1 dbus send, }" \
+	"/t { $p2 dbus write, }" \
+	"/t { $p2 dbus w, }"
 
-verify_binary_equality "dbus send + receive" \
-	"/t { dbus (send, receive), }" \
-	"/t { dbus (read, write), }" \
-	"/t { dbus (r, w), }" \
-	"/t { dbus (rw), }" \
-	"/t { dbus rw, }" \
+verify_binary_equality "'$p1'x'$p2' dbus receive" \
+	"/t { $p1 dbus receive, }" \
+	"/t { $p2 dbus read, }" \
+	"/t { $p2 dbus r, }"
 
-verify_binary_equality "dbus all accesses" \
-	"/t { dbus (send, receive, bind, eavesdrop), }" \
-	"/t { dbus (read, write, bind, eavesdrop), }" \
-	"/t { dbus (r, w, bind, eavesdrop), }" \
-	"/t { dbus (rw, bind, eavesdrop), }" \
-	"/t { dbus (), }" \
-	"/t { dbus, }" \
+verify_binary_equality "'$p1'x'$p2' dbus send + receive" \
+	"/t { $p1 dbus (send, receive), }" \
+	"/t { $p2 dbus (read, write), }" \
+	"/t { $p2 dbus (r, w), }" \
+	"/t { $p2 dbus (rw), }" \
+	"/t { $p2 dbus rw, }" \
 
-verify_binary_equality "dbus implied accesses with a bus conditional" \
-	"/t { dbus (send, receive, bind, eavesdrop) bus=session, }" \
-	"/t { dbus (read, write, bind, eavesdrop) bus=session, }" \
-	"/t { dbus (r, w, bind, eavesdrop) bus=session, }" \
-	"/t { dbus (rw, bind, eavesdrop) bus=session, }" \
-	"/t { dbus () bus=session, }" \
-	"/t { dbus bus=session, }" \
+verify_binary_equality "'$p1'x'$p2' dbus all accesses" \
+	"/t { $p1 dbus (send, receive, bind, eavesdrop), }" \
+	"/t { $p2 dbus (read, write, bind, eavesdrop), }" \
+	"/t { $p2 dbus (r, w, bind, eavesdrop), }" \
+	"/t { $p2 dbus (rw, bind, eavesdrop), }" \
+	"/t { $p2 dbus (), }" \
+	"/t { $p2 dbus, }" \
 
-verify_binary_equality "dbus implied accesses for services" \
-	"/t { dbus bind name=com.foo, }" \
-	"/t { dbus name=com.foo, }"
+verify_binary_equality "'$p1'x'$p2' dbus implied accesses with a bus conditional" \
+	"/t { $p1 dbus (send, receive, bind, eavesdrop) bus=session, }" \
+	"/t { $p2 dbus (read, write, bind, eavesdrop) bus=session, }" \
+	"/t { $p2 dbus (r, w, bind, eavesdrop) bus=session, }" \
+	"/t { $p2 dbus (rw, bind, eavesdrop) bus=session, }" \
+	"/t { $p2 dbus () bus=session, }" \
+	"/t { $p2 dbus bus=session, }" \
 
-verify_binary_equality "dbus implied accesses for messages" \
-	"/t { dbus (send, receive) path=/com/foo interface=org.foo, }" \
-	"/t { dbus path=/com/foo interface=org.foo, }"
+verify_binary_equality "'$p1'x'$p2' dbus implied accesses for services" \
+	"/t { $p1 dbus bind name=com.foo, }" \
+	"/t { $p2 dbus name=com.foo, }"
 
-verify_binary_equality "dbus implied accesses for messages with peer names" \
-	"/t { dbus (send, receive) path=/com/foo interface=org.foo peer=(name=com.foo), }" \
-	"/t { dbus path=/com/foo interface=org.foo peer=(name=com.foo), }" \
-	"/t { dbus (send, receive) path=/com/foo interface=org.foo peer=(name=(com.foo)), }" \
-	"/t { dbus path=/com/foo interface=org.foo peer=(name=(com.foo)), }"
+verify_binary_equality "'$p1'x'$p2' dbus implied accesses for messages" \
+	"/t { $p1 dbus (send, receive) path=/com/foo interface=org.foo, }" \
+	"/t { $p2 dbus path=/com/foo interface=org.foo, }"
 
-verify_binary_equality "dbus implied accesses for messages with peer labels" \
-	"/t { dbus (send, receive) path=/com/foo interface=org.foo peer=(label=/usr/bin/app), }" \
-	"/t { dbus path=/com/foo interface=org.foo peer=(label=/usr/bin/app), }"
+verify_binary_equality "'$p1'x'$p2' dbus implied accesses for messages with peer names" \
+	"/t { $p1 dbus (send, receive) path=/com/foo interface=org.foo peer=(name=com.foo), }" \
+	"/t { $p2 dbus path=/com/foo interface=org.foo peer=(name=com.foo), }" \
+	"/t { $p2 dbus (send, receive) path=/com/foo interface=org.foo peer=(name=(com.foo)), }" \
+	"/t { $p2 dbus path=/com/foo interface=org.foo peer=(name=(com.foo)), }"
 
-verify_binary_equality "dbus element parsing" \
-	"/t { dbus bus=b path=/ interface=i member=m peer=(name=n label=l), }" \
-	"/t { dbus bus=\"b\" path=\"/\" interface=\"i\" member=\"m\" peer=(name=\"n\" label=\"l\"), }" \
-	"/t { dbus bus=(b) path=(/) interface=(i) member=(m) peer=(name=(n) label=(l)), }" \
-	"/t { dbus bus=(\"b\") path=(\"/\") interface=(\"i\") member=(\"m\") peer=(name=(\"n\") label=(\"l\")), }" \
-	"/t { dbus bus =b path =/ interface =i member =m peer =(name =n label =l), }" \
-	"/t { dbus bus= b path= / interface= i member= m peer= (name= n label= l), }" \
-	"/t { dbus bus = b path = / interface = i member = m peer = ( name = n label = l ), }"
+verify_binary_equality "'$p1'x'$p2' dbus implied accesses for messages with peer labels" \
+	"/t { $p1 dbus (send, receive) path=/com/foo interface=org.foo peer=(label=/usr/bin/app), }" \
+	"/t { $p2 dbus path=/com/foo interface=org.foo peer=(label=/usr/bin/app), }"
 
-verify_binary_equality "dbus access parsing" \
-	"/t { dbus, }" \
-	"/t { dbus (), }" \
-	"/t { dbus (send, receive, bind, eavesdrop), }" \
-	"/t { dbus (send receive bind eavesdrop), }" \
-	"/t { dbus (send,	receive                  bind,  eavesdrop), }" \
-	"/t { dbus (send,receive,bind,eavesdrop), }" \
-	"/t { dbus (send,receive,,,,,,,,,,,,,,,,bind,eavesdrop), }" \
-	"/t { dbus (send,send,send,send send receive,bind	eavesdrop), }" \
+verify_binary_equality "'$p1'x'$p2' dbus element parsing" \
+	"/t { $p1 dbus bus=b path=/ interface=i member=m peer=(name=n label=l), }" \
+	"/t { $p2 dbus bus=\"b\" path=\"/\" interface=\"i\" member=\"m\" peer=(name=\"n\" label=\"l\"), }" \
+	"/t { $p2 dbus bus=(b) path=(/) interface=(i) member=(m) peer=(name=(n) label=(l)), }" \
+	"/t { $p2 dbus bus=(\"b\") path=(\"/\") interface=(\"i\") member=(\"m\") peer=(name=(\"n\") label=(\"l\")), }" \
+	"/t { $p2 dbus bus =b path =/ interface =i member =m peer =(name =n label =l), }" \
+	"/t { $p2 dbus bus= b path= / interface= i member= m peer= (name= n label= l), }" \
+	"/t { $p2 dbus bus = b path = / interface = i member = m peer = ( name = n label = l ), }"
 
-verify_binary_equality "dbus variable expansion" \
-	"/t { dbus (send, receive) path=/com/foo member=spork interface=org.foo peer=(name=com.foo label=/com/foo), }" \
+verify_binary_equality "'$p1'x'$p2' dbus access parsing" \
+	"/t { $p1 dbus, }" \
+	"/t { $p2 dbus (), }" \
+	"/t { $p2 dbus (send, receive, bind, eavesdrop), }" \
+	"/t { $p2 dbus (send receive bind eavesdrop), }" \
+	"/t { $p2 dbus (send,	receive                  bind,  eavesdrop), }" \
+	"/t { $p2 dbus (send,receive,bind,eavesdrop), }" \
+	"/t { $p2 dbus (send,receive,,,,,,,,,,,,,,,,bind,eavesdrop), }" \
+	"/t { $p2 dbus (send,send,send,send send receive,bind	eavesdrop), }" \
+
+verify_binary_equality "'$p1'x'$p2' dbus variable expansion" \
+	"/t { $p1 dbus (send, receive) path=/com/foo member=spork interface=org.foo peer=(name=com.foo label=/com/foo), }" \
 	"@{FOO}=foo
-	    /t { dbus (send, receive) path=/com/@{FOO} member=spork interface=org.@{FOO} peer=(name=com.@{FOO} label=/com/@{FOO}), }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO} member=spork interface=org.@{FOO} peer=(name=com.@{FOO} label=/com/@{FOO}), }" \
 	"@{FOO}=foo
 	 @{SPORK}=spork
-	    /t { dbus (send, receive) path=/com/@{FOO} member=@{SPORK} interface=org.@{FOO} peer=(name=com.@{FOO} label=/com/@{FOO}), }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO} member=@{SPORK} interface=org.@{FOO} peer=(name=com.@{FOO} label=/com/@{FOO}), }" \
 	"@{FOO}=/com/foo
-            /t { dbus (send, receive) path=@{FOO} member=spork interface=org.foo peer=(name=com.foo label=@{FOO}), }" \
+            /t { $p2 dbus (send, receive) path=@{FOO} member=spork interface=org.foo peer=(name=com.foo label=@{FOO}), }" \
 	"@{FOO}=com
-            /t { dbus (send, receive) path=/@{FOO}/foo member=spork interface=org.foo peer=(name=@{FOO}.foo label=/@{FOO}/foo), }"
+            /t { $p2 dbus (send, receive) path=/@{FOO}/foo member=spork interface=org.foo peer=(name=@{FOO}.foo label=/@{FOO}/foo), }"
 
-verify_binary_equality "dbus variable expansion, multiple values/rules" \
-	"/t { dbus (send, receive) path=/com/foo, dbus (send, receive) path=/com/bar, }" \
-	"/t { dbus (send, receive) path=/com/{foo,bar}, }" \
-	"/t { dbus (send, receive) path={/com/foo,/com/bar}, }" \
+verify_binary_equality "'$p1'x'$p2' dbus variable expansion, multiple values/rules" \
+	"/t { $p1 dbus (send, receive) path=/com/foo, $p1 dbus (send, receive) path=/com/bar, }" \
+	"/t { $p2 dbus (send, receive) path=/com/{foo,bar}, }" \
+	"/t { $p2 dbus (send, receive) path={/com/foo,/com/bar}, }" \
 	"@{FOO}=foo
-	    /t { dbus (send, receive) path=/com/@{FOO}, dbus (send, receive) path=/com/bar, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, $p2 dbus (send, receive) path=/com/bar, }" \
 	"@{FOO}=foo bar
-	    /t { dbus (send, receive) path=/com/@{FOO}, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
 	"@{FOO}=bar foo
-	    /t { dbus (send, receive) path=/com/@{FOO}, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
 	"@{FOO}={bar,foo}
-	    /t { dbus (send, receive) path=/com/@{FOO}, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
 	"@{FOO}=foo
 	 @{BAR}=bar
-	    /t { dbus (send, receive) path=/com/{@{FOO},@{BAR}}, }" \
+	    /t { $p2 dbus (send, receive) path=/com/{@{FOO},@{BAR}}, }" \
 
-verify_binary_equality "dbus variable expansion, ensure rule de-duping occurs" \
-	"/t { dbus (send, receive) path=/com/foo, dbus (send, receive) path=/com/bar, }" \
-	"/t { dbus (send, receive) path=/com/foo, dbus (send, receive) path=/com/bar, dbus (send, receive) path=/com/bar, }" \
+verify_binary_equality "'$p1'x'$p2' dbus variable expansion, ensure rule de-duping occurs" \
+	"/t { $p1 dbus (send, receive) path=/com/foo, $p1 dbus (send, receive) path=/com/bar, }" \
+	"/t { $p2 dbus (send, receive) path=/com/foo, $p2 dbus (send, receive) path=/com/bar, dbus (send, receive) path=/com/bar, }" \
 	"@{FOO}=bar foo bar foo
-	    /t { dbus (send, receive) path=/com/@{FOO}, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
 	"@{FOO}=bar foo bar foo
-	    /t { dbus (send, receive) path=/com/@{FOO}, dbus (send, receive) path=/com/@{FOO}, }"
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, $p2 dbus (send, receive) path=/com/@{FOO}, }"
 
-verify_binary_equality "dbus minimization with all perms" \
-	"/t { dbus, }" \
-	"/t { dbus bus=session, dbus, }" \
-	"/t { dbus (send, receive, bind, eavesdrop), dbus, }"
+verify_binary_equality "'$p1'x'$p2' dbus minimization with all perms" \
+	"/t { $p1 dbus, }" \
+	"/t { $p2 dbus bus=session, $p2 dbus, }" \
+	"/t { $p2 dbus (send, receive, bind, eavesdrop), $p2 dbus, }"
 
-verify_binary_equality "dbus minimization with bind" \
-	"/t { dbus bind, }" \
-	"/t { dbus bind bus=session, dbus bind, }" \
-	"/t { dbus bind bus=system name=com.foo, dbus bind, }"
+verify_binary_equality "'$p1'x'$p2' dbus minimization with bind" \
+	"/t { $p1 dbus bind, }" \
+	"/t { $p2 dbus bind bus=session, $p2 dbus bind, }" \
+	"/t { $p2 dbus bind bus=system name=com.foo, $p2 dbus bind, }"
 
-verify_binary_equality "dbus minimization with send and a bus conditional" \
-	"/t { dbus send bus=system, }" \
-	"/t { dbus send bus=system path=/com/foo interface=com.foo member=bar, dbus send bus=system, }" \
-	"/t { dbus send bus=system peer=(label=/usr/bin/foo), dbus send bus=system, }"
+verify_binary_equality "'$p1'x'$p2' dbus minimization with send and a bus conditional" \
+	"/t { $p1 dbus send bus=system, }" \
+	"/t { $p2 dbus send bus=system path=/com/foo interface=com.foo member=bar, dbus send bus=system, }" \
+	"/t { $p2 dbus send bus=system peer=(label=/usr/bin/foo), $p2 dbus send bus=system, }"
 
-verify_binary_equality "dbus minimization with an audit modifier" \
-	"/t { audit dbus eavesdrop, }" \
-	"/t { audit dbus eavesdrop bus=session, audit dbus eavesdrop, }"
+verify_binary_equality "'$p1'x'$p2' dbus minimization with an audit modifier" \
+	"/t { $p1 audit dbus eavesdrop, }" \
+	"/t { $p2 audit dbus eavesdrop bus=session, $p2 audit dbus eavesdrop, }"
 
-verify_binary_equality "dbus minimization with a deny modifier" \
-	"/t { deny dbus send bus=system peer=(name=com.foo), }" \
-	"/t { deny dbus send bus=system peer=(name=com.foo label=/usr/bin/foo), deny dbus send bus=system peer=(name=com.foo), }" \
+verify_binary_equality "'$p1'x'$p2' dbus minimization with a deny modifier" \
+	"/t { $p1 deny dbus send bus=system peer=(name=com.foo), }" \
+	"/t { $p2 deny dbus send bus=system peer=(name=com.foo label=/usr/bin/foo), $p2 deny dbus send bus=system peer=(name=com.foo), }" \
 
-verify_binary_equality "dbus minimization found in dbus abstractions" \
-	"/t { dbus send bus=session, }" \
-	"/t { dbus send
+verify_binary_equality "'$p1'x'$p2' dbus minimization found in dbus abstractions" \
+	"/t { $p1 dbus send bus=session, }" \
+	"/t { $p2 dbus send
                    bus=session
                    path=/org/freedesktop/DBus
                    interface=org.freedesktop.DBus
                    member={Hello,AddMatch,RemoveMatch,GetNameOwner,NameHasOwner,StartServiceByName}
                    peer=(name=org.freedesktop.DBus),
-	      dbus send bus=session, }"
+	      $p2 dbus send bus=session, }"
 
 # verify slash filtering for dbus paths.
-verify_binary_equality "dbus slash filtering for paths" \
-	"/t { dbus (send, receive) path=/com/foo, dbus (send, receive) path=/com/bar, }" \
-	"/t { dbus (send, receive) path=/com///foo, dbus (send, receive) path=///com/bar, }" \
-	"/t { dbus (send, receive) path=/com//{foo,bar}, }" \
-	"/t { dbus (send, receive) path={//com/foo,/com//bar}, }" \
+verify_binary_equality "'$p1'x'$p2' dbus slash filtering for paths" \
+	"/t { $p1 dbus (send, receive) path=/com/foo, $p1 dbus (send, receive) path=/com/bar, }" \
+	"/t { $p2 dbus (send, receive) path=/com///foo, $p2 dbus (send, receive) path=///com/bar, }" \
+	"/t { $p2 dbus (send, receive) path=/com//{foo,bar}, }" \
+	"/t { $p2 dbus (send, receive) path={//com/foo,/com//bar}, }" \
 	"@{FOO}=/foo
-	    /t { dbus (send, receive) path=/com/@{FOO}, dbus (send, receive) path=/com/bar, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, $p2 dbus (send, receive) path=/com/bar, }" \
 	"@{FOO}=/foo /bar
-	    /t { dbus (send, receive) path=/com/@{FOO}, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
 	"@{FOO}=/bar //foo
-	    /t { dbus (send, receive) path=/com/@{FOO}, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
 	"@{FOO}=//{bar,foo}
-	    /t { dbus (send, receive) path=/com/@{FOO}, }" \
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
 	"@{FOO}=/foo
 	 @{BAR}=bar
-	    /t { dbus (send, receive) path=/com/@{FOO}, dbus (send, receive) path=/com//@{BAR}, }"
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, $p2 dbus (send, receive) path=/com//@{BAR}, }"
 
 # Rules compatible with audit, deny, and audit deny
 # note: change_profile does not support audit/allow/deny atm
 for rule in "capability" "capability mac_admin" \
-	"network" "network tcp" "network inet6 tcp"\
 	"mount" "mount /a" "mount /a -> /b" "mount options in (ro) /a -> b" \
 	"remount" "remount /a" \
 	"umount" "umount /a" \
@@ -302,6 +308,35 @@ for rule in "capability" "capability mac_admin" \
 	"link /a -> /b" "link subset /a -> /b" \
 	"l /a -> /b" "l subset /a -> /b" \
 	"file l /a -> /b" "l subset /a -> /b"
+do
+	verify_binary_equality "'$p1'x'$p2' allow modifier for \"${rule}\"" \
+		"/t { $p1 ${rule}, }" \
+		"/t { $p2 allow ${rule}, }"
+
+	verify_binary_equality "'$p1'x'$p2' audit allow modifier for \"${rule}\"" \
+		"/t { $p1 audit ${rule}, }" \
+		"/t { $p2 audit allow ${rule}, }"
+
+	verify_binary_inequality "'$p1'x'$p2' audit, deny, and audit deny modifiers for \"${rule}\"" \
+		"/t { $p1 ${rule}, }" \
+		"/t { $p2 audit ${rule}, }" \
+		"/t { $p2 audit allow ${rule}, }" \
+		"/t { $p2 deny ${rule}, }" \
+		"/t { $p2 audit deny ${rule}, }"
+
+	verify_binary_inequality "'$p1'x'$p2' audit vs deny and audit deny modifiers for \"${rule}\"" \
+		"/t { $p1 audit ${rule}, }" \
+		"/t { $p2 deny ${rule}, }" \
+		"/t { $p2 audit deny ${rule}, }"
+
+	verify_binary_inequality "'$p1'x'$p2' deny and audit deny modifiers for \"${rule}\"" \
+		"/t { $p1 deny ${rule}, }" \
+		"/t { $p2 audit deny ${rule}, }"
+done
+
+####### special case for network  TODO: for network above  when network
+####### rules fixed
+for rule in "network" "network tcp" "network inet6 tcp"
 do
 	verify_binary_equality "allow modifier for \"${rule}\"" \
 		"/t { ${rule}, }" \
@@ -357,36 +392,36 @@ for rule in "/f ux" "/f Ux" "/f px" "/f Px" "/f cx" "/f Cx" "/f ix" \
             "file /* cux -> b" "file /* Cux -> b" "file /* cix -> b" "file /* Cix -> b"
 
 do
-	verify_binary_equality "allow modifier for \"${rule}\"" \
-		"/t { ${rule}, }" \
-		"/t { allow ${rule}, }"
+	verify_binary_equality "'$p1'x'$p2' allow modifier for \"${rule}\"" \
+		"/t { $p1 ${rule}, }" \
+		"/t { $p2 allow ${rule}, }"
 
-	verify_binary_equality "audit allow modifier for \"${rule}\"" \
-		"/t { audit ${rule}, }" \
-		"/t { audit allow ${rule}, }"
+	verify_binary_equality "'$p1'x'$p2' audit allow modifier for \"${rule}\"" \
+		"/t { $p1 audit ${rule}, }" \
+		"/t { $p2 audit allow ${rule}, }"
 
 	# skip rules that don't end with x perm
 	if [ -n "${rule##*x}" ] ; then continue ; fi
 
-	verify_binary_inequality "deny, audit deny modifier for \"${rule}\"" \
-		"/t { ${rule}, }" \
-		"/t { audit ${rule}, }" \
-		"/t { audit allow ${rule}, }" \
-		"/t { deny ${rule% *} x, }" \
-		"/t { audit deny ${rule% *} x, }"
+	verify_binary_inequality "'$p1'x'$p2' deny, audit deny modifier for \"${rule}\"" \
+		"/t { $p1 ${rule}, }" \
+		"/t { $p2 audit ${rule}, }" \
+		"/t { $p2 audit allow ${rule}, }" \
+		"/t { $p2 deny ${rule% *} x, }" \
+		"/t { $p2 audit deny ${rule% *} x, }"
 
-	verify_binary_inequality "audit vs deny and audit deny modifiers for \"${rule}\"" \
-		"/t { audit ${rule}, }" \
-		"/t { deny ${rule% *} x, }" \
-		"/t { audit deny ${rule% *} x, }"
+	verify_binary_inequality "'$p1'x'$p2' audit vs deny and audit deny modifiers for \"${rule}\"" \
+		"/t { $p1 audit ${rule}, }" \
+		"/t { $p2 deny ${rule% *} x, }" \
+		"/t { $p2 audit deny ${rule% *} x, }"
 
 done
 
 # verify deny and audit deny differ for x perms
 for prefix in "/f" "/*" "file /f" "file /*" ; do
-	verify_binary_inequality "deny and audit deny x modifiers for \"${prefix}\"" \
-		"/t { deny ${prefix} x, }" \
-		"/t { audit deny ${prefix} x, }"
+	verify_binary_inequality "'$p1'x'$p2' deny and audit deny x modifiers for \"${prefix}\"" \
+		"/t { $p1 deny ${prefix} x, }" \
+		"/t { $p2 audit deny ${prefix} x, }"
 done
 
 #Test equality of leading and trailing file permissions
@@ -403,26 +438,26 @@ for audit in "" "audit" ; do
 					    "lkm" "rwlk" "rwlm" "rwkm" \
 					    "ralk" "ralm" "wlkm" "alkm" \
 					    "rwlkm" "ralkm" ; do
-					verify_binary_equality "leading and trailing perms for \"${perm}\"" \
-						"/t { ${prefix} /f ${perm}, }" \
-						"/t { ${prefix} ${perm} /f, }"
+					verify_binary_equality "'$p1'x'$p2' leading and trailing perms for \"${perm}\"" \
+						"/t { $p1 ${prefix} /f ${perm}, }" \
+						"/t { $p2 ${prefix} ${perm} /f, }"
 				done
 				if [ "$allow" == "deny" ] ; then continue ; fi
 				for perm in "ux" "Ux" "px" "Px" "cx" "Cx" \
 					    "ix" "pux" "Pux" "pix" "Pix" \
 					    "cux" "Cux" "cix" "Cix"
 				do
-					verify_binary_equality "leading and trailing perms for \"${perm}\"" \
-						"/t { ${prefix} /f ${perm}, }" \
-						"/t { ${prefix} ${perm} /f, }"
+					verify_binary_equality "'$p1'x'$p2' leading and trailing perms for \"${perm}\"" \
+						"/t { $p1 ${prefix} /f ${perm}, }" \
+						"/t { $p2 ${prefix} ${perm} /f, }"
 				done
 				for perm in "px" "Px" "cx" "Cx" \
 					    "pux" "Pux" "pix" "Pix" \
 					    "cux" "Cux" "cix" "Cix"
 				do
-					verify_binary_equality "leading and trailing perms for x-transition \"${perm}\"" \
-						"/t { ${prefix} /f ${perm} -> b, }" \
-						"/t { ${prefix} ${perm} /f -> b, }"
+					verify_binary_equality "'$p1'x'$p2' leading and trailing perms for x-transition \"${perm}\"" \
+						"/t { $p1 ${prefix} /f ${perm} -> b, }" \
+						"/t { $p2 ${prefix} ${perm} /f -> b, }"
 				done
 			done
 		done
@@ -443,127 +478,102 @@ do
 	             "cix -> b" "Cix -> b"
 	do
 		if [ "$perm1" == "$perm2" ] ; then
-			verify_binary_equality "Exec perm \"${perm1}\" - most specific match: same as glob" \
-				"/t { /* ${perm1}, /f ${perm2}, }" \
-				"/t { /* ${perm1}, }"
+			verify_binary_equality "'$p1'x'$p2' Exec perm \"${perm1}\" - most specific match: same as glob" \
+				"/t { $p1 /* ${perm1}, /f ${perm2}, }" \
+				"/t { $p2 /* ${perm1}, }"
 		else
-			verify_binary_inequality "Exec \"${perm1}\" vs \"${perm2}\" - most specific match: different from glob" \
-				"/t { /* ${perm1}, /f ${perm2}, }" \
-				"/t { /* ${perm1}, }"
+			verify_binary_inequality "'$p1'x'$p2' Exec \"${perm1}\" vs \"${perm2}\" - most specific match: different from glob" \
+				"/t { $p1 /* ${perm1}, /f ${perm2}, }" \
+				"/t { $p2 /* ${perm1}, }"
 		fi
 	done
-	verify_binary_inequality "Exec \"${perm1}\" vs deny x - most specific match: different from glob" \
-		"/t { /* ${perm1}, audit deny /f x, }" \
-		"/t { /* ${perm1}, }"
+	verify_binary_inequality "'$p1'x'$p2' Exec \"${perm1}\" vs deny x - most specific match: different from glob" \
+		"/t { $p1 /* ${perm1}, audit deny /f x, }" \
+		"/t { $p2 /* ${perm1}, }"
 
 done
 
 #Test deny carves out permission
-verify_binary_inequality "Deny removes r perm" \
-		       "/t { /foo/[abc] r, audit deny /foo/b r, }" \
-		       "/t { /foo/[abc] r, }"
+verify_binary_inequality "'$p1'x'$p2' Deny removes r perm" \
+		       "/t { $p1 /foo/[abc] r, audit deny /foo/b r, }" \
+		       "/t { $p2 /foo/[abc] r, }"
 
-verify_binary_equality "Deny removes r perm" \
-		       "/t { /foo/[abc] r, audit deny /foo/b r, }" \
-		       "/t { /foo/[ac] r, }"
+verify_binary_equality "'$p1'x'$p2' Deny removes r perm" \
+		       "/t { $p1 /foo/[abc] r, audit deny /foo/b r, }" \
+		       "/t { $p2 /foo/[ac] r, }"
 
 #this one may not be true in the future depending on if the compiled profile
 #is explicitly including deny permissions for dynamic composition
-verify_binary_equality "Deny of ungranted perm" \
-		       "/t { /foo/[abc] r, audit deny /foo/b w, }" \
-		       "/t { /foo/[abc] r, }"
+verify_binary_equality "'$p1'x'$p2' Deny of ungranted perm" \
+		       "/t { $p1 /foo/[abc] r, audit deny /foo/b w, }" \
+		       "/t { $p2 /foo/[abc] r, }"
 
 
-verify_binary_equality "change_profile == change_profile -> **" \
-		       "/t { change_profile, }" \
-		       "/t { change_profile -> **, }"
+verify_binary_equality "'$p1'x'$p2' change_profile == change_profile -> **" \
+		       "/t { $p1 change_profile, }" \
+		       "/t { $p2 change_profile -> **, }"
 
-verify_binary_equality "change_profile /** == change_profile /** -> **" \
-		       "/t { change_profile /**, }" \
-		       "/t { change_profile /** -> **, }"
+verify_binary_equality "'$p1'x'$p2' change_profile /** == change_profile /** -> **" \
+		       "/t { $p1 change_profile /**, }" \
+		       "/t { $p2 change_profile /** -> **, }"
 
-verify_binary_equality "change_profile /** == change_profile /** -> **" \
-		       "/t { change_profile unsafe /**, }" \
-		       "/t { change_profile unsafe /** -> **, }"
+verify_binary_equality "'$p1'x'$p2' change_profile /** == change_profile /** -> **" \
+		       "/t { $p1 change_profile unsafe /**, }" \
+		       "/t { $p2 change_profile unsafe /** -> **, }"
 
-verify_binary_equality "change_profile /** == change_profile /** -> **" \
-		       "/t { change_profile /**, }" \
-		       "/t { change_profile safe /** -> **, }"
+verify_binary_equality "'$p1'x'$p2' change_profile /** == change_profile /** -> **" \
+		       "/t { $p1 change_profile /**, }" \
+		       "/t { $p2 change_profile safe /** -> **, }"
 
-verify_binary_inequality "change_profile /** == change_profile /** -> **" \
-			 "/t { change_profile /**, }" \
-			 "/t { change_profile unsafe /**, }"
+verify_binary_inequality "'$p1'x'$p2' change_profile /** == change_profile /** -> **" \
+			 "/t { $p1 change_profile /**, }" \
+			 "/t { $p2 change_profile unsafe /**, }"
 
-verify_binary_equality "profile name is hname in rule" \
-	":ns:/hname { signal peer=/hname, }" \
-	":ns:/hname { signal peer=@{profile_name}, }"
+verify_binary_equality "'$p1'x'$p2' profile name is hname in rule" \
+	":ns:/hname { $p1 signal peer=/hname, }" \
+	":ns:/hname { $p2 signal peer=@{profile_name}, }"
 
-verify_binary_inequality "profile name is NOT fq name in rule" \
-	":ns:/hname { signal peer=:ns:/hname, }" \
-	":ns:/hname { signal peer=@{profile_name}, }"
+verify_binary_inequality "'$p1'x'$p2' profile name is NOT fq name in rule" \
+	":ns:/hname { $p1 signal peer=:ns:/hname, }" \
+	":ns:/hname { $p2 signal peer=@{profile_name}, }"
 
-verify_binary_equality "profile name is hname in sub pofile rule" \
-	":ns:/hname { profile child { signal peer=/hname//child, } }" \
-	":ns:/hname { profile child { signal peer=@{profile_name}, } }"
+verify_binary_equality "'$p1'x'$p2' profile name is hname in sub pofile rule" \
+	":ns:/hname { profile child { $p1 signal peer=/hname//child, } }" \
+	":ns:/hname { profile child { $p2 signal peer=@{profile_name}, } }"
 
-verify_binary_inequality "profile name is NOT fq name in sub profile rule" \
-	":ns:/hname { profile child { signal peer=:ns:/hname//child, } }" \
-	":ns:/hname { profile child { signal peer=@{profile_name}, } }"
+verify_binary_inequality "'$p1'x'$p2' profile name is NOT fq name in sub profile rule" \
+	":ns:/hname { profile child { $p1 signal peer=:ns:/hname//child, } }" \
+	":ns:/hname { profile child { $p2 signal peer=@{profile_name}, } }"
 
-verify_binary_equality "profile name is hname in hat rule" \
-	":ns:/hname { ^child { signal peer=/hname//child, } }" \
-	":ns:/hname { ^child { signal peer=@{profile_name}, } }"
+verify_binary_equality "'$p1'x'$p2' profile name is hname in hat rule" \
+	":ns:/hname { ^child { $p1 signal peer=/hname//child, } }" \
+	":ns:/hname { ^child { $p2 signal peer=@{profile_name}, } }"
 
-verify_binary_inequality "profile name is NOT fq name in hat rule" \
-	":ns:/hname { ^child { signal peer=:ns:/hname//child, } }" \
-	":ns:/hname { ^child { signal peer=@{profile_name}, } }"
+verify_binary_inequality "'$p1'x'$p2' profile name is NOT fq name in hat rule" \
+	":ns:/hname { ^child { $p1 signal peer=:ns:/hname//child, } }" \
+	":ns:/hname { ^child { $p2 signal peer=@{profile_name}, } }"
 
-verify_binary_equality "@{profile_name} is literal in peer" \
-	"/{a,b} { signal peer=/\{a,b\}, }" \
-	"/{a,b} { signal peer=@{profile_name}, }"
+verify_binary_equality "'$p1'x'$p2' @{profile_name} is literal in peer" \
+	"/{a,b} { $p1 signal peer=/\{a,b\}, }" \
+	"/{a,b} { $p2 signal peer=@{profile_name}, }"
 
-verify_binary_equality "@{profile_name} is literal in peer with pattern" \
-	"/{a,b} { signal peer={/\{a,b\},c}, }" \
-	"/{a,b} { signal peer={@{profile_name},c}, }"
+verify_binary_equality "'$p1'x'$p2' @{profile_name} is literal in peer with pattern" \
+	"/{a,b} { $p1 signal peer={/\{a,b\},c}, }" \
+	"/{a,b} { $p2 signal peer={@{profile_name},c}, }"
 
-verify_binary_inequality "@{profile_name} is not pattern in peer" \
-	"/{a,b} { signal peer=/{a,b}, }" \
-	"/{a,b} { signal peer=@{profile_name}, }"
+verify_binary_inequality "'$p1'x'$p2' @{profile_name} is not pattern in peer" \
+	"/{a,b} { $p1 signal peer=/{a,b}, }" \
+	"/{a,b} { $p2 signal peer=@{profile_name}, }"
 
-verify_binary_equality "@{profile_name} is literal in peer with esc sequence" \
-	"/\\\\a { signal peer=/\\\\a, }" \
-	"/\\\\a { signal peer=@{profile_name}, }"
+verify_binary_equality "'$p1'x'$p2' @{profile_name} is literal in peer with esc sequence" \
+	"/\\\\a { $p1 signal peer=/\\\\a, }" \
+	"/\\\\a { $p2 signal peer=@{profile_name}, }"
 
-verify_binary_equality "@{profile_name} is literal in peer with esc alt sequence" \
-	"/\\{a,b\\},c { signal peer=/\\{a,b\\},c, }" \
-	"/\\{a,b\\},c { signal peer=@{profile_name}, }"
+verify_binary_equality "'$p1'x'$p2' @{profile_name} is literal in peer with esc alt sequence" \
+	"/\\{a,b\\},c { $p1 signal peer=/\\{a,b\\},c, }" \
+	"/\\{a,b\\},c { $p2 signal peer=@{profile_name}, }"
 
 
-
-# verify rlimit data conversions
-verify_binary_equality "set rlimit rttime <= 12 weeks" \
-                       "/t { set rlimit rttime <= 12 weeks, }" \
-                       "/t { set rlimit rttime <= $((12 * 7)) days, }" \
-                       "/t { set rlimit rttime <= $((12 * 7 * 24)) hours, }" \
-                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60)) minutes, }" \
-                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60 * 60)) seconds, }" \
-                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60 * 60 * 1000)) ms, }" \
-                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60 * 60 * 1000 * 1000)) us, }" \
-                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60 * 60 * 1000 * 1000)), }"
-
-verify_binary_equality "set rlimit cpu <= 42 weeks" \
-                       "/t { set rlimit cpu <= 42 weeks, }" \
-                       "/t { set rlimit cpu <= $((42 * 7)) days, }" \
-                       "/t { set rlimit cpu <= $((42 * 7 * 24)) hours, }" \
-                       "/t { set rlimit cpu <= $((42 * 7 * 24 * 60)) minutes, }" \
-                       "/t { set rlimit cpu <= $((42 * 7 * 24 * 60 * 60)) seconds, }" \
-                       "/t { set rlimit cpu <= $((42 * 7 * 24 * 60 * 60)), }"
-
-verify_binary_equality "set rlimit memlock <= 2GB" \
-                       "/t { set rlimit memlock <= 2GB, }" \
-                       "/t { set rlimit memlock <= $((2 * 1024)) MB, }" \
-                       "/t { set rlimit memlock <= $((2 * 1024 * 1024)) KB, }" \
-                       "/t { set rlimit memlock <= $((2 * 1024 * 1024 * 1024)) , }"
 
 # Unfortunately we can not just compare an empty profile and hat to a
 # ie. "/t { ^test { /f r, }}"
@@ -577,62 +587,62 @@ verify_binary_equality "set rlimit memlock <= 2GB" \
 # the "write" permission in the second profile and the test will fail.
 # If the parser is adding the change_hat proc attr rules then the
 # rules should merge and be equivalent.
-verify_binary_equality "change_hat rules automatically inserted"\
-		       "/t { owner /proc/[0-9]*/attr/{apparmor/,}current a, ^test { owner /proc/[0-9]*/attr/{apparmor/,}current a, /f r, }}" \
-		       "/t { owner /proc/[0-9]*/attr/{apparmor/,}current w, ^test { owner /proc/[0-9]*/attr/{apparmor/,}current w, /f r, }}"
+verify_binary_equality "'$p1'x'$p2' change_hat rules automatically inserted"\
+		       "/t { $p1 owner /proc/[0-9]*/attr/{apparmor/,}current a, ^test { $p2 owner /proc/[0-9]*/attr/{apparmor/,}current a, /f r, }}" \
+		       "/t { $p2 owner /proc/[0-9]*/attr/{apparmor/,}current w, ^test { $p2 owner /proc/[0-9]*/attr/{apparmor/,}current w, /f r, }}"
 
 # verify slash filtering for unix socket address paths.
 # see https://bugs.launchpad.net/apparmor/+bug/1856738
-verify_binary_equality "unix rules addr conditional" \
-                       "/t { unix bind addr=@/a/bar, }" \
-                       "/t { unix bind addr=@/a//bar, }" \
-                       "/t { unix bind addr=@//a/bar, }" \
-                       "/t { unix bind addr=@/a///bar, }" \
+verify_binary_equality "'$p1'x'$p2' unix rules addr conditional" \
+                       "/t { $p1 unix bind addr=@/a/bar, }" \
+                       "/t { $p2 unix bind addr=@/a//bar, }" \
+                       "/t { $p2 unix bind addr=@//a/bar, }" \
+                       "/t { $p2 unix bind addr=@/a///bar, }" \
                        "@{HOME}=/a/
-                           /t { unix bind addr=@@{HOME}/bar, }" \
+                           /t { $p2 unix bind addr=@@{HOME}/bar, }" \
                        "@{HOME}=/a/
-                           /t { unix bind addr=@//@{HOME}bar, }" \
+                           /t { $p2 unix bind addr=@//@{HOME}bar, }" \
                        "@{HOME}=/a/
-                           /t { unix bind addr=@/@{HOME}/bar, }"
+                           /t { $p2 unix bind addr=@/@{HOME}/bar, }"
 
-verify_binary_equality "unix rules peer addr conditional" \
-                       "/t { unix peer=(addr=@/a/bar), }" \
-                       "/t { unix peer=(addr=@/a//bar), }" \
-                       "/t { unix peer=(addr=@//a/bar), }" \
-                       "/t { unix peer=(addr=@/a///bar), }" \
+verify_binary_equality "'$p1'x'$p2' unix rules peer addr conditional" \
+                       "/t { $p1 unix peer=(addr=@/a/bar), }" \
+                       "/t { $p2 unix peer=(addr=@/a//bar), }" \
+                       "/t { $p2 unix peer=(addr=@//a/bar), }" \
+                       "/t { $p2 unix peer=(addr=@/a///bar), }" \
                        "@{HOME}=/a/
-                           /t { unix peer=(addr=@@{HOME}/bar), }" \
+                           /t { $p2 unix peer=(addr=@@{HOME}/bar), }" \
                        "@{HOME}=/a/
-                           /t { unix peer=(addr=@//@{HOME}bar), }" \
+                           /t { $p2 unix peer=(addr=@//@{HOME}bar), }" \
                        "@{HOME}=/a/
-                           /t { unix peer=(addr=@/@{HOME}/bar), }"
+                           /t { $p2 unix peer=(addr=@/@{HOME}/bar), }"
 
 # verify slash filtering for mount rules
-verify_binary_equality "mount rules slash filtering" \
-                       "/t { mount /dev/foo -> /mnt/bar, }" \
-                       "/t { mount ///dev/foo -> /mnt/bar, }" \
-                       "/t { mount /dev/foo -> /mnt//bar, }" \
-                       "/t { mount /dev///foo -> ////mnt/bar, }" \
+verify_binary_equality "'$p1'x'$p2' mount rules slash filtering" \
+                       "/t { $p1 mount /dev/foo -> /mnt/bar, }" \
+                       "/t { $p2 mount ///dev/foo -> /mnt/bar, }" \
+                       "/t { $p2 mount /dev/foo -> /mnt//bar, }" \
+                       "/t { $p2 mount /dev///foo -> ////mnt/bar, }" \
                        "@{MNT}=/mnt/
-                           /t { mount /dev///foo -> @{MNT}/bar, }" \
+                           /t { $p2 mount /dev///foo -> @{MNT}/bar, }" \
                        "@{FOO}=/foo
-                           /t { mount /dev//@{FOO} -> /mnt/bar, }"
+                           /t { $p2 mount /dev//@{FOO} -> /mnt/bar, }"
 
 # verify slash filtering for link rules
-verify_binary_equality "link rules slash filtering" \
-                       "/t { link /dev/foo -> /mnt/bar, }" \
-                       "/t { link ///dev/foo -> /mnt/bar, }" \
-                       "/t { link /dev/foo -> /mnt//bar, }" \
-                       "/t { link /dev///foo -> ////mnt/bar, }" \
+verify_binary_equality "'$p1'x'$p2' link rules slash filtering" \
+                       "/t { $p1 link /dev/foo -> /mnt/bar, }" \
+                       "/t { $p2 link ///dev/foo -> /mnt/bar, }" \
+                       "/t { $p2 link /dev/foo -> /mnt//bar, }" \
+                       "/t { $p2 link /dev///foo -> ////mnt/bar, }" \
                        "@{BAR}=/mnt/
-                           /t { link /dev///foo -> @{BAR}/bar, }" \
+                           /t { $p2 link /dev///foo -> @{BAR}/bar, }" \
                        "@{FOO}=/dev/
-                           /t { link @{FOO}//foo -> /mnt/bar, }" \
+                           /t { $p2 link @{FOO}//foo -> /mnt/bar, }" \
                        "@{FOO}=/dev/
                         @{BAR}=/mnt/
-                           /t { link @{FOO}/foo -> @{BAR}/bar, }"
+                           /t { $p2 link @{FOO}/foo -> @{BAR}/bar, }"
 
-verify_binary_equality "attachment slash filtering" \
+verify_binary_equality "'$p1'x'$p2' attachment slash filtering" \
                        "/t /bin/foo { }" \
                        "/t /bin//foo { }" \
                        "@{BAR}=/bin/
@@ -660,9 +670,9 @@ verify_binary_equality "value like comment at end of set var" \
 # dfas dumped will be different, even if the binary is the same
 # Note: this test in the future will require -O filter-deny and
 # -O minimize and -O remove-unreachable.
-verify_binary_equality "mount specific deny doesn't affect non-overlapping" \
-			"/t { mount options=bind /e/ -> /**, }" \
-			"/t { audit deny mount /s/** -> /**,
+verify_binary_equality "'$p1'x'$p2' mount specific deny doesn't affect non-overlapping" \
+			"/t { $p1 mount options=bind /e/ -> /**, }" \
+			"/t { $p2 audit deny mount /s/** -> /**,
 			      mount options=bind /e/ -> /**, }"
 
 if [ $fails -ne 0 ] || [ $errors -ne 0 ]
@@ -670,6 +680,139 @@ then
 	printf "ERRORS: %d\nFAILS: %d\n" $errors $fails 2>&1
 	exit $((fails + errors))
 fi
+
+
+## priority override equivalence tests
+## compare single rule, to multi-rule profile where one rule overrides
+## the other rule via priority.
+
+
+verify_binary_equality "'$p1'x'$p2' dbus variable expansion, multiple values/rules" \
+	"/t { dbus (send, receive) path=/com/foo, }" \
+	"/t { $p1 dbus (send, receive) path=/com/foo, $p2 dbus (send, receive) path=/com/foo, }" \
+	"@{FOO}=foo
+	    /t { $p1 dbus (send, receive) path=/com/@{FOO}, $p2 dbus (send, receive) path=/com/foo, }" \
+
+verify_binary_equality "'$p1'x'$p2' dbus variable expansion, ensure rule de-duping occurs" \
+	"/t { $p1 dbus (send, receive) path=/com/foo, dbus (send, receive) path=/com/bar, }" \
+	"/t { $p2 dbus (send, receive) path=/com/foo, dbus (send, receive) path=/com/bar, dbus (send, receive) path=/com/bar, }" \
+	"@{FOO}=bar foo bar foo
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
+	"@{FOO}=bar foo bar foo
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, dbus (send, receive) path=/com/@{FOO}, }"
+
+verify_binary_equality "'$p1'x'$p2' dbus minimization with all perms" \
+	"/t { $p1 dbus, }" \
+	"/t { $p2 dbus bus=session, $p2 dbus, }" \
+	"/t { $p2 dbus (send, receive, bind, eavesdrop), $p2 dbus, }"
+
+verify_binary_equality "'$p1'x'$p2' dbus minimization with bind" \
+	"/t { $p1 dbus bind, }" \
+	"/t { $p2 dbus bind bus=session, $p2 dbus bind, }" \
+	"/t { $p2 dbus bind bus=system name=com.foo, $p2 dbus bind, }"
+
+verify_binary_equality "'$p1'x'$p2' dbus minimization with send and a bus conditional" \
+	"/t { $p1 dbus send bus=system, }" \
+	"/t { $p2 dbus send bus=system path=/com/foo interface=com.foo member=bar, dbus send bus=system, }" \
+	"/t { $p2 dbus send bus=system peer=(label=/usr/bin/foo), $p2 dbus send bus=system, }"
+
+verify_binary_equality "'$p1'x'$p2' dbus minimization with an audit modifier" \
+	"/t { $p1 audit dbus eavesdrop, }" \
+	"/t { $p2 audit dbus eavesdrop bus=session, $p2 audit dbus eavesdrop, }"
+
+verify_binary_equality "'$p1'x'$p2' dbus minimization with a deny modifier" \
+	"/t { $p1 deny dbus send bus=system peer=(name=com.foo), }" \
+	"/t { $p2 deny dbus send bus=system peer=(name=com.foo label=/usr/bin/foo), $p2 deny dbus send bus=system peer=(name=com.foo), }" \
+
+verify_binary_equality "'$p1'x'$p2' dbus minimization found in dbus abstractions" \
+	"/t { $p1 dbus send bus=session, }" \
+	"/t { $p2 dbus send
+                   bus=session
+                   path=/org/freedesktop/DBus
+                   interface=org.freedesktop.DBus
+                   member={Hello,AddMatch,RemoveMatch,GetNameOwner,NameHasOwner,StartServiceByName}
+                   peer=(name=org.freedesktop.DBus),
+	      $p2 dbus send bus=session, }"
+
+# verify slash filtering for dbus paths.
+verify_binary_equality "'$p1'x'$p2' dbus slash filtering for paths" \
+	"/t { $p1 dbus (send, receive) path=/com/foo, dbus (send, receive) path=/com/bar, }" \
+	"/t { $p2 dbus (send, receive) path=/com///foo, dbus (send, receive) path=///com/bar, }" \
+	"/t { $p2 dbus (send, receive) path=/com//{foo,bar}, }" \
+	"/t { $p2 dbus (send, receive) path={//com/foo,/com//bar}, }" \
+	"@{FOO}=/foo
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, $p2 dbus (send, receive) path=/com/bar, }" \
+	"@{FOO}=/foo /bar
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
+	"@{FOO}=/bar //foo
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
+	"@{FOO}=//{bar,foo}
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, }" \
+	"@{FOO}=/foo
+	 @{BAR}=bar
+	    /t { $p2 dbus (send, receive) path=/com/@{FOO}, $p2 dbus (send, receive) path=/com//@{BAR}, }"
+
+
+
+#### end of wrapper fn
+}
+
+
+printf "Equality Tests:\n"
+
+#rules that don't support priority
+
+# verify rlimit data conversions
+verify_binary_equality "set rlimit rttime <= 12 weeks" \
+                       "/t { set rlimit rttime <= 12 weeks, }" \
+                       "/t { set rlimit rttime <= $((12 * 7)) days, }" \
+                       "/t { set rlimit rttime <= $((12 * 7 * 24)) hours, }" \
+                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60)) minutes, }" \
+                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60 * 60)) seconds, }" \
+                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60 * 60 * 1000)) ms, }" \
+                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60 * 60 * 1000 * 1000)) us, }" \
+                       "/t { set rlimit rttime <= $((12 * 7 * 24 * 60 * 60 * 1000 * 1000)), }"
+
+verify_binary_equality "set rlimit cpu <= 42 weeks" \
+                       "/t { set rlimit cpu <= 42 weeks, }" \
+                       "/t { set rlimit cpu <= $((42 * 7)) days, }" \
+                       "/t { set rlimit cpu <= $((42 * 7 * 24)) hours, }" \
+                       "/t { set rlimit cpu <= $((42 * 7 * 24 * 60)) minutes, }" \
+                       "/t { set rlimit cpu <= $((42 * 7 * 24 * 60 * 60)) seconds, }" \
+                       "/t { set rlimit cpu <= $((42 * 7 * 24 * 60 * 60)), }"
+
+verify_binary_equality "set rlimit memlock <= 2GB" \
+                       "/t { set rlimit memlock <= 2GB, }" \
+                       "/t { set rlimit memlock <= $((2 * 1024)) MB, }" \
+                       "/t { set rlimit memlock <= $((2 * 1024 * 1024)) KB, }" \
+                       "/t { set rlimit memlock <= $((2 * 1024 * 1024 * 1024)) , }"
+
+
+# verify combinations of different priority levels
+# for single rule comparisons, rules should keep same expected result
+# even when the priorities are different.
+# different priorities within a profile comparison resulting in
+# different permission could affected expected results
+
+
+priorities="none 0 1 -1"
+
+for pri1 in $priorities ; do
+    if [ "$pri1" = "none" ] ; then
+	priority1=""
+    else
+	priority1="priority=$pri1"
+    fi
+    for pri2 in $priorities  ; do
+	if [ "$pri2" = "none" ] ; then
+	    priority2=""
+	else
+	    priority2="priority=$pri2"
+	fi
+
+	verify_set "$priority1" "$priority2"
+    done
+done
 
 [ -z "${verbose}" ] && printf "\n"
 printf "PASS\n"

@@ -48,6 +48,9 @@ public:
 	};
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) {
+		// priority is partially supported for unix rules
+		// rules that get downgraded to just network socket
+		// won't support them but the fine grained do.
 		if (p.owner) {
 			error = "owner prefix not allowed on unix rules";
 			return false;

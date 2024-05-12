@@ -82,11 +82,10 @@ class rule_t {
 public:
 	int rule_type;
 	rule_flags_t flags;
-	int priority;
 
 	rule_t *removed_by;
 
-	rule_t(int t): rule_type(t), flags(RULE_FLAG_NONE), priority(0), removed_by(NULL) { }
+	rule_t(int t): rule_type(t), flags(RULE_FLAG_NONE), removed_by(NULL) { }
 	virtual ~rule_t() { };
 
 	bool is_type(int type) { return rule_type == type; }
@@ -114,9 +113,6 @@ public:
 	virtual int expand_variables(void) = 0;
 
 	virtual int cmp(rule_t const &rhs) const {
-		int tmp = priority - rhs.priority;
-		if (tmp != 0)
-			return tmp;
 		return rule_type - rhs.rule_type;
 	}
 	virtual bool operator<(rule_t const &rhs) const {
@@ -177,6 +173,7 @@ typedef enum { OWNER_UNSPECIFIED, OWNER_SPECIFIED, OWNER_NOT } owner_t;
  */
 class prefixes {
 public:
+	int priority;
 	audit_t audit;
 	rule_mode_t rule_mode;
 	owner_t owner;
@@ -246,7 +243,10 @@ public:
 	}
 
 	int cmp(prefixes const &rhs) const {
-		int tmp = (int) audit - (int) rhs.audit;
+		int tmp = priority - rhs.priority;
+		if (tmp != 0)
+			return tmp;
+		tmp = (int) audit - (int) rhs.audit;
 		if (tmp != 0)
 			return tmp;
 		tmp = (int) rule_mode - (int) rhs.rule_mode;
@@ -271,6 +271,7 @@ public:
 	prefix_rule_t(int t = RULE_TYPE_PREFIX) : rule_t(t)
 	{
 		/* Must construct prefix here see note on prefixes */
+		priority = 0;
 		audit = AUDIT_UNSPECIFIED;
 		rule_mode = RULE_UNSPECIFIED;
 		owner = OWNER_UNSPECIFIED;
@@ -281,6 +282,19 @@ public:
 	virtual bool add_prefix(const prefixes &p, const char *&error) {
 		if (!valid_prefix(p, error))
 			return false;
+
+		// priority does NOT conflict but allowed at the block
+		// level yet. priority at the block level applies to
+		// the entire block, but only for the level of rules
+		// it is at.
+		// priority within the block arranges order of rules
+		// within the block.
+		if (priority != 0) {
+			error = "priority levels not supported";
+			return false;
+		}
+		priority = p.priority;
+
 		/* audit conflicts */
 		if (p.audit != AUDIT_UNSPECIFIED) {
 			if (audit != AUDIT_UNSPECIFIED &&

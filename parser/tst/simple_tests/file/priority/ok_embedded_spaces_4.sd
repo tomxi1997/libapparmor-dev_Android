@@ -1,0 +1,6 @@
+#=DESCRIPTION Simple test case for embedded spaces
+#=EXRESULT PASS
+
+/bin/foo {
+  priority=-1 /abc\ def r,
+}

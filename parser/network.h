@@ -194,7 +194,12 @@ public:
 	bool parse_address(ip_conds &entry);
 	bool parse_port(ip_conds &entry);
 
+	// update TODO: in equality.sh when priority is a valid prefix
 	virtual bool valid_prefix(const prefixes &p, const char *&error) {
+		if (p.priority != 0) {
+			error = _("priority prefix not allowed on network rules");
+			return false;
+		}
 		if (p.owner) {
 			error = _("owner prefix not allowed on network rules");
 			return false;

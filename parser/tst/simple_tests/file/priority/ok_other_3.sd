@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION simple other flag test
+#=EXRESULT PASS
+
+profile test {
+  priority=-1 audit other /tmp/** rw,
+}

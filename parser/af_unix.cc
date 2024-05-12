@@ -203,7 +203,7 @@ void unix_rule::downgrade_rule(Profile &prof) {
 			prof.net.audit[AF_UNIX] |= mask;
 		const char *error;
 		network_rule *netv8 = new network_rule(perms, AF_UNIX, sock_type_n);
-		if(!netv8->add_prefix({audit, rule_mode, owner}, error))
+		if(!netv8->add_prefix({0, audit, rule_mode, owner}, error))
 			yyerror(error);
 		prof.rule_ents.push_back(netv8);
 	} else {
