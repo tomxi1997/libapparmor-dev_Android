@@ -222,7 +222,8 @@ static void abi_features(char *filename, bool search);
 	struct value_list *val_list;
 	struct cond_entry *cond_entry;
 	struct cond_entry_list cond_entry_list;
-	int boolean;
+	bool boolean;
+	int integer;
 	owner_t owner;
 	struct prefixes prefix;
 	IncludeCache_t *includecache;
@@ -270,7 +271,7 @@ static void abi_features(char *filename, bool search);
 %type <boolean> opt_subset_flag
 %type <audit>	opt_audit_flag
 %type <owner> opt_owner_flag
-%type <boolean> opt_profile_flag
+%type <integer> opt_profile_flag
 %type <boolean> opt_flags
 %type <rule_mode> opt_rule_mode
 %type <id>	opt_id
@@ -294,7 +295,7 @@ static void abi_features(char *filename, bool search);
 %type <unix_entry>	unix_rule
 %type <id>	opt_target
 %type <id>	opt_named_transition
-%type <boolean> opt_exec_mode
+%type <integer> opt_exec_mode
 %type <boolean> opt_file
 %type <fperms>  userns_perm
 %type <fperms>  userns_perms
@@ -588,13 +589,13 @@ flags:	{ /* nothing */
 		$$ = fv;
 	};
 
-opt_flags: { /* nothing */ $$ = 0; }
+opt_flags: { /* nothing */ $$ = false; }
 	| TOK_CONDID TOK_EQUALS
 	{
 		if (strcmp($1, "flags") != 0)
 			yyerror("expected flags= got %s=", $1);
 		free($1);
-		$$ = 1;
+		$$ = true;
 	}
 
 flags:	opt_flags TOK_OPENPAREN flagvals TOK_CLOSEPAREN
@@ -1011,8 +1012,8 @@ opt_exec_mode: { /* nothing */ $$ = EXEC_MODE_EMPTY; }
 	| TOK_UNSAFE { $$ = EXEC_MODE_UNSAFE; };
 	| TOK_SAFE { $$ = EXEC_MODE_SAFE; };
 
-opt_file: { /* nothing */ $$ = 0; }
-	| TOK_FILE { $$ = 1; }
+opt_file: { /* nothing */ $$ = false; }
+	| TOK_FILE { $$ = true; }
 
 frule:	id_or_var file_perms opt_named_transition TOK_END_OF_RULE
 	{
