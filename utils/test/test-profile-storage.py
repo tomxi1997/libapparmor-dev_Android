@@ -122,6 +122,12 @@ class TestSetInvalid(AATest):
         with self.assertRaises(expected):
             self.storage[params[0]] = params[1]
 
+    def testInvalidTypeChange(self):
+        storage = ProfileStorage('/test/foo', 'hat', 'TEST')
+        storage.data['invalid'] = 42  # manually set behind __setitem__'s back to avoid checks
+        with self.assertRaises(AppArmorBug):
+            storage['invalid'] = 'foo'  # attempt to change type from int to str
+
 
 class AaTest_repr(AATest):
     def testRepr(self):
