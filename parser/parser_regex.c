@@ -791,7 +791,7 @@ int process_profile_regex(Profile *prof)
 		prof->dfa.dfa = prof->dfa.rules->create_dfablob(&prof->dfa.size,
 					&xmatch_len, prof->dfa.perms_table,
 					parseopts, true,
-					prof->uses_prompt_rules && (prompt_compat_mode == PROMPT_COMPAT_PERMSV2),
+					kernel_supports_permstable32,
 					prof->uses_prompt_rules);
 		delete prof->dfa.rules;
 		prof->dfa.rules = NULL;
@@ -1174,7 +1174,7 @@ int process_profile_policydb(Profile *prof)
 						&xmatch_len,
 						prof->policy.perms_table,
 						parseopts, false,
-						prof->uses_prompt_rules && (prompt_compat_mode == PROMPT_COMPAT_PERMSV2),
+						kernel_supports_permstable32,
 						prof->uses_prompt_rules);
 		delete prof->policy.rules;
 

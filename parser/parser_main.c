@@ -1583,7 +1583,10 @@ static bool get_kernel_features(struct aa_features **features)
 	}
 	kernel_supports_permstable32_v1 = aa_features_supports(*features, "policy/permstable32_version/0x000001");
 	if (kernel_supports_permstable32_v1) {
-		//fprintf(stderr, "kernel supports prompt_v1\n");
+		/* permstabl32 is broken in kernels that only support v1
+		 * so disable it
+		 */
+		kernel_supports_permstable32 = false;
 	}
 
 	/* set default prompt_compat_mode to the best that is supported */

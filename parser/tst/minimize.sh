@@ -155,7 +155,7 @@ echo "ok"
 ## NOTE: change count from 6 to 7 when extend perms is not dependent on
 ## prompt rules being present
 echo -n "Minimize profiles extended no-filter audit deny perms "
-if [ "$(echo "/t { /a r, /b w, /c a, /d l, /e k, /f m, audit deny /** w, }" | ${APPARMOR_PARSER} -M features_files/features.extended-perms-no-policydb -QT -O minimize -O no-filter-deny -D dfa-states 2>&1 | grep -v '<==' | grep -c '^{.*} 0 (.*)$')" -ne 6 ] ; then
+if [ "$(echo "/t { /a r, /b w, /c a, /d l, /e k, /f m, audit deny /** w, }" | ${APPARMOR_PARSER} -M features_files/features.extended-perms-no-policydb -QT -O minimize -O no-filter-deny -D dfa-states 2>&1 | grep -v '<==' | grep -c '^{.*} 0 (.*)$')" -ne 7 ] ; then
     echo "failed"
     exit 1;
 fi
