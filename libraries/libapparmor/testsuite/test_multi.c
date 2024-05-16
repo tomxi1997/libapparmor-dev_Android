@@ -1,11 +1,15 @@
-#define _GNU_SOURCE /* for glibc's basename version */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
 #include <aalogparse.h>
+
+static const char *basename(const char *path)
+{
+	const char *p = strrchr(path, '/');
+	return p ? p + 1 : path;
+}
 
 int print_results(aa_log_record *record);
 
