@@ -29,7 +29,7 @@ PYMODULES = $(wildcard apparmor/*.py apparmor/rule/*.py)
 
 MANPAGES = ${TOOLS:=.8} logprof.conf.5
 
-PYFLAKES ?= pyflakes3
+PYFLAKES ?= flake8 --ignore E501,E241,W503
 
 all: docs
 	$(MAKE) -C po all
