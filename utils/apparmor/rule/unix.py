@@ -114,7 +114,6 @@ class UnixRule(BaseRule):
             else:
                 accesses = cls.ALL
 
-
             rule_conds = initialize_cond_dict(r, ['type', 'protocol'], '_cond_set', cls.ALL)
             local_expr = initialize_cond_dict(r, ['addr', 'label', 'attr', 'opt'], '_cond', cls.ALL)
             peer_expr = initialize_cond_dict(r, ['addr', 'label'], '_peer_cond', cls.ALL)
@@ -201,6 +200,7 @@ class UnixRule(BaseRule):
                     return False
 
         return True
+
 
 class UnixRuleset(BaseRuleset):
     '''Class to handle and store a collection of Unix rules'''

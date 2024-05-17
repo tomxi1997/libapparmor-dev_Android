@@ -63,7 +63,7 @@ class FileRule(BaseRule):
                          comment=comment, log_event=log_event)
 
         #                                              rulepart  partperms  is_path  log_event
-        self.path,   self.all_paths   = self._aare_or_all(path,   'path',   True,  log_event)
+        self.path,   self.all_paths   = self._aare_or_all(path,   'path',   True,  log_event)  # noqa: E221
         self.target, self.all_targets = self._aare_or_all(target, 'target', False, log_event)
 
         self.can_glob = not self.all_paths
@@ -564,7 +564,7 @@ def perms_with_a(perms):
        - perms: the original permissions
     """
     if not perms or 'w' not in perms:
-         return perms  # no need to change anything
+        return perms  # no need to change anything
 
     perms_with_a = set(perms)
     perms_with_a.add('a')

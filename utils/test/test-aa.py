@@ -78,7 +78,6 @@ class AaTest_check_for_apparmor(AaTestWithTempdir):
         self.assertEqual(self.tmpdir + '/security/apparmor', check_for_apparmor(filesystems, mounts))
 
 
-
 class AaTest_create_new_profile(AATest):
     tests = (
         # file content         filename        expected interpreter  expected abstraction (besides 'base')  expected profiles
@@ -118,7 +117,7 @@ class AaTest_create_new_profile(AATest):
         if exp_interpreter_path:
             self.assertEqual(
                 set(profile[program]['file'].get_clean()),
-                {'{} ix,'.format(exp_interpreter_path), '{} r,'.format(program), '' })
+                {'{} ix,'.format(exp_interpreter_path), '{} r,'.format(program), ''})
         else:
             self.assertEqual(set(profile[program]['file'].get_clean()), {'{} mr,'.format(program), ''})
 
@@ -178,21 +177,27 @@ class AaTest_get_profile_flags(AaTestWithTempdir):
 
     def test_get_flags_01(self):
         self._test_get_flags('/foo', None)
+
     def test_get_flags_02(self):
         self._test_get_flags('/foo (  complain  )', '  complain  ')
+
     def test_get_flags_04(self):
         self._test_get_flags('/foo (complain)', 'complain')
+
     def test_get_flags_05(self):
         self._test_get_flags('/foo flags=(complain)', 'complain')
+
     def test_get_flags_06(self):
         self._test_get_flags('/foo flags=(complain,  audit)', 'complain,  audit')
 
     def test_get_flags_invalid_01(self):
         with self.assertRaises(AppArmorException):
             self._test_get_flags('/foo ()', None)
+
     def test_get_flags_invalid_02(self):
         with self.assertRaises(AppArmorException):
             self._test_get_flags('/foo flags=()', None)
+
     def test_get_flags_invalid_03(self):
         with self.assertRaises(AppArmorException):
             self._test_get_flags('/foo (  )', '  ')
@@ -234,24 +239,34 @@ class AaTest_change_profile_flags(AaTestWithTempdir):
     # tests that actually don't change the flags
     def test_change_profile_flags_nochange_02(self):
         self._test_change_profile_flags('/foo', '(  complain  )', 'complain', True, 'complain', whitespace='   ')
+
     def test_change_profile_flags_nochange_03(self):
         self._test_change_profile_flags('/foo', '(complain)', 'complain', True, 'complain')
+
     def test_change_profile_flags_nochange_04(self):
         self._test_change_profile_flags('/foo', 'flags=(complain)', 'complain', True, 'complain')
+
     def test_change_profile_flags_nochange_05(self):
         self._test_change_profile_flags('/foo', 'flags=(complain,  audit)', 'complain', True, 'audit, complain', whitespace='     ')
+
     def test_change_profile_flags_nochange_06(self):
         self._test_change_profile_flags('/foo', 'flags=(complain,  audit)', 'complain', True, 'audit, complain', whitespace='     ', comment='# a comment')
+
     def test_change_profile_flags_nochange_07(self):
         self._test_change_profile_flags('/foo', 'flags=(complain,  audit)', 'audit', True, 'audit, complain', whitespace='     ', more_rules='  # a comment\n#another  comment')
+
     def test_change_profile_flags_nochange_08(self):
         self._test_change_profile_flags('profile /foo', 'flags=(complain)', 'complain', True, 'complain')
+
     def test_change_profile_flags_nochange_09(self):
         self._test_change_profile_flags('profile xy /foo', 'flags=(complain)', 'complain', True, 'complain', profile_name='xy')
+
     def test_change_profile_flags_nochange_10(self):
         self._test_change_profile_flags('profile "/foo bar"', 'flags=(complain)', 'complain', True, 'complain', profile_name='/foo bar')
+
     def test_change_profile_flags_nochange_11(self):
         self._test_change_profile_flags('/foo', '(complain)', 'complain', True, 'complain', profile_name=None)
+
     def test_change_profile_flags_nochange_12(self):
         # XXX changes the flags for the child profile (which happens to have the same profile name) to 'complain'
         self._test_change_profile_flags('/foo', 'flags=(complain)', 'complain', True, 'complain', more_rules='  profile /foo {\n}', expected_more_rules='  profile /foo flags=(complain) {\n}')
@@ -259,26 +274,37 @@ class AaTest_change_profile_flags(AaTestWithTempdir):
     # tests that change the flags
     def test_change_profile_flags_01(self):
         self._test_change_profile_flags('/foo', '', 'audit', True, 'audit')
+
     def test_change_profile_flags_02(self):
         self._test_change_profile_flags('/foo', '(  complain  )', 'audit', True, 'audit, complain', whitespace='  ')
+
     def test_change_profile_flags_04(self):
         self._test_change_profile_flags('/foo', '(complain)', 'audit', True, 'audit, complain')
+
     def test_change_profile_flags_05(self):
         self._test_change_profile_flags('/foo', 'flags=(complain)', 'audit', True, 'audit, complain')
+
     def test_change_profile_flags_06(self):
         self._test_change_profile_flags('/foo', 'flags=(complain,  audit)', 'complain', False, 'audit', whitespace='    ')
+
     def test_change_profile_flags_07(self):
         self._test_change_profile_flags('/foo', 'flags=(complain,  audit)', 'audit', False, 'complain')
+
     def test_change_profile_flags_08(self):
         self._test_change_profile_flags('/foo', '(  complain  )', 'audit', True, 'audit, complain', whitespace='  ', profile_name=None)
+
     def test_change_profile_flags_09(self):
         self._test_change_profile_flags('profile /foo', 'flags=(complain)', 'audit', True, 'audit, complain')
+
     def test_change_profile_flags_10(self):
         self._test_change_profile_flags('profile xy /foo', 'flags=(complain)', 'audit', True, 'audit, complain', profile_name='xy')
+
     def test_change_profile_flags_11(self):
         self._test_change_profile_flags('profile "/foo bar"', 'flags=(complain)', 'audit', True, 'audit, complain', profile_name='/foo bar')
+
     def test_change_profile_flags_12(self):
         self._test_change_profile_flags('profile xy "/foo bar"', 'flags=(complain)', 'audit', True, 'audit, complain', profile_name='xy')
+
     def test_change_profile_flags_13(self):
         self._test_change_profile_flags('/foo', '(audit)', 'audit', False, '')
 
@@ -339,12 +365,15 @@ class AaTest_change_profile_flags(AaTestWithTempdir):
     def test_change_profile_flags_invalid_01(self):
         with self.assertRaises(AppArmorBug):
             self._test_change_profile_flags('/foo', '()', None, False, '', check_new_flags=False)
+
     def test_change_profile_flags_invalid_02(self):
         with self.assertRaises(AppArmorBug):
             self._test_change_profile_flags('/foo', 'flags=()', None, True, '', check_new_flags=False)
+
     def test_change_profile_flags_invalid_03(self):
         with self.assertRaises(AppArmorBug):
             self._test_change_profile_flags('/foo', '(  )', '', True, '', check_new_flags=False)
+
     def test_change_profile_flags_invalid_04(self):
         with self.assertRaises(AppArmorBug):
             self._test_change_profile_flags('/foo', 'flags=(complain,  audit)', '  ', True, 'audit, complain', check_new_flags=False)  # whitespace-only newflags
@@ -411,48 +440,68 @@ class AaTest_set_options_owner_mode(AATest):
 class AaTest_is_skippable_file(AATest):
     def test_not_skippable_01(self):
         self.assertFalse(is_skippable_file('bin.ping'))
+
     def test_not_skippable_02(self):
         self.assertFalse(is_skippable_file('usr.lib.dovecot.anvil'))
+
     def test_not_skippable_03(self):
         self.assertFalse(is_skippable_file('bin.~ping'))
+
     def test_not_skippable_04(self):
         self.assertFalse(is_skippable_file('bin.rpmsave.ping'))
+
     def test_not_skippable_05(self):
         # normally is_skippable_file should be called without directory, but it shouldn't hurt too much
         self.assertFalse(is_skippable_file('/etc/apparmor.d/bin.ping'))
+
     def test_not_skippable_06(self):
         self.assertFalse(is_skippable_file('bin.pingrej'))
 
     def test_skippable_01(self):
         self.assertTrue(is_skippable_file('bin.ping.dpkg-new'))
+
     def test_skippable_02(self):
         self.assertTrue(is_skippable_file('bin.ping.dpkg-old'))
+
     def test_skippable_03(self):
         self.assertTrue(is_skippable_file('bin.ping..dpkg-dist'))
+
     def test_skippable_04(self):
         self.assertTrue(is_skippable_file('bin.ping..dpkg-bak'))
+
     def test_skippable_05(self):
         self.assertTrue(is_skippable_file('bin.ping.dpkg-remove'))
+
     def test_skippable_06(self):
         self.assertTrue(is_skippable_file('bin.ping.pacsave'))
+
     def test_skippable_07(self):
         self.assertTrue(is_skippable_file('bin.ping.pacnew'))
+
     def test_skippable_08(self):
         self.assertTrue(is_skippable_file('bin.ping.rpmnew'))
+
     def test_skippable_09(self):
         self.assertTrue(is_skippable_file('bin.ping.rpmsave'))
+
     def test_skippable_10(self):
         self.assertTrue(is_skippable_file('bin.ping.orig'))
+
     def test_skippable_11(self):
         self.assertTrue(is_skippable_file('bin.ping.rej'))
+
     def test_skippable_12(self):
         self.assertTrue(is_skippable_file('bin.ping~'))
+
     def test_skippable_13(self):
         self.assertTrue(is_skippable_file('.bin.ping'))
+
     def test_skippable_14(self):
         self.assertTrue(is_skippable_file(''))  # empty filename
+
     def test_skippable_15(self):
         self.assertTrue(is_skippable_file('/etc/apparmor.d/'))  # directory without filename
+
     def test_skippable_16(self):
         self.assertTrue(is_skippable_file('README'))
 

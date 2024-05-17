@@ -100,7 +100,7 @@ def getkey():
         key = readkey()
         if key == '[':
             key = readkey()
-            if(ARROWS.get(key, False)):
+            if ARROWS.get(key, False):
                 key = ARROWS[key]
     return key.strip()
 
@@ -539,7 +539,6 @@ class PromptQuestion:
                     if options and selected < len(options) - 1:
                         selected += 1
                     ans = 'XXXINVALIDXXX'
-
 
     #             elif keys.get(ans, False) == 'CMD_HELP':
     #                 sys.stdout.write('\n%s\n' %helptext)

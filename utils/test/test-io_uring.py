@@ -37,7 +37,7 @@ class IOUringTestParse(AATest):
         ('deny io_uring (sqpoll, override_creds),',       IOUringRule(('sqpoll', 'override_creds'), IOUringRule.ALL, False, True,  False, '')),
         ('audit allow io_uring,',                         IOUringRule(IOUringRule.ALL,              IOUringRule.ALL, True,  False, True,  '')),
         ('io_uring override_creds, # cmt',                IOUringRule(('override_creds'),           IOUringRule.ALL, False, False, False, ' # cmt')),
-        )
+    )
 
     def _run_test(self, rawrule, expected):
         self.assertTrue(IOUringRule.match(rawrule))
@@ -82,16 +82,16 @@ class IOUringTestParseInvalid(AATest):
 
 class InvalidIOUringInit(AATest):
     tests = (
-        # init params  expected exception
-        (('', 'label'),        AppArmorBug),       # empty access
-        (('    ', 'label'),    AppArmorBug),       # whitespace access
-        (('xyxy', 'label'),    AppArmorException), # invalid access
-        ((dict(), 'label'),    AppArmorBug),       # wrong type for access
-        ((None, 'label'),      AppArmorBug),       # wrong type for access
-        (('sqpoll', ''),       AppArmorBug),       # empty label
-        (('sqpoll', '    '),   AppArmorBug),       # whitespace label
-        (('sqpoll', dict()),   AppArmorBug),       # wrong type for label
-        (('sqpoll', None),     AppArmorBug),       # wrong type for label
+        # access    label      expected exception
+        (('',       'label'),  AppArmorBug),        # empty access
+        (('    ',   'label'),  AppArmorBug),        # whitespace access
+        (('xyxy',   'label'),  AppArmorException),  # invalid access
+        ((dict(),   'label'),  AppArmorBug),        # wrong type for access
+        ((None,     'label'),  AppArmorBug),        # wrong type for access
+        (('sqpoll', ''),       AppArmorBug),        # empty label
+        (('sqpoll', '    '),   AppArmorBug),        # whitespace label
+        (('sqpoll', dict()),   AppArmorBug),        # wrong type for label
+        (('sqpoll', None),     AppArmorBug),        # wrong type for label
     )
 
     def _run_test(self, params, expected):
@@ -116,7 +116,7 @@ class WriteIOUringTestAATest(AATest):
         ('    audit     io_uring (sqpoll , override_creds ),',       'audit io_uring (override_creds sqpoll),'),
         ('   deny io_uring         sqpoll      label=bar,# foo bar', 'deny io_uring sqpoll label=bar, # foo bar'),
         ('   deny io_uring         override_creds      ,# foo bar',  'deny io_uring override_creds, # foo bar'),
-        ('   allow io_uring             label=tst    ,# foo bar'  ,  'allow io_uring label=tst, # foo bar'),
+        ('   allow io_uring             label=tst    ,# foo bar',    'allow io_uring label=tst, # foo bar'),
         ('io_uring,',                                                'io_uring,'),
         ('io_uring (override_creds),',                               'io_uring override_creds,'),
         ('io_uring (sqpoll),',                                       'io_uring sqpoll,'),
@@ -171,10 +171,10 @@ class IOUringIsCoveredTest(AATest):
 class IOUringLogprofHeaderTest(AATest):
     tests = (
         ('io_uring,',        [_('Access mode'), _('ALL'), _('Label'), _('ALL')]),
-        ('io_uring sqpoll,', [_('Access mode'), 'sqpoll' , _('Label'), _('ALL')]),
+        ('io_uring sqpoll,', [_('Access mode'), 'sqpoll', _('Label'), _('ALL')]),
         ('io_uring override_creds,', [_('Access mode'), 'override_creds', _('Label'), _('ALL')]),
         ('io_uring (sqpoll,override_creds),', [_('Access mode'), 'override_creds sqpoll', _('Label'), _('ALL')]),
-        ('io_uring sqpoll label=/foo,', [_('Access mode'), 'sqpoll' , _('Label'), '/foo']),
+        ('io_uring sqpoll label=/foo,', [_('Access mode'), 'sqpoll', _('Label'), '/foo']),
         ('io_uring override_creds label=bar,', [_('Access mode'), 'override_creds', _('Label'), 'bar']),
         ('io_uring (sqpoll,override_creds) label=baz,', [_('Access mode'), 'override_creds sqpoll', _('Label'), 'baz']),
     )

@@ -22,15 +22,20 @@ class TestBaserule(AATest):
 
     class ValidSubclass(BaseRule):
         @classmethod
-        def _create_instance(cls, raw_rule, matches): pass
+        def _create_instance(cls, raw_rule, matches):
+            pass
 
-        def get_clean(self, depth=0): pass
+        def get_clean(self, depth=0):
+            pass
 
-        def _is_covered_localvars(self, other_rule): pass
+        def _is_covered_localvars(self, other_rule):
+            pass
 
-        def _is_equal_localvars(self, other_rule, strict): pass
+        def _is_equal_localvars(self, other_rule, strict):
+            pass
 
-        def _logprof_header_localvars(self): pass
+        def _logprof_header_localvars(self):
+            pass
 
     def test_implemented_abstract_methods(self):
         self.ValidSubclass()

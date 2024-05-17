@@ -200,18 +200,18 @@ class FileFromInit(FileTest):
 
         #         path,    perms, exec_perms, target,       owner, file_keyword, leading_perms
         (FileRule('/foo', 'rw',   None,       FileRule.ALL, False, False,        False,       audit=True, deny=True),
-                  #  audit  allow   deny  comment  path   all_paths perms       all?   exec_perms target all?  owner  file keyword  leading perms
-                  exp(True,  False, True, '',     '/foo', False,    {'r', 'w'}, False, None,      None,  True, False, False,        False)),
+         #   audit  allow   deny  comment  path   all_paths perms       all?   exec_perms target all?  owner  file keyword  leading perms
+         exp(True,  False, True, '',     '/foo', False,    {'r', 'w'}, False, None,      None,  True, False, False,        False)),
 
         #         path,   perms, exec_perms, target,     owner, file_keyword, leading_perms
         (FileRule('/foo', None,  'Pix',      'bar_prof', True,  True,         True,        allow_keyword=True),
-                  #   audit  allow  deny   comment  path     all_paths  perms  all?   exec_perms  target      all?   owner  file keyword  leading perms
-                  exp(False, True,  False, '',      '/foo',  False,     set(), False, 'Pix',      'bar_prof', False, True,  True,         True)),
+         #   audit  allow  deny   comment  path     all_paths  perms  all?   exec_perms  target      all?   owner  file keyword  leading perms
+         exp(False, True,  False, '',      '/foo',  False,     set(), False, 'Pix',      'bar_prof', False, True,  True,         True)),
 
         #         path,   perms,              exec_perms, target, owner, file_keyword, leading_perms
         (FileRule('/foo', {'link', 'subset'}, None,       '/bar', False, False,        True,        audit=True, deny=True),
-                  #   audit  allow  deny  comment  path    all_paths  perms               all?   exec_perms  target  all?   owner  file keyword leading perms
-                  exp(True,  False, True, '',      '/foo', False,     {'link', 'subset'}, False, None,       '/bar', False, False, False,       True)),
+         #   audit  allow  deny  comment  path    all_paths  perms               all?   exec_perms  target  all?   owner  file keyword leading perms
+         exp(True,  False, True, '',      '/foo', False,     {'link', 'subset'}, False, None,       '/bar', False, False, False,       True)),
 
     )
 
@@ -224,55 +224,55 @@ class InvalidFileInit(AATest):
         #       path,         perms,              exec_perms, target, owner,  file_keyword, leading_perms  expected exception
 
         # empty fields
-        (      ('',           'rw',               'ix',       '/bar', False,  False,        False),        AppArmorBug),
-        #  OK  ('/foo',       '',                 'ix',       '/bar', False,  False,        False),        AppArmorBug),
-        (      ('/foo',       'rw',               '',         '/bar', False,  False,        False),        AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       '',     False,  False,        False),        AppArmorBug),
+        (      ('',           'rw',               'ix',       '/bar', False,  False,        False),        AppArmorBug),  # noqa: E201
+        #  OK  ('/foo',       '',                 'ix',       '/bar', False,  False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               '',         '/bar', False,  False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       '',     False,  False,        False),        AppArmorBug),  # noqa: E201
 
         # whitespace fields
-        (      ('   ',        'rw',               'ix',       '/bar', False,  False,        False),        AppArmorBug),
-        (      ('/foo',       '   ',              'ix',       '/bar', False,  False,        False),        AppArmorException),
-        (      ('/foo',       'rw',               '   ',      '/bar', False,  False,        False),        AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       '   ',  False,  False,        False),        AppArmorBug),
+        (      ('   ',        'rw',               'ix',       '/bar', False,  False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       '   ',              'ix',       '/bar', False,  False,        False),        AppArmorException),  # noqa: E201
+        (      ('/foo',       'rw',               '   ',      '/bar', False,  False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       '   ',  False,  False,        False),        AppArmorBug),  # noqa: E201
 
         # wrong type - dict()
-        (      (dict(),       'rw',               'ix',       '/bar', False,  False,        False),        AppArmorBug),
-        (      ('/foo',       dict(),             'ix',       '/bar', False,  False,        False),        AppArmorBug),
-        (      ('/foo',       'rw',               dict(),     '/bar', False,  False,        False),        AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       dict(), False,  False,        False),        AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       '/bar', dict(), False,        False),        AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       '/bar', False,  dict(),       False),        AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       '/bar', False,  False,        dict()),       AppArmorBug),
+        (      (dict(),       'rw',               'ix',       '/bar', False,  False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       dict(),             'ix',       '/bar', False,  False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               dict(),     '/bar', False,  False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       dict(), False,  False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       '/bar', dict(), False,        False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       '/bar', False,  dict(),       False),        AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       '/bar', False,  False,        dict()),       AppArmorBug),  # noqa: E201
 
 
         # wrong type - None
-        (      (None,         'rw',               'ix',       '/bar', False,  False,        False),         AppArmorBug),
-        #  OK  ('/foo',       None,               'ix',       '/bar', False,  False,        False),         AppArmorBug),
-        #  OK  ('/foo',       'rw',               None,       '/bar', False,  False,        False),         AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       None,   False,  False,        False),         AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       '/bar', None,   False,        False),         AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       '/bar', False,  None,         False),         AppArmorBug),
-        (      ('/foo',       'rw',               'ix',       '/bar', False,  False,        None),          AppArmorBug),
+        (      (None,         'rw',               'ix',       '/bar', False,  False,        False),         AppArmorBug),  # noqa: E201
+        #  OK  ('/foo',       None,               'ix',       '/bar', False,  False,        False),         AppArmorBug),  # noqa: E201
+        #  OK  ('/foo',       'rw',               None,       '/bar', False,  False,        False),         AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       None,   False,  False,        False),         AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       '/bar', None,   False,        False),         AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       '/bar', False,  None,         False),         AppArmorBug),  # noqa: E201
+        (      ('/foo',       'rw',               'ix',       '/bar', False,  False,        None),          AppArmorBug),  # noqa: E201
 
 
         # misc
-        (      ('/foo',       'rwa',              'ix',       '/bar', False,  False,        False),        AppArmorException),  # 'r' and 'a' conflict
-        (      ('/foo',       None,               'rw',       '/bar', False,  False,        False),        AppArmorBug),        # file perms in exec perms parameter
-        (      ('/foo',       'ix',               None,       '/bar', False,  False,        False),        AppArmorBug),        # exec perms in file perms parameter
-        (      ('foo',        'rw',               'ix',       '/bar', False,  False,        False),        AppArmorException),  # path doesn't start with /
-        (      ('/foo',       'rb',               'ix',       '/bar', False,  False,        False),        AppArmorException),  # invalid file mode 'b' (str)
-        (      ('/foo',       {'b'},              'ix',       '/bar', False,  False,        False),        AppArmorBug),        # invalid file mode 'b' (str)
-        (      ('/foo',       'rw',               'ax',       '/bar', False,  False,        False),        AppArmorBug),        # invalid exec mode 'ax'
-        (      ('/foo',       'rw',               'x',        '/bar', False,  False,        False),        AppArmorException),  # plain 'x' is only allowed in deny rules
-        (      (FileRule.ALL, FileRule.ALL,       None,       '/bar', False,  False,        False),        AppArmorBug),        # plain 'file,' doesn't allow exec target
+        (      ('/foo',       'rwa',              'ix',       '/bar', False,  False,        False),        AppArmorException),  # 'r' and 'a' conflict  # noqa: E201
+        (      ('/foo',       None,               'rw',       '/bar', False,  False,        False),        AppArmorBug),        # file perms in exec perms parameter  # noqa: E201
+        (      ('/foo',       'ix',               None,       '/bar', False,  False,        False),        AppArmorBug),        # exec perms in file perms parameter  # noqa: E201
+        (      ('foo',        'rw',               'ix',       '/bar', False,  False,        False),        AppArmorException),  # path doesn't start with /  # noqa: E201
+        (      ('/foo',       'rb',               'ix',       '/bar', False,  False,        False),        AppArmorException),  # invalid file mode 'b' (str)  # noqa: E201
+        (      ('/foo',       {'b'},              'ix',       '/bar', False,  False,        False),        AppArmorBug),        # invalid file mode 'b' (str)  # noqa: E201
+        (      ('/foo',       'rw',               'ax',       '/bar', False,  False,        False),        AppArmorBug),        # invalid exec mode 'ax'  # noqa: E201
+        (      ('/foo',       'rw',               'x',        '/bar', False,  False,        False),        AppArmorException),  # plain 'x' is only allowed in deny rules  # noqa: E201
+        (      (FileRule.ALL, FileRule.ALL,       None,       '/bar', False,  False,        False),        AppArmorBug),        # plain 'file,' doesn't allow exec target  # noqa: E201
 
         # link rules
-        (      (None,         {'link'},           None,       None,   False,  False,        False),        AppArmorBug),        # missing path and target
-        (      ('/foo',       {'link'},           None,       None,   False,  False,        False),        AppArmorBug),        # missing target
-        (      ( None,        {'link'},           None,       '/bar', False,  False,        False),        AppArmorBug),        # missing path
-        (      ('/foo',       {'subset'},         None,       '/bar', False,  False,        False),        AppArmorBug),        # subset without link
-        (      ('/foo',       {'link'},           'ix',       '/bar', False,  False,        False),        AppArmorBug),        # link rule with exec perms
-        (      ('/foo',       {'link', 'subset'}, 'ix',       '/bar', False,  False,        False),        AppArmorBug),        # link subset rule with exec perms
+        (      (None,         {'link'},           None,       None,   False,  False,        False),        AppArmorBug),        # missing path and target  # noqa: E201
+        (      ('/foo',       {'link'},           None,       None,   False,  False,        False),        AppArmorBug),        # missing target  # noqa: E201
+        (      ( None,        {'link'},           None,       '/bar', False,  False,        False),        AppArmorBug),        # missing path  # noqa: E201
+        (      ('/foo',       {'subset'},         None,       '/bar', False,  False,        False),        AppArmorBug),        # subset without link  # noqa: E201
+        (      ('/foo',       {'link'},           'ix',       '/bar', False,  False,        False),        AppArmorBug),        # link rule with exec perms  # noqa: E201
+        (      ('/foo',       {'link', 'subset'}, 'ix',       '/bar', False,  False,        False),        AppArmorBug),        # link subset rule with exec perms  # noqa: E201
     )
 
     def _run_test(self, params, expected):
@@ -473,34 +473,34 @@ class FileCoveredTest(AATest):
 
 class FileCoveredTest_01(FileCoveredTest):
     rule = 'file /foo r,'
-tests = (
-    #  rule                      equal  strict equal  covered  covered exact
-    ('file /foo r,',            (True,  True,         True,    True)),
-    ('file /foo r ,',           (True,  False,        True,    True)),
-    ('allow file /foo r,',      (True,  False,        True,    True)),
-    ('allow /foo r, # comment', (True,  False,        True,    True)),
-    ('allow owner /foo r,',     (False, False,        True,    True)),
-    ('/foo r -> bar,',          (False, False,        True,    True)),
-    ('file r /foo,',            (True,  False,        True,    True)),
-    ('allow file r /foo,',      (True,  False,        True,    True)),
-    ('allow r /foo, # comment', (True,  False,        True,    True)),
-    ('allow owner r /foo,',     (False, False,        True,    True)),
-    ('r /foo -> bar,',          (False, False,        True,    True)),
-    ('file,',                   (False, False,        False,   False)),
-    ('file /foo w,',            (False, False,        False,   False)),
-    ('file /foo rw,',           (False, False,        False,   False)),
-    ('file /bar r,',            (False, False,        False,   False)),
-    ('audit /foo r,',           (False, False,        False,   False)),
-    ('audit file,',             (False, False,        False,   False)),
-    ('audit deny /foo r,',      (False, False,        False,   False)),
-    ('deny file /foo r,',       (False, False,        False,   False)),
-    ('/foo rPx,',               (False, False,        False,   False)),
-    ('/foo Pxr,',               (False, False,        False,   False)),
-    ('/foo Px,',                (False, False,        False,   False)),
-    ('/foo ix,',                (False, False,        False,   False)),
-    ('/foo ix -> bar,',         (False, False,        False,   False)),
-    ('/foo rPx -> bar,',        (False, False,        False,   False)),
-)
+    tests = (
+        #  rule                      equal  strict equal  covered  covered exact
+        ('file /foo r,',            (True,  True,         True,    True)),
+        ('file /foo r ,',           (True,  False,        True,    True)),
+        ('allow file /foo r,',      (True,  False,        True,    True)),
+        ('allow /foo r, # comment', (True,  False,        True,    True)),
+        ('allow owner /foo r,',     (False, False,        True,    True)),
+        ('/foo r -> bar,',          (False, False,        True,    True)),
+        ('file r /foo,',            (True,  False,        True,    True)),
+        ('allow file r /foo,',      (True,  False,        True,    True)),
+        ('allow r /foo, # comment', (True,  False,        True,    True)),
+        ('allow owner r /foo,',     (False, False,        True,    True)),
+        ('r /foo -> bar,',          (False, False,        True,    True)),
+        ('file,',                   (False, False,        False,   False)),
+        ('file /foo w,',            (False, False,        False,   False)),
+        ('file /foo rw,',           (False, False,        False,   False)),
+        ('file /bar r,',            (False, False,        False,   False)),
+        ('audit /foo r,',           (False, False,        False,   False)),
+        ('audit file,',             (False, False,        False,   False)),
+        ('audit deny /foo r,',      (False, False,        False,   False)),
+        ('deny file /foo r,',       (False, False,        False,   False)),
+        ('/foo rPx,',               (False, False,        False,   False)),
+        ('/foo Pxr,',               (False, False,        False,   False)),
+        ('/foo Px,',                (False, False,        False,   False)),
+        ('/foo ix,',                (False, False,        False,   False)),
+        ('/foo ix -> bar,',         (False, False,        False,   False)),
+        ('/foo rPx -> bar,',        (False, False,        False,   False)),
+    )
 
 
 class FileCoveredTest_02(FileCoveredTest):
@@ -791,6 +791,7 @@ class FileCoveredTest_ManualOrInvalid(AATest):
 
     def test_invalid_is_covered(self):
         raw_rule = 'file,'
+
         class SomeOtherClass(FileRule):
             pass
 
@@ -801,6 +802,7 @@ class FileCoveredTest_ManualOrInvalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'file,'
+
         class SomeOtherClass(FileRule):
             pass
 
@@ -836,21 +838,21 @@ class FileSeverityTest(AATest):
 class FileLogprofHeaderTest(AATest):
     tests = (
         # log event                        old perms ALL / owner
-        (('file,',                             set(),    set()),     [                              _('Path'), _('ALL'),                                _('New Mode'), _('ALL')]),
-        (('/foo r,',                           set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'r']),
-        (('file /bar Px -> foo,',              set(),    set()),     [                              _('Path'), '/bar',                                  _('New Mode'), 'Px -> foo']),
+        (('file,',                             set(),    set()),     [                              _('Path'), _('ALL'),                                _('New Mode'), _('ALL')]),  # noqa: E201
+        (('/foo r,',                           set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'r']),  # noqa: E201
+        (('file /bar Px -> foo,',              set(),    set()),     [                              _('Path'), '/bar',                                  _('New Mode'), 'Px -> foo']),  # noqa: E201
         (('deny file,',                        set(),    set()),     [_('Qualifier'), 'deny',       _('Path'), _('ALL'),                                _('New Mode'), _('ALL')]),
         (('allow file /baz rwk,',              set(),    set()),     [_('Qualifier'), 'allow',      _('Path'), '/baz',                                  _('New Mode'), 'rwk']),
         (('audit file /foo mr,',               set(),    set()),     [_('Qualifier'), 'audit',      _('Path'), '/foo',                                  _('New Mode'), 'mr']),
         (('audit deny /foo wk,',               set(),    set()),     [_('Qualifier'), 'audit deny', _('Path'), '/foo',                                  _('New Mode'), 'wk']),
-        (('owner file /foo ix,',               set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'owner ix']),
+        (('owner file /foo ix,',               set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'owner ix']),  # noqa: E201
         (('audit deny file /foo rlx -> /baz,', set(),    set()),     [_('Qualifier'), 'audit deny', _('Path'), '/foo',                                  _('New Mode'), 'rlx -> /baz']),
-        (('/foo rw,',                          set('r'), set()),     [                              _('Path'), '/foo', _('Old Mode'), _('r'),           _('New Mode'), _('rw')]),
-        (('/foo rw,',                          set(),    set('rw')), [                              _('Path'), '/foo', _('Old Mode'), _('owner rw'),    _('New Mode'), _('rw')]),
-        (('/foo mrw,',                         set('r'), set('k')),  [                              _('Path'), '/foo', _('Old Mode'), _('r + owner k'), _('New Mode'), _('mrw')]),
-        (('/foo mrw,',                         set('r'), set('rk')), [                              _('Path'), '/foo', _('Old Mode'), _('r + owner k'), _('New Mode'), _('mrw')]),
-        (('link /foo -> /bar,',                set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'link -> /bar']),
-        (('link subset /foo -> /bar,',         set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'link subset -> /bar']),
+        (('/foo rw,',                          set('r'), set()),     [                              _('Path'), '/foo', _('Old Mode'), _('r'),           _('New Mode'), _('rw')]),  # noqa: E201
+        (('/foo rw,',                          set(),    set('rw')), [                              _('Path'), '/foo', _('Old Mode'), _('owner rw'),    _('New Mode'), _('rw')]),  # noqa: E201
+        (('/foo mrw,',                         set('r'), set('k')),  [                              _('Path'), '/foo', _('Old Mode'), _('r + owner k'), _('New Mode'), _('mrw')]),  # noqa: E201
+        (('/foo mrw,',                         set('r'), set('rk')), [                              _('Path'), '/foo', _('Old Mode'), _('r + owner k'), _('New Mode'), _('mrw')]),  # noqa: E201
+        (('link /foo -> /bar,',                set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'link -> /bar']),  # noqa: E201
+        (('link subset /foo -> /bar,',         set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'link subset -> /bar']),  # noqa: E201
     )
 
     def _run_test(self, params, expected):
@@ -923,7 +925,7 @@ class FileValidateAndStoreEditTest(AATest):
             rule_obj.store_edit('/foo/bar')
 
 
-## --- tests for FileRuleset --- #
+# --- tests for FileRuleset --- #
 
 class FileRulesTest(AATest):
     def test_empty_ruleset(self):
@@ -1047,9 +1049,9 @@ class FileGetRulesForPath(AATest):
         (('/etc/foo/dovecot-database.conf.ext', False, False), ['/etc/foo/* r,', '/etc/foo/dovecot-database.conf.ext w,',                     '']),
         (('/etc/foo/auth.d/authfoo.conf',       False, False), ['/etc/foo/{auth,conf}.d/*.conf r,', '/etc/foo/{auth,conf}.d/authfoo.conf w,', '']),
         (('/etc/foo/dovecot-deny.conf',         False, False), ['deny /etc/foo/dovecot-deny.conf r,', '', '/etc/foo/* r,',                    '']),
-        (('/foo/bar',                           False, True),  [                                                                                ]),
+        (('/foo/bar',                           False, True),  [                                                                                ]),  # noqa: E201,E202
         (('/etc/foo/dovecot-deny.conf',         False, True),  ['deny /etc/foo/dovecot-deny.conf r,',                                         '']),
-        (('/etc/foo/foo.conf',                  False, True),  [                                                                                ]),
+        (('/etc/foo/foo.conf',                  False, True),  [                                                                                ]),  # noqa: E201,E202
         (('/etc/foo/owner.conf',                False, False), ['/etc/foo/* r,', 'owner /etc/foo/owner.conf w,',                              '']),
     )
 

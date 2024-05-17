@@ -311,6 +311,7 @@ def var_transform(ref):
         data.append(quote_if_needed(value))
     return ' '.join(data)
 
+
 def write_pivot_root_rules(prof_data, depth, allow):
     pre = '  ' * depth
     data = []

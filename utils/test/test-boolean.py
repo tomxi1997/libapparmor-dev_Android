@@ -227,6 +227,7 @@ class BooleanCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered_3(self):
         raw_rule = '$foo = true'
+
         class SomeOtherClass(BooleanRule):
             pass
 
@@ -237,6 +238,7 @@ class BooleanCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = '$foo = true'
+
         class SomeOtherClass(BooleanRule):
             pass
 

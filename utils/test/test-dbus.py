@@ -181,18 +181,18 @@ class DbusFromInit(DbusTest):
     tests = (
         #         access  bus        path          name          interface     member        peername      peerlabel   audit=, deny=, allow_keyword, comment=, log_event)
         (DbusRule('send', 'session', DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL),
-                  #   audit  allow  deny   comment  access    all?   bus        all?   path  all?  name  all?  interface all?  member all?  peername all?  peerlabel all?
-                  exp(False, False, False, '',      {'send'}, False, 'session', False, None, True, None, True, None,     True, None,  True, None,    True, None,     True)),
+         #   audit  allow  deny   comment  access    all?   bus        all?   path  all?  name  all?  interface all?  member all?  peername all?  peerlabel all?
+         exp(False, False, False, '',      {'send'}, False, 'session', False, None, True, None, True, None,     True, None,  True, None,    True, None,     True)),
 
         #         access               bus        path          name          interface     member        peername      peerlabel   audit=, deny=, allow_keyword, comment=, log_event)
         (DbusRule(('send', 'receive'), 'session', DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL),
-                  #   audit  allow  deny   comment access               all?   bus        all?   path  all?  name  all?  interface all?  member all?  peername all?  peerlabel all?
-                  exp(False, False, False, '',     {'send', 'receive'}, False, 'session', False, None, True, None, True, None,     True, None,  True, None,    True, None,     True)),
+         #   audit  allow  deny   comment access               all?   bus        all?   path  all?  name  all?  interface all?  member all?  peername all?  peerlabel all?
+         exp(False, False, False, '',     {'send', 'receive'}, False, 'session', False, None, True, None, True, None,     True, None,  True, None,    True, None,     True)),
 
         #         access        bus           path          name          interface    member      peername      peerlabel   audit=, deny=, allow_keyword, comment=, log_event)
         (DbusRule(DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, '/int/face', '/mem/ber', '/peer/name', '/peer/label'),
-                  #   audit  allow  deny   comment access  all?  bus   all?  path  all?  name  all?  interface    all?   member      all?   peername      all?   peerlabel      all?
-                  exp(False, False, False, '',     None,   True, None, True, None, True, None, True, '/int/face', False, '/mem/ber', False, '/peer/name', False, '/peer/label', False)),
+         #   audit  allow  deny   comment access  all?  bus   all?  path  all?  name  all?  interface    all?   member      all?   peername      all?   peerlabel      all?
+         exp(False, False, False, '',     None,   True, None, True, None, True, None, True, '/int/face', False, '/mem/ber', False, '/peer/name', False, '/peer/label', False)),
     )
 
     def _run_test(self, obj, expected):
@@ -475,11 +475,11 @@ class DbusCoveredTest_02(DbusCoveredTest):
 
     tests = (
         #   rule                          equal  strict equal  covered  covered exact
-        (      'dbus send,',             (False, False,        True,    False)),
+        ('      dbus send,',             (False, False,        True,    False)),
         ('audit dbus send,',             (True,  True,         True,    True)),
-        (      'dbus send bus=session,', (False, False,        True,    False)),
+        ('      dbus send bus=session,', (False, False,        True,    False)),
         ('audit dbus send bus=session,', (False, False,        True,    True)),
-        (      'dbus,',                  (False, False,        False,   False)),
+        ('      dbus,',                  (False, False,        False,   False)),
         ('audit dbus,',                  (False, False,        False,   False)),
         ('dbus receive,',                (False, False,        False,   False)),
     )
@@ -490,16 +490,16 @@ class DbusCoveredTest_03(DbusCoveredTest):
 
     tests = (
         #   rule                                 equal  strict equal  covered  covered exact
-        (      'dbus send bus=session,',        (True,  True,         True,    True)),
+        ('      dbus send bus=session,',        (True,  True,         True,    True)),
         ('allow dbus send bus=session,',        (True,  False,        True,    True)),
-        (      'dbus send,',                    (False, False,        False,   False)),
-        (      'dbus,',                         (False, False,        False,   False)),
-        (      'dbus send member=(label=foo),', (False, False,        False,   False)),
+        ('      dbus send,',                    (False, False,        False,   False)),
+        ('      dbus,',                         (False, False,        False,   False)),
+        ('      dbus send member=(label=foo),', (False, False,        False,   False)),
         ('audit dbus,',                         (False, False,        False,   False)),
         ('audit dbus send bus=session,',        (False, False,        False,   False)),
         ('audit dbus bus=session,',             (False, False,        False,   False)),
-        (      'dbus send,',                    (False, False,        False,   False)),
-        (      'dbus,',                         (False, False,        False,   False)),
+        ('      dbus send,',                    (False, False,        False,   False)),
+        ('      dbus,',                         (False, False,        False,   False)),
     )
 
 
@@ -508,12 +508,12 @@ class DbusCoveredTest_04(DbusCoveredTest):
 
     tests = (
         #   rule                             equal  strict equal  covered  covered exact
-        (      'dbus,',                     (True,  True,         True,    True)),
+        ('      dbus,',                     (True,  True,         True,    True)),
         ('allow dbus,',                     (True,  False,        True,    True)),
-        (      'dbus send,',                (False, False,        True,    True)),
-        (      'dbus receive bus=session,', (False, False,        True,    True)),
-        (      'dbus member=(label=foo),',  (False, False,        True,    True)),
-        (      'dbus send bus=session,',    (False, False,        True,    True)),
+        ('      dbus send,',                (False, False,        True,    True)),
+        ('      dbus receive bus=session,', (False, False,        True,    True)),
+        ('      dbus member=(label=foo),',  (False, False,        True,    True)),
+        ('      dbus send bus=session,',    (False, False,        True,    True)),
         ('audit dbus,',                     (False, False,        False,   False)),
         ('deny  dbus,',                     (False, False,        False,   False)),
     )
@@ -524,11 +524,11 @@ class DbusCoveredTest_05(DbusCoveredTest):
 
     tests = (
         #   rule                     equal  strict equal  covered  covered exact
-        (      'deny dbus send,',    (True,  True,       True,    True)),
+        ('      deny dbus send,',    (True,  True,       True,    True)),
         ('audit deny dbus send,',    (False, False,      False,   False)),
-        (           'dbus send,',    (False, False,      False,   False)),  # XXX should covered be true here?
-        (      'deny dbus receive,', (False, False,      False,   False)),
-        (      'deny dbus,',         (False, False,      False,   False)),
+        ('           dbus send,',    (False, False,      False,   False)),  # XXX should covered be true here?
+        ('      deny dbus receive,', (False, False,      False,   False)),
+        ('      deny dbus,',         (False, False,      False,   False)),
     )
 
 
@@ -711,7 +711,7 @@ class DbusCoveredTest_11(DbusCoveredTest):
 class DbusCoveredTest_Invalid(AATest):
     def AASetup(self):
         #                        access               bus        path         name          interface    member        peername      peerlabel
-        self.obj     = DbusRule(('send', 'receive'), 'session', '/org/test', DbusRule.ALL, '/int/face', DbusRule.ALL, '/peer/name', '/peer/label', allow_keyword=True)
+        self.obj     = DbusRule(('send', 'receive'), 'session', '/org/test', DbusRule.ALL, '/int/face', DbusRule.ALL, '/peer/name', '/peer/label', allow_keyword=True)  # noqa: E221
         self.testobj = DbusRule(('send'),            'session', '/org/test', DbusRule.ALL, '/int/face', '/mem/ber',   '/peer/name', '/peer/label', allow_keyword=True)
 
     def test_borked_obj_is_covered_1(self):
@@ -734,7 +734,7 @@ class DbusCoveredTest_Invalid(AATest):
 
     def test_borked_obj_is_covered_4(self):
         # we need a different 'victim' because dbus send doesn't allow the name conditional we want to test here
-        self.obj = DbusRule(    ('bind'), 'session',  DbusRule.ALL, '/name', DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, allow_keyword=True)
+        self.obj     = DbusRule(('bind'), 'session',  DbusRule.ALL, '/name', DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, allow_keyword=True)  # noqa: E221
         self.testobj = DbusRule(('bind'), 'session',  DbusRule.ALL, '/name', DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, allow_keyword=True)
         self.testobj.name = ''
 
@@ -767,6 +767,7 @@ class DbusCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered(self):
         raw_rule = 'dbus send,'
+
         class SomeOtherClass(DbusRule):
             pass
 
@@ -777,6 +778,7 @@ class DbusCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'dbus send,'
+
         class SomeOtherClass(DbusRule):
             pass
 
@@ -788,17 +790,17 @@ class DbusCoveredTest_Invalid(AATest):
 
 class DbusLogprofHeaderTest(AATest):
     tests = (
-        ('dbus,',                        [                              _('Access mode'), _('ALL'),       _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),
-        ('dbus (send receive),',         [                              _('Access mode'), 'receive send', _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),
-        ('dbus send bus=session,',       [                              _('Access mode'), 'send',         _('Bus'), 'session', _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),
+        ('dbus,',                        [                              _('Access mode'), _('ALL'),       _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),  # noqa: E201
+        ('dbus (send receive),',         [                              _('Access mode'), 'receive send', _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),  # noqa: E201
+        ('dbus send bus=session,',       [                              _('Access mode'), 'send',         _('Bus'), 'session', _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),  # noqa: E201
         ('deny dbus,',                   [_('Qualifier'), 'deny',       _('Access mode'), _('ALL'),       _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),
         ('allow dbus send,',             [_('Qualifier'), 'allow',      _('Access mode'), 'send',         _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),
         ('audit dbus send bus=session,', [_('Qualifier'), 'audit',      _('Access mode'), 'send',         _('Bus'), 'session', _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),
         ('audit deny dbus send,',        [_('Qualifier'), 'audit deny', _('Access mode'), 'send',         _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),
-        ('dbus bind name=bind.name,',    [                              _('Access mode'), 'bind',         _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), 'bind.name', _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),
+        ('dbus bind name=bind.name,',    [                              _('Access mode'), 'bind',         _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), 'bind.name', _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), _('ALL')]),  # noqa: E201
         ('dbus send bus=session path=/path interface=aa.test member=ExMbr peer=(name=(peer.name)),',
-                                         [                              _('Access mode'), 'send',         _('Bus'), 'session', _('Path'), '/path',  _('Name'), _('ALL'),    _('Interface'), 'aa.test', _('Member'), 'ExMbr',  _('Peer name'), 'peer.name', _('Peer label'), _('ALL')]),
-        ('dbus send peer=(label=foo),',  [                              _('Access mode'), 'send',         _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), 'foo']),
+                                         [                              _('Access mode'), 'send',         _('Bus'), 'session', _('Path'), '/path',  _('Name'), _('ALL'),    _('Interface'), 'aa.test', _('Member'), 'ExMbr',  _('Peer name'), 'peer.name', _('Peer label'), _('ALL')]),  # noqa: E201,E127
+        ('dbus send peer=(label=foo),',  [                              _('Access mode'), 'send',         _('Bus'), _('ALL'),  _('Path'), _('ALL'), _('Name'), _('ALL'),    _('Interface'), _('ALL'),  _('Member'), _('ALL'), _('Peer name'), _('ALL'),    _('Peer label'), 'foo']),  # noqa: E201
     )
 
     def _run_test(self, params, expected):
@@ -806,7 +808,7 @@ class DbusLogprofHeaderTest(AATest):
         self.assertEqual(obj.logprof_header(), expected)
 
 
-## --- tests for DbusRuleset --- #
+# --- tests for DbusRuleset --- #
 
 class DbusRulesTest(AATest):
     def test_empty_ruleset(self):

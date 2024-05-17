@@ -25,9 +25,9 @@ _ = init_translation()
 access_keyword = 'create'
 
 RE_USERNS_DETAILS = re.compile(
-    '^' +
-    r'\s+(?P<access>' + access_keyword + ')?' +  # optional access keyword
-    r'\s*$')
+    '^'
+    + r'\s+(?P<access>' + access_keyword + ')?'  # optional access keyword
+    + r'\s*$')
 
 
 class UserNamespaceRule(BaseRule):
@@ -89,7 +89,7 @@ class UserNamespaceRule(BaseRule):
         else:
             raise AppArmorBug('Empty access in userns rule')
 
-        return('%s%suserns%s,%s' % (space, self.modifiers_str(), access, self.comment))
+        return '%s%suserns%s,%s' % (space, self.modifiers_str(), access, self.comment)
 
     def _is_covered_localvars(self, other_rule):
         '''check if other_rule is covered by this rule object'''
@@ -103,8 +103,7 @@ class UserNamespaceRule(BaseRule):
     def _is_equal_localvars(self, rule_obj, strict):
         '''compare if rule-specific variables are equal'''
 
-        if (self.access != rule_obj.access or
-                self.all_access != rule_obj.all_access):
+        if (self.access != rule_obj.access or self.all_access != rule_obj.all_access):
             return False
 
         return True

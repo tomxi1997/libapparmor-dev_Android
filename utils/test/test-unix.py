@@ -38,7 +38,7 @@ class UnixTestParse(AATest):
         ('unix shutdown addr=@srv,',                        UnixRule('shutdown',        UnixRule.ALL,                     {'addr': '@srv'},             UnixRule.ALL,                   False, False, False, '')),
         ('unix send addr=@foo{a,b} peer=(label=splat),',    UnixRule('send',            UnixRule.ALL,                     {'addr': '@foo{a,b}'},        {'label': 'splat'},             False, False, False, '')),
         ('unix (accept, rw) protocol=AA type=BB opt=AA label=bb peer=(addr=a label=bb),',
-                                                            UnixRule(('accept', 'rw'),  {'type': 'BB', 'protocol': 'AA'}, {'opt': 'AA', 'label': 'bb'}, {'addr': 'a', 'label': 'bb'},   False, False, False, '')),
+                                                            UnixRule(('accept', 'rw'),  {'type': 'BB', 'protocol': 'AA'}, {'opt': 'AA', 'label': 'bb'}, {'addr': 'a', 'label': 'bb'},   False, False, False, '')),  # noqa: E127
     )
 
     def _run_test(self, rawrule, expected):
@@ -84,7 +84,6 @@ class UnixTestParseInvalid(AATest):
     def test_invalid_access2(self):
         with self.assertRaises(AppArmorException):
             UnixRule(('rw', 'invalid'), UnixRule.ALL, UnixRule.ALL, UnixRule.ALL,  False, False, False, '')
-
 
     def test_invalid_peer_expr(self):
         with self.assertRaises(AppArmorException):

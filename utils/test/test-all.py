@@ -44,10 +44,10 @@ class AllTest(AATest):
 class AllTestParse(AllTest):
     tests = (
         # rawrule                       audit  allow  deny   comment
-        ('all,',                    exp(False, False, False, '',           )),
-        ('deny all, # comment',     exp(False, False, True,  ' # comment', )),
-        ('audit allow all,',        exp(True,  True,  False, '',           )),
-        ('audit allow all,',        exp(True,  True,  False, '',           )),
+        ('all,',                    exp(False, False, False, '')),
+        ('deny all, # comment',     exp(False, False, True,  ' # comment')),
+        ('audit allow all,',        exp(True,  True,  False, '')),
+        ('audit allow all,',        exp(True,  True,  False, '')),
     )
 
     def _run_test(self, rawrule, expected):
@@ -77,8 +77,8 @@ class AllTestParseInvalid(AllTest):
 class AllFromInit(AllTest):
     tests = (
         # AllRule object            audit  allow  deny   comment
-        (AllRule(deny=True),    exp(False, False, True,  '',      )),
-        (AllRule(),             exp(False, False, False, '',      )),
+        (AllRule(deny=True),    exp(False, False, True,  '')),
+        (AllRule(),             exp(False, False, False, '')),
     )
 
     def _run_test(self, obj, expected):
@@ -168,7 +168,7 @@ class AllCoveredTest_02(AllCoveredTest):
 
     tests = (
         #   rule                 equal  strict equal covered  covered exact
-        (      'all,',          (False, False,       True,    False)),
+        ('      all,',          (False, False,       True,    False)),
         ('audit all,',          (True,  True,        True,    True)),
     )
 
@@ -178,15 +178,16 @@ class AllCoveredTest_03(AllCoveredTest):
 
     tests = (
         #   rule                 equal  strict equal  covered  covered exact
-        (      'deny all,',     (True,  True,         True,    True)),
+        ('      deny all,',     (True,  True,         True,    True)),
         ('audit deny all,',     (False, False,        False,   False)),
-        (           'all,',     (False, False,        False,   False)),  # XXX should covered be true here?
+        ('           all,',     (False, False,        False,   False)),  # XXX should covered be true here?
     )
 
 
 class AllCoveredTest_Invalid(AATest):
     def test_invalid_is_covered(self):
         raw_rule = 'all,'
+
         class SomeOtherClass(AllRule):
             pass
 
@@ -197,6 +198,7 @@ class AllCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'all,'
+
         class SomeOtherClass(AllRule):
             pass
 
@@ -220,10 +222,10 @@ class AllSeverityTest(AATest):
 
 class AllLogprofHeaderTest(AATest):
     tests = (
-        ('all,',                       [                                'All', _('Allow everything'),  ]),
-        ('deny all,',                  [_('Qualifier'), 'deny',         'All', _('Allow everything'),  ]),
-        ('allow all,',                 [_('Qualifier'), 'allow',        'All', _('Allow everything'),  ]),
-        ('audit deny all,',            [_('Qualifier'), 'audit deny',   'All', _('Allow everything'),  ]),
+        ('all,',                       [                                'All', _('Allow everything')]),  # noqa: E201
+        ('deny all,',                  [_('Qualifier'), 'deny',         'All', _('Allow everything')]),
+        ('allow all,',                 [_('Qualifier'), 'allow',        'All', _('Allow everything')]),
+        ('audit deny all,',            [_('Qualifier'), 'audit deny',   'All', _('Allow everything')]),
     )
 
     def _run_test(self, params, expected):

@@ -27,7 +27,7 @@ _ = init_translation()
 
 exp = namedtuple(
     'exp', (  # 'audit', 'allow_keyword', 'deny',
-            'comment', 'path', 'ifexists', 'ismagic'))
+        'comment', 'path', 'ifexists', 'ismagic'))
 
 # --- tests for single IncludeRule --- #
 
@@ -94,10 +94,10 @@ class IncludeTestParse(IncludeTest):
 
 class IncludeTestParseInvalid(IncludeTest):
     tests = (
-      # (' some #include if exists <abstractions/base>', AppArmorException),
-      # ('  /etc/fstab r,',                              AppArmorException),
-      # ('/usr/include r,',                              AppArmorException),
-      # ('/include r,',                                  AppArmorException),
+        # (' some #include if exists <abstractions/base>', AppArmorException),
+        # ('  /etc/fstab r,',                              AppArmorException),
+        # ('/usr/include r,',                              AppArmorException),
+        # ('/include r,',                                  AppArmorException),
     )
 
     def _run_test(self, rawrule, expected):
@@ -297,6 +297,7 @@ class IncludeCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered(self):
         raw_rule = 'include <abstractions/base>'
+
         class SomeOtherClass(IncludeRule):
             pass
 
@@ -307,6 +308,7 @@ class IncludeCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'include <abstractions/base>'
+
         class SomeOtherClass(IncludeRule):
             pass
 
@@ -367,7 +369,7 @@ class IncludeFullPathsTest(AATest):
         self.assertEqual(obj.get_full_paths(self.profile_dir), exp2)
 
 
-## --- tests for IncludeRuleset --- #
+# --- tests for IncludeRuleset --- #
 
 class IncludeRulesTest(AATest):
     def AASetup(self):

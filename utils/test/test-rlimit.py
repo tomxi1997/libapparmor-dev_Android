@@ -354,6 +354,7 @@ class RlimitCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered(self):
         raw_rule = 'set rlimit cpu <= 1024,'
+
         class SomeOtherClass(RlimitRule):
             pass
 
@@ -364,6 +365,7 @@ class RlimitCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'set rlimit cpu <= 1024,'
+
         class SomeOtherClass(RlimitRule):
             pass
 
@@ -492,10 +494,10 @@ class RlimitTime_to_intTest(AATest):
         ('30us',      0.00003),
         ('40ms',      0.04),
         ('40seconds', 40),
-        ('2minutes',  2*60),
-        ('2hours',    2*60*60),
-        ('1 day',     1*60*60*24),
-        ('2 weeks',   2*60*60*24*7),
+        ('2minutes',  2 * 60),
+        ('2hours',    2 * 60 * 60),
+        ('1 day',     1 * 60 * 60 * 24),
+        ('2 weeks',   2 * 60 * 60 * 24 * 7),
     )
 
     def _run_test(self, params, expected):

@@ -107,7 +107,7 @@ class AADecodeTest(unittest.TestCase):
         expected_string = 'name="/tmp/foo bar"'
         content = \
 '''type=AVC msg=audit(1348982151.183:2934): apparmor="DENIED" operation="open" parent=30751 profile="/usr/lib/firefox/firefox{,*[^s] [^h]}" name=2F746D702F666F6F20626172 pid=30833 comm="plugin-containe" requested_mask="r" denied_mask="r" fsuid=1000 ouid=0
-'''
+'''  # noqa: E128
 
         self._run_file_test(content, (expected_string,))
 
@@ -123,7 +123,7 @@ class AADecodeTest(unittest.TestCase):
 ''' type=LOGIN msg=audit(1348980001.155:2925): login pid=17875 uid=0 old auid=4294967295 new auid=0 old ses=4294967295 new ses=2762
 type=AVC msg=audit(1348982151.183:2934): apparmor="DENIED" operation="open" parent=30751 profile="/usr/lib/firefox/firefox{,*[^s] [^h]}" name=2F746D702F666F6F20626172 pid=30833 comm="plugin-containe" requested_mask="r" denied_mask="r" fsuid=1000 ouid=0
 type=AVC msg=audit(1348982148.195:2933): apparmor="DENIED" operation="file_lock" parent=5490 profile="/usr/lib/firefox/firefox{,*[^s][^h]}" name=2F686F6D652F73746576652F746D702F6D7920746573742066696C65 pid=30737 comm="firefox" requested_mask="k" denied_mask="k" fsuid=1000 ouid=1000
-'''
+'''  # noqa: E128
 
         self._run_file_test(content, expected_strings)
 
@@ -135,7 +135,7 @@ type=AVC msg=audit(1348982148.195:2933): apparmor="DENIED" operation="file_lock"
             'name="/lib/x86_64-linux-gnu/libdl-2.13.so"', 'profile="/test space"')
         content = \
 '''[289763.843292] type=1400 audit(1322614912.304:857): apparmor="ALLOWED" operation="getattr" parent=16001 profile=2F74657374207370616365 name="/lib/x86_64-linux-gnu/libdl-2.13.so" pid=17011 comm="bash" requested_mask="r" denied_mask="r" fsuid=0 ouid=0
-'''
+'''  # noqa: E128
 
         self._run_file_test(content, expected_strings)
 
@@ -147,7 +147,7 @@ type=AVC msg=audit(1348982148.195:2933): apparmor="DENIED" operation="file_lock"
                             'profile="/home/steve/tmp/my prog.sh"')
         content = \
 '''type=AVC msg=audit(1349805073.402:6857): apparmor="DENIED" operation="mknod" parent=5890 profile=2F686F6D652F73746576652F746D702F6D792070726F672E7368 name=2F686F6D652F73746576652F746D702F6D7920746573742066696C65 pid=5891 comm="touch" requested_mask="c" denied_mask="c" fsuid=1000 ouid=1000
-'''
+'''  # noqa: E128
 
         self._run_file_test(content, expected_strings)
 
@@ -157,7 +157,7 @@ type=AVC msg=audit(1348982148.195:2933): apparmor="DENIED" operation="file_lock"
         expected_strings = ('name="/home/steve/tmp/my test ^file"',)
         content = \
 '''type=AVC msg=audit(1349805073.402:6857): apparmor="DENIED" operation="mknod" parent=5890 profile="/usr/bin/test_profile" name=2F686F6D652F73746576652F746D702F6D792074657374205E66696C65 pid=5891 comm="touch" requested_mask="c" denied_mask="c" fsuid=1000 ouid=1000
-'''
+'''  # noqa: E128
 
         self._run_file_test(content, expected_strings)
 
@@ -167,7 +167,7 @@ type=AVC msg=audit(1348982148.195:2933): apparmor="DENIED" operation="file_lock"
         expected_strings = (r'name="/home/steve/tmp/my test \^file"',)
         content = \
 '''type=AVC msg=audit(1349805073.402:6857): apparmor="DENIED" operation="mknod" parent=5890 profile="/usr/bin/test_profile" name=2F686F6D652F73746576652F746D702F6D792074657374205C5E66696C65 pid=5891 comm="touch" requested_mask="c" denied_mask="c" fsuid=1000 ouid=1000
-'''
+'''  # noqa: E128
 
         self._run_file_test(content, expected_strings)
 
@@ -177,7 +177,7 @@ type=AVC msg=audit(1348982148.195:2933): apparmor="DENIED" operation="file_lock"
         expected_strings = ('name="/home/steve/tmp/my test \'file"',)
         content = \
 '''type=AVC msg=audit(1349805073.402:6857): apparmor="DENIED" operation="mknod" parent=5890 profile="/usr/bin/test_profile" name=2F686F6D652F73746576652F746D702F6D792074657374202766696C65 pid=5891 comm="touch" requested_mask="c" denied_mask="c" fsuid=1000 ouid=1000
-'''
+'''  # noqa: E128
 
         self._run_file_test(content, expected_strings)
 
@@ -187,7 +187,7 @@ type=AVC msg=audit(1348982148.195:2933): apparmor="DENIED" operation="file_lock"
         expected_strings = ('name="/lib/x86_64-linux-gnu/libdl-2.13.so"', 'profile="test space"')
         content = \
 '''[289763.843292] type=1400 audit(1322614912.304:857): apparmor="ALLOWED" operation="getattr" parent=16001 profile=74657374207370616365 name="/lib/x86_64-linux-gnu/libdl-2.13.so" pid=17011 comm="bash" requested_mask="r" denied_mask="r" fsuid=0 ouid=0
-'''
+'''  # noqa: E128
 
         self._run_file_test(content, expected_strings)
 

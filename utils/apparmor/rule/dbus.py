@@ -43,24 +43,24 @@ RE_FLAG = r'(?P<%s>(\S+|"[^"]+"|\(\s*\S+\s*\)|\(\s*"[^"]+"\)\s*))'  # string wit
 RE_DBUS_DETAILS = re.compile(
     '^'
     + r'(\s+(?P<access>' + RE_ACCESS_KEYWORDS + '))?'  # optional access keyword(s)
-        + '('
-            + r'(\s+(bus\s*=\s*'       + RE_FLAG % 'bus'       + '))?|'  # optional bus= system | session | AARE, (...) optional
-            + r'(\s+(path\s*=\s*'      + RE_FLAG % 'path'      + '))?|'  # optional path=AARE, (...) optional
-            + r'(\s+(name\s*=\s*'      + RE_FLAG % 'name'      + '))?|'  # optional name=AARE, (...) optional
+        + '('  # noqa: E131
+            + r'(\s+(bus\s*=\s*'       + RE_FLAG % 'bus'       + '))?|'  # optional bus= system | session | AARE, (...) optional  # noqa: E131,E221
+            + r'(\s+(path\s*=\s*'      + RE_FLAG % 'path'      + '))?|'  # optional path=AARE, (...) optional  # noqa: E221
+            + r'(\s+(name\s*=\s*'      + RE_FLAG % 'name'      + '))?|'  # optional name=AARE, (...) optional  # noqa: E221
             + r'(\s+(interface\s*=\s*' + RE_FLAG % 'interface' + '))?|'  # optional interface=AARE, (...) optional
-            + r'(\s+(member\s*=\s*'    + RE_FLAG % 'member'    + '))?|'  # optional member=AARE, (...) optional
+            + r'(\s+(member\s*=\s*'    + RE_FLAG % 'member'    + '))?|'  # optional member=AARE, (...) optional  # noqa: E221
             + r'(\s+(peer\s*=\s*\((,|\s)*'  # optional peer=(name=AARE and/or label=AARE), (...) required
-                + '('
-                    + '(' + r'(,|\s)*' + ')'  # empty peer=()
-                    + '|'  # or
-                    + '(' + r'name\s*=\s*' + RE_PROFILE_NAME % 'peername1' + ')'  # only peer name (match group peername1)
-                    + '|'  # or
-                    + '(' r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel1' + ')'  # only peer label (match group peerlabel1)
-                    + '|'  # or
-                    + '(' + r'name\s*=\s*'  + RE_PROFILE_NAME % 'peername2'  + r'(,|\s)+' + r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel2' + ')'  # peer name + label (match name peername2/peerlabel2)
-                    + '|'  # or
-                    + '(' + r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel3' + r'(,|\s)+' + r'name\s*=\s*'  + RE_PROFILE_NAME % 'peername3'  + ')'  # peer label + name (match name peername3/peerlabel3)
-                + ')'
+                + '('  # noqa: E131
+                    + '(' + r'(,|\s)*' + ')'  # empty peer=()  # noqa: E131
+                    + '|'  # or  # noqa: E131
+                    + '(' + r'name\s*=\s*' + RE_PROFILE_NAME % 'peername1' + ')'  # only peer name (match group peername1)  # noqa: E131
+                    + '|'  # or  # noqa: E131
+                    + '(' r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel1' + ')'  # only peer label (match group peerlabel1)  # noqa: E131
+                    + '|'  # or  # noqa: E131
+                    + '(' + r'name\s*=\s*'  + RE_PROFILE_NAME % 'peername2'  + r'(,|\s)+' + r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel2' + ')'  # peer name + label (match name peername2/peerlabel2)  # noqa: E131,E221
+                    + '|'  # or  # noqa: E131
+                    + '(' + r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel3' + r'(,|\s)+' + r'name\s*=\s*'  + RE_PROFILE_NAME % 'peername3'  + ')'  # peer label + name (match name peername3/peerlabel3)  # noqa: E131,E221
+                + ')'  # noqa: E131
             + r'(,|\s)*\)))?'
         + '){0,6}'
     + r'\s*$')
@@ -90,13 +90,13 @@ class DbusRule(BaseRule):
             raise AppArmorException(_('Passed unknown access keyword to %s: %s') % (type(self).__name__, ' '.join(unknown_items)))
 
         #                                                       rulepart   partname    is_path  log_event
-        self.bus, self.all_buses            = self._aare_or_all(bus,       'bus',        False, log_event)
-        self.path, self.all_paths           = self._aare_or_all(path,      'path',       True,  log_event)
-        self.name, self.all_names           = self._aare_or_all(name,      'name',       False, log_event)
-        self.interface, self.all_interfaces = self._aare_or_all(interface, 'interface',  False, log_event)
-        self.member, self.all_members       = self._aare_or_all(member,    'member',     False, log_event)
-        self.peername, self.all_peernames   = self._aare_or_all(peername,  'peer name',  False, log_event)
-        self.peerlabel, self.all_peerlabels = self._aare_or_all(peerlabel, 'peer label', False, log_event)
+        self.bus, self.all_buses            = self._aare_or_all(bus,       'bus',        False, log_event)  # noqa: E221
+        self.path, self.all_paths           = self._aare_or_all(path,      'path',       True,  log_event)  # noqa: E221
+        self.name, self.all_names           = self._aare_or_all(name,      'name',       False, log_event)  # noqa: E221
+        self.interface, self.all_interfaces = self._aare_or_all(interface, 'interface',  False, log_event)  # noqa: E221
+        self.member, self.all_members       = self._aare_or_all(member,    'member',     False, log_event)  # noqa: E221
+        self.peername, self.all_peernames   = self._aare_or_all(peername,  'peer name',  False, log_event)  # noqa: E221
+        self.peerlabel, self.all_peerlabels = self._aare_or_all(peerlabel, 'peer label', False, log_event)  # noqa: E221
 
         # not all combinations are allowed
         if self.access and 'bind' in self.access and (self.path or self.interface or self.member or self.peername or self.peerlabel):
@@ -203,14 +203,14 @@ class DbusRule(BaseRule):
         else:
             raise AppArmorBug('Empty access in dbus rule')
 
-        bus         = self._get_aare_rule_part('bus',       self.bus,       self.all_buses)
-        path        = self._get_aare_rule_part('path',      self.path,      self.all_paths)
-        name        = self._get_aare_rule_part('name',      self.name,      self.all_names)
-        interface   = self._get_aare_rule_part('interface', self.interface, self.all_interfaces)
-        member      = self._get_aare_rule_part('member',    self.member,    self.all_members)
+        bus         = self._get_aare_rule_part('bus',       self.bus,       self.all_buses)  # noqa: E221
+        path        = self._get_aare_rule_part('path',      self.path,      self.all_paths)  # noqa: E221
+        name        = self._get_aare_rule_part('name',      self.name,      self.all_names)  # noqa: E221
+        interface   = self._get_aare_rule_part('interface', self.interface, self.all_interfaces)  # noqa: E221
+        member      = self._get_aare_rule_part('member',    self.member,    self.all_members)  # noqa: E221
 
-        peername    = self._get_aare_rule_part('name',      self.peername,  self.all_peernames)
-        peerlabel   = self._get_aare_rule_part('label',     self.peerlabel, self.all_peerlabels)
+        peername    = self._get_aare_rule_part('name',      self.peername,  self.all_peernames)  # noqa: E221
+        peerlabel   = self._get_aare_rule_part('label',     self.peerlabel, self.all_peerlabels)  # noqa: E221
         peer = peername + peerlabel
         if peer:
             peer = ' peer=(%s)' % peer.strip()

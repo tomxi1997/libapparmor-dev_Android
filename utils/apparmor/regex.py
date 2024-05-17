@@ -70,7 +70,7 @@ RE_HAS_COMMENT_SPLIT = re.compile(
 RE_PROFILE_START = re.compile(
     r'^(?P<leadingspace>\s*)'
     + '('
-        + RE_PROFILE_PATH_OR_VAR % 'plainprofile'  # just a path
+        + RE_PROFILE_PATH_OR_VAR % 'plainprofile'  # just a path # noqa: E131
         + '|'  # or
         + '(' + 'profile' + r'\s+' + RE_PROFILE_NAME % 'namedprofile' + r'(\s+' + RE_PROFILE_PATH_OR_VAR % 'attachment' + ')?' + ')'  # 'profile', profile name, optionally attachment
     + ')'
@@ -97,7 +97,7 @@ RE_PROFILE_FILE_ENTRY = re.compile(
     RE_AUDIT_DENY
     + r'(?P<owner>owner\s+)?'  # optionally: <owner>
     + '('
-        + '(?P<bare_file>file)'  # bare 'file,'
+        + '(?P<bare_file>file)'  # bare 'file,' # noqa: E131
     + '|'  # or
         + r'(?P<file_keyword>file\s+)?'  # optional 'file' keyword
         + '('

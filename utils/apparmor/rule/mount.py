@@ -100,8 +100,8 @@ class MountRule(BaseRule):
         else:
             self.all_fstype = False
             for it in fstype[1]:
-                l, unused = parse_aare(it, 0, 'fstype')
-                if l != len(it):
+                aare_len, unused = parse_aare(it, 0, 'fstype')
+                if aare_len != len(it):
                     raise AppArmorException(f'Invalid aare : {it}')
             self.fstype = fstype[1]
             self.is_fstype_equal = fstype[0]
@@ -292,7 +292,6 @@ class MountRule(BaseRule):
 
 class MountRuleset(BaseRuleset):
     '''Class to handle and store a collection of Mount rules'''
-
 
 
 def parse_aare(s, offset, param):

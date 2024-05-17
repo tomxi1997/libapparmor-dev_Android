@@ -52,7 +52,6 @@ from apparmor.notify import get_last_login_timestamp
 from apparmor.translations import init_translation
 
 
-
 def get_user_login():
     """Portable function to get username.
 
@@ -152,12 +151,11 @@ def show_entries_since_epoch(logfile, epoch_since, filters):
             print()  # Print a newline after each entry for better readability
 
     aaui.UI_Info(_('AppArmor denials: {count} (since {date})').format(
-            **{
-                'count': count,
-                'date': time.strftime(timeformat, time.localtime(epoch_since))
-            }
-        )
-    )
+        **{
+            'count': count,
+            'date': time.strftime(timeformat, time.localtime(epoch_since))
+        }
+    ))
 
     if args.verbose:
         if 'message_footer' in config['']:

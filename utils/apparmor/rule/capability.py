@@ -58,7 +58,7 @@ class CapabilityRule(BaseRule):
             self.capability = set()
         else:
             if isinstance(cap_list, str):
-                cap_list = [ cap_list ]
+                cap_list = [cap_list]
 
             if isinstance(cap_list, list):
                 if not cap_list:

@@ -30,21 +30,21 @@ access_keywords_other = ['create', 'open', 'delete', 'getattr', 'setattr']
 access_keywords = access_keywords_read + access_keywords_write + access_keywords_rw + access_keywords_other
 
 joint_access_keyword = r'\s*(' + '|'.join(access_keywords) + r')\s*'
-RE_ACCESS_KEYWORDS = (joint_access_keyword +  # one of the access_keyword or
-                      '|' +                                           # or
-                      r'\(' + joint_access_keyword + '(' + r'(\s|,)+' + joint_access_keyword + ')*' + r'\)'  # one or more access_keyword in (...)
+RE_ACCESS_KEYWORDS = (joint_access_keyword  # one of the access_keyword or
+                      + '|'                                            # or
+                      + r'\(' + joint_access_keyword + '(' + r'(\s|,)+' + joint_access_keyword + ')*' + r'\)'  # one or more access_keyword in (...)
                       )
 
 RE_MQUEUE_NAME = r'(?P<%s>(/\S+|\d*))'  # / + string for posix, or digits for sys
 RE_MQUEUE_TYPE = r'(?P<%s>(sysv|posix))'  # type can be sysv or posix
 
 RE_MQUEUE_DETAILS = re.compile(
-    '^' +
-    r'(\s+(?P<access>' + RE_ACCESS_KEYWORDS + '))?' +  # optional access keyword(s)
-    r'(\s+(type=' + RE_MQUEUE_TYPE % 'mqueue_type' + '))?' +  # optional type
-    r'(\s+(label=' + RE_PROFILE_NAME % 'label' + '))?' +  # optional label
-    r'(\s+(' + RE_MQUEUE_NAME % 'mqueue_name' + '))?' +  # optional mqueue name
-    r'\s*$')
+    '^'
+    + r'(\s+(?P<access>' + RE_ACCESS_KEYWORDS + '))?'  # optional access keyword(s)
+    + r'(\s+(type=' + RE_MQUEUE_TYPE % 'mqueue_type' + '))?'  # optional type
+    + r'(\s+(label=' + RE_PROFILE_NAME % 'label' + '))?'  # optional label
+    + r'(\s+(' + RE_MQUEUE_NAME % 'mqueue_name' + '))?'  # optional mqueue name
+    + r'\s*$')
 
 
 class MessageQueueRule(BaseRule):
@@ -169,7 +169,7 @@ class MessageQueueRule(BaseRule):
         else:
             raise AppArmorBug('Empty mqueue_name in mqueue rule')
 
-        return('%s%smqueue%s%s%s%s,%s' % (space, self.modifiers_str(), access, mqueue_type, label, mqueue_name, self.comment))
+        return '%s%smqueue%s%s%s%s,%s' % (space, self.modifiers_str(), access, mqueue_type, label, mqueue_name, self.comment)
 
     def _is_covered_localvars(self, other_rule):
         '''check if other_rule is covered by this rule object'''
@@ -192,8 +192,7 @@ class MessageQueueRule(BaseRule):
     def _is_equal_localvars(self, rule_obj, strict):
         '''compare if rule-specific variables are equal'''
 
-        if (self.access != rule_obj.access or
-                self.all_access != rule_obj.all_access):
+        if (self.access != rule_obj.access or self.all_access != rule_obj.all_access):
             return False
 
         if not self._is_equal_aare(self.mqueue_type, self.all_mqueue_types, rule_obj.mqueue_type, rule_obj.all_mqueue_types, 'mqueue_type'):

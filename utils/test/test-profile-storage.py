@@ -85,10 +85,10 @@ class AaTest_get_header(AATest):
 
 class AaTest_get_header_01(AATest):
     tests = (
-        ({'name': '/foo', 'depth': 1,                          'flags': 'complain'                                             }, '  /foo flags=(complain) {'),
-        ({'name': '/foo', 'depth': 1,                          'flags': 'complain', 'profile_keyword': True                    }, '  profile /foo flags=(complain) {'),
-        ({'name': '/foo',                                      'flags': 'complain'                                             }, '/foo flags=(complain) {'),
-        ({'name': '/foo',            'xattrs': 'user.foo=bar', 'flags': 'complain'                                             }, '/foo xattrs=(user.foo=bar) flags=(complain) {'),
+        ({'name': '/foo', 'depth': 1,                          'flags': 'complain'},                                              '  /foo flags=(complain) {'),
+        ({'name': '/foo', 'depth': 1,                          'flags': 'complain', 'profile_keyword': True},                     '  profile /foo flags=(complain) {'),
+        ({'name': '/foo',                                      'flags': 'complain'},                                              '/foo flags=(complain) {'),
+        ({'name': '/foo',            'xattrs': 'user.foo=bar', 'flags': 'complain'},                                              '/foo xattrs=(user.foo=bar) flags=(complain) {'),
         ({'name': '/foo',            'xattrs': 'user.foo=bar',                                             'embedded_hat': True}, 'profile /foo xattrs=(user.foo=bar) {'),
     )
 

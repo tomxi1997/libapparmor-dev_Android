@@ -154,6 +154,7 @@ class TestFilename_from_attachment(AATest):
         with self.assertRaises(AppArmorBug):
             self.pl.filename_from_attachment('foo')
 
+
 class TestProfile_from_attachment(TestFilename_from_attachment):
     # uses AASetup from TestFilename_from_attachment
     tests = (

@@ -25,7 +25,7 @@ _ = init_translation()
 
 exp = namedtuple(
     'exp', (  # 'audit', 'allow_keyword', 'deny',
-            'comment', 'path', 'ifexists', 'ismagic'))
+        'comment', 'path', 'ifexists', 'ismagic'))
 
 # --- tests for single AbiRule --- #
 
@@ -290,7 +290,7 @@ class AbiLogprofHeaderTest(AATest):
         self.assertEqual(obj.logprof_header(), expected)
 
 
-## --- tests for AbiRuleset --- #
+# --- tests for AbiRuleset --- #
 
 class AbiRulesTest(AATest):
     def test_empty_ruleset(self):
