@@ -32,7 +32,7 @@ class UserNamespaceTestParse(AATest):
         ('deny userns,',         UserNamespaceRule(UserNamespaceRule.ALL, False, True,  False, '')),
         ('audit allow userns,',  UserNamespaceRule(UserNamespaceRule.ALL, True,  False, True,  '')),
         ('userns create, # cmt', UserNamespaceRule(('create'),            False, False, False, ' # cmt')),
-        )
+    )
 
     def _run_test(self, rawrule, expected):
         self.assertTrue(UserNamespaceRule.match(rawrule))
@@ -84,6 +84,7 @@ class InvalidUserNamespaceInit(AATest):
     def test_missing_params(self):
         with self.assertRaises(TypeError):
             UserNamespaceRule()
+
 
 class WriteUserNamespaceTestAATest(AATest):
     tests = (

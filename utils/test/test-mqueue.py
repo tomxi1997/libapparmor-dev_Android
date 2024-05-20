@@ -26,25 +26,25 @@ _ = init_translation()
 class MessageQueueTestParse(AATest):
     tests = (
         #                                                           access type label mqueue_name audit deny allow comment
-        ('mqueue,'                               , MessageQueueRule(MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue create,'                        , MessageQueueRule(('create'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue (create,open,delete),'          , MessageQueueRule(('create', 'open', 'delete'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue (getattr,setattr),'             , MessageQueueRule(('getattr', 'setattr'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue (write,read),'                  , MessageQueueRule(('write', 'read'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue (open,delete),'                 , MessageQueueRule(('open', 'delete'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue write label=foo,'               , MessageQueueRule(('write'), MessageQueueRule.ALL, 'foo', MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue read label=foo /queue,'         , MessageQueueRule(('read'), MessageQueueRule.ALL, 'foo', '/queue', False, False, False, '')),
-        ('audit mqueue read label=foo /queue,'   , MessageQueueRule(('read'), MessageQueueRule.ALL, 'foo', '/queue', True, False, False, '')),
-        ('deny mqueue rw label=foo /queue,'      , MessageQueueRule(('rw'), MessageQueueRule.ALL, 'foo', '/queue', False, True, False, '')),
+        ('mqueue,',                                MessageQueueRule(MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue create,',                         MessageQueueRule(('create'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue (create,open,delete),',           MessageQueueRule(('create', 'open', 'delete'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue (getattr,setattr),',              MessageQueueRule(('getattr', 'setattr'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue (write,read),',                   MessageQueueRule(('write', 'read'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue (open,delete),',                  MessageQueueRule(('open', 'delete'), MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue write label=foo,',                MessageQueueRule(('write'), MessageQueueRule.ALL, 'foo', MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue read label=foo /queue,',          MessageQueueRule(('read'), MessageQueueRule.ALL, 'foo', '/queue', False, False, False, '')),
+        ('audit mqueue read label=foo /queue,',    MessageQueueRule(('read'), MessageQueueRule.ALL, 'foo', '/queue', True, False, False, '')),
+        ('deny mqueue rw label=foo /queue,',       MessageQueueRule(('rw'), MessageQueueRule.ALL, 'foo', '/queue', False, True, False, '')),
         ('audit allow mqueue r label=foo /queue,', MessageQueueRule(('r'), MessageQueueRule.ALL, 'foo', '/queue', True, False, True, '')),
-        ('mqueue w label=foo 1234, # cmt'        , MessageQueueRule(('w'), MessageQueueRule.ALL, 'foo', '1234', False, False, False, ' # cmt')),
-        ('mqueue wr 1234,'                       , MessageQueueRule(('wr'), MessageQueueRule.ALL, MessageQueueRule.ALL, '1234', False, False, False, '')),
-        ('mqueue 1234,'                          , MessageQueueRule(MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, '1234', False, False, False, '')),
-        ('mqueue type=sysv,'                     , MessageQueueRule(MessageQueueRule.ALL, 'sysv', MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue type=posix,'                    , MessageQueueRule(MessageQueueRule.ALL, 'posix', MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
-        ('mqueue type=sysv 1234,'                , MessageQueueRule(MessageQueueRule.ALL, 'sysv', MessageQueueRule.ALL, '1234', False, False, False, '')),
-        ('mqueue type=posix /queue,'             , MessageQueueRule(MessageQueueRule.ALL, 'posix', MessageQueueRule.ALL, '/queue', False, False, False, '')),
-        ('mqueue open type=sysv label=foo 1234,' , MessageQueueRule(('open'), 'sysv', 'foo', '1234', False, False, False, '')),
+        ('mqueue w label=foo 1234, # cmt',         MessageQueueRule(('w'), MessageQueueRule.ALL, 'foo', '1234', False, False, False, ' # cmt')),
+        ('mqueue wr 1234,',                        MessageQueueRule(('wr'), MessageQueueRule.ALL, MessageQueueRule.ALL, '1234', False, False, False, '')),
+        ('mqueue 1234,',                           MessageQueueRule(MessageQueueRule.ALL, MessageQueueRule.ALL, MessageQueueRule.ALL, '1234', False, False, False, '')),
+        ('mqueue type=sysv,',                      MessageQueueRule(MessageQueueRule.ALL, 'sysv', MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue type=posix,',                     MessageQueueRule(MessageQueueRule.ALL, 'posix', MessageQueueRule.ALL, MessageQueueRule.ALL, False, False, False, '')),
+        ('mqueue type=sysv 1234,',                 MessageQueueRule(MessageQueueRule.ALL, 'sysv', MessageQueueRule.ALL, '1234', False, False, False, '')),
+        ('mqueue type=posix /queue,',              MessageQueueRule(MessageQueueRule.ALL, 'posix', MessageQueueRule.ALL, '/queue', False, False, False, '')),
+        ('mqueue open type=sysv label=foo 1234,',  MessageQueueRule(('open'), 'sysv', 'foo', '1234', False, False, False, '')),
     )
 
     def _run_test(self, rawrule, expected):
@@ -56,14 +56,14 @@ class MessageQueueTestParse(AATest):
 
 class MessageQueueTestParseInvalid(AATest):
     tests = (
-        ('mqueue label=,'                  , AppArmorException),
+        ('mqueue label=,',                   AppArmorException),
         ('mqueue invalidaccess /queuename,', AppArmorException),
-        ('mqueue invalidqueuename,'        , AppArmorException),
-        ('mqueue invalidqueuename1234,'    , AppArmorException),
-        ('mqueue foo label foo bar,'       , AppArmorException),
-        ('mqueue type=,'                   , AppArmorException),
-        ('mqueue type=sysv /foo,'          , AppArmorException),
-        ('mqueue type=posix 1234,'         , AppArmorException),
+        ('mqueue invalidqueuename,',         AppArmorException),
+        ('mqueue invalidqueuename1234,',     AppArmorException),
+        ('mqueue foo label foo bar,',        AppArmorException),
+        ('mqueue type=,',                    AppArmorException),
+        ('mqueue type=sysv /foo,',           AppArmorException),
+        ('mqueue type=posix 1234,',          AppArmorException),
     )
 
     def _run_test(self, rawrule, expected):
@@ -148,28 +148,28 @@ class InvalidMessageQueueInit(AATest):
 class WriteMessageQueueTestAATest(AATest):
     tests = (
         #  raw rule                                               clean rule
-        ('     mqueue         ,    # foo        '               , 'mqueue, # foo'),
-        ('    audit     mqueue create,'                         , 'audit mqueue create,'),
-        ('    audit     mqueue (open  ),'                       , 'audit mqueue open,'),
-        ('    audit     mqueue (delete , read ),'               , 'audit mqueue (delete read),'),
+        ('     mqueue         ,    # foo        ',                'mqueue, # foo'),
+        ('    audit     mqueue create,',                          'audit mqueue create,'),
+        ('    audit     mqueue (open  ),',                        'audit mqueue open,'),
+        ('    audit     mqueue (delete , read ),',                'audit mqueue (delete read),'),
         ('   deny mqueue         write      label=bar,# foo bar', 'deny mqueue write label=bar, # foo bar'),
-        ('   deny mqueue         open      ,# foo bar'          , 'deny mqueue open, # foo bar'),
-        ('   allow mqueue             label=tst    ,# foo bar'  , 'allow mqueue label=tst, # foo bar'),
-        ('mqueue,'                                              , 'mqueue,'),
-        ('mqueue (read),'                                       , 'mqueue read,'),
-        ('mqueue (create),'                                     , 'mqueue create,'),
-        ('mqueue (write read),'                                 , 'mqueue (read write),'),
-        ('mqueue (open,create,open,delete,write,read),'         , 'mqueue (create delete open read write),'),
-        ('mqueue r,'                                            , 'mqueue r,'),
-        ('mqueue w,'                                            , 'mqueue w,'),
-        ('mqueue rw,'                                           , 'mqueue rw,'),
-        ('mqueue delete label="tst",'                           , 'mqueue delete label="tst",'),
-        ('mqueue (getattr) label=bar,'                          , 'mqueue getattr label=bar,'),
-        ('mqueue getattr /foo,'                                 , 'mqueue getattr /foo,'),
-        ('mqueue (setattr getattr) 1234,'                       , 'mqueue (getattr setattr) 1234,'),
-        ('mqueue wr label=tst 1234,'                            , 'mqueue wr label=tst 1234,'),
-        ('mqueue wr  type=sysv   label=tst 1234,'               , 'mqueue wr type=sysv label=tst 1234,'),
-        ('mqueue wr   type=posix label=tst /foo,'               , 'mqueue wr type=posix label=tst /foo,'),
+        ('   deny mqueue         open      ,# foo bar',           'deny mqueue open, # foo bar'),
+        ('   allow mqueue             label=tst    ,# foo bar',   'allow mqueue label=tst, # foo bar'),
+        ('mqueue,',                                               'mqueue,'),
+        ('mqueue (read),',                                        'mqueue read,'),
+        ('mqueue (create),',                                      'mqueue create,'),
+        ('mqueue (write read),',                                  'mqueue (read write),'),
+        ('mqueue (open,create,open,delete,write,read),',          'mqueue (create delete open read write),'),
+        ('mqueue r,',                                             'mqueue r,'),
+        ('mqueue w,',                                             'mqueue w,'),
+        ('mqueue rw,',                                            'mqueue rw,'),
+        ('mqueue delete label="tst",',                            'mqueue delete label="tst",'),
+        ('mqueue (getattr) label=bar,',                           'mqueue getattr label=bar,'),
+        ('mqueue getattr /foo,',                                  'mqueue getattr /foo,'),
+        ('mqueue (setattr getattr) 1234,',                        'mqueue (getattr setattr) 1234,'),
+        ('mqueue wr label=tst 1234,',                             'mqueue wr label=tst 1234,'),
+        ('mqueue wr  type=sysv   label=tst 1234,',                'mqueue wr type=sysv label=tst 1234,'),
+        ('mqueue wr   type=posix label=tst /foo,',                'mqueue wr type=posix label=tst /foo,'),
     )
 
     def _run_test(self, rawrule, expected):
@@ -232,11 +232,11 @@ class MessageQueueIsCoveredTest(AATest):
 
 class MessageQueueLogprofHeaderTest(AATest):
     tests = (
-        ('mqueue,',                     [                               _('Access mode'), _('ALL'),         _('Type'), _('ALL'), _('Label'), _('ALL'), _('Message queue name'), _('ALL'), ]),
-        ('mqueue (create,getattr) 12,', [                               _('Access mode'), 'create getattr', _('Type'), _('ALL'), _('Label'), _('ALL'), _('Message queue name'), '12', ]),
-        ('mqueue write label=bar,',     [                               _('Access mode'), 'write',          _('Type'), _('ALL'), _('Label'), 'bar',    _('Message queue name'), _('ALL'), ]),
-        ('mqueue write type=sysv,',     [                               _('Access mode'), 'write',          _('Type'), 'sysv',   _('Label'), _('ALL'), _('Message queue name'), _('ALL'), ]),
-        ('mqueue read type=posix,',     [                               _('Access mode'), 'read',           _('Type'), 'posix',  _('Label'), _('ALL'), _('Message queue name'), _('ALL'), ]),
+        ('mqueue,',                     [                               _('Access mode'), _('ALL'),         _('Type'), _('ALL'), _('Label'), _('ALL'), _('Message queue name'), _('ALL'), ]),  # noqa: E201
+        ('mqueue (create,getattr) 12,', [                               _('Access mode'), 'create getattr', _('Type'), _('ALL'), _('Label'), _('ALL'), _('Message queue name'), '12', ]),  # noqa: E201
+        ('mqueue write label=bar,',     [                               _('Access mode'), 'write',          _('Type'), _('ALL'), _('Label'), 'bar',    _('Message queue name'), _('ALL'), ]),  # noqa: E201
+        ('mqueue write type=sysv,',     [                               _('Access mode'), 'write',          _('Type'), 'sysv',   _('Label'), _('ALL'), _('Message queue name'), _('ALL'), ]),  # noqa: E201
+        ('mqueue read type=posix,',     [                               _('Access mode'), 'read',           _('Type'), 'posix',  _('Label'), _('ALL'), _('Message queue name'), _('ALL'), ]),  # noqa: E201
         ('deny mqueue read /foo,',      [_('Qualifier'), 'deny',        _('Access mode'), 'read',           _('Type'), _('ALL'), _('Label'), _('ALL'), _('Message queue name'), '/foo', ]),
         ('allow mqueue setattr,',       [_('Qualifier'), 'allow',       _('Access mode'), 'setattr',        _('Type'), _('ALL'), _('Label'), _('ALL'), _('Message queue name'), _('ALL'), ]),
         ('audit mqueue r label=ba 12,', [_('Qualifier'), 'audit',       _('Access mode'), 'r',              _('Type'), _('ALL'), _('Label'), 'ba',     _('Message queue name'), '12', ]),

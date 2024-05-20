@@ -26,15 +26,15 @@ _ = init_translation()
 access_keywords = ['sqpoll', 'override_creds']
 
 joint_access_keyword = r'\s*(' + '|'.join(access_keywords) + r')\s*'
-RE_ACCESS_KEYWORDS = (joint_access_keyword +  # one of the access_keyword or
-                      '|' +                                           # or
-                      r'\(' + joint_access_keyword + '(' + r'(\s|,)+' + joint_access_keyword + ')*' + r'\)'  # one or more access_keyword in (...)
+RE_ACCESS_KEYWORDS = (joint_access_keyword  # one of the access_keyword or
+                      + '|'                                           # or
+                      + r'\(' + joint_access_keyword + '(' + r'(\s|,)+' + joint_access_keyword + ')*' + r'\)'  # one or more access_keyword in (...)
                       )
 RE_IO_URING_DETAILS = re.compile(
-    r'^' +
-    r'(\s+(?P<access>' + RE_ACCESS_KEYWORDS + r'))?' +  # optional access keyword(s)
-    r'(\s+(label\s*=\s*' + RE_PROFILE_NAME % 'label' + r'))?' +  # optional label
-    r'\s*$')
+    r'^'
+    + r'(\s+(?P<access>' + RE_ACCESS_KEYWORDS + r'))?'  # optional access keyword(s)
+    + r'(\s+(label\s*=\s*' + RE_PROFILE_NAME % 'label' + r'))?'  # optional label
+    + r'\s*$')
 
 
 class IOUringRule(BaseRule):
@@ -119,7 +119,7 @@ class IOUringRule(BaseRule):
         else:
             raise AppArmorBug('Empty label in io_uring rule')
 
-        return('%s%sio_uring%s%s,%s' % (space, self.modifiers_str(), access, label, self.comment))
+        return '%s%sio_uring%s%s,%s' % (space, self.modifiers_str(), access, label, self.comment)
 
     def _is_covered_localvars(self, other_rule):
         '''check if other_rule is covered by this rule object'''
@@ -136,8 +136,7 @@ class IOUringRule(BaseRule):
     def _is_equal_localvars(self, rule_obj, strict):
         '''compare if rule-specific variables are equal'''
 
-        if (self.access != rule_obj.access or
-                self.all_access != rule_obj.all_access):
+        if (self.access != rule_obj.access or self.all_access != rule_obj.all_access):
             return False
 
         if not self._is_equal_aare(self.label, self.all_labels, rule_obj.label, rule_obj.all_labels, 'label'):

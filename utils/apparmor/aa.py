@@ -64,7 +64,6 @@ debug_logger = DebugLogger('aa')
 # The database for severity
 sev_db = None
 # The file to read log messages from
-### Was our
 logfile = None
 
 CONFDIR = None
@@ -76,7 +75,7 @@ profile_dir = None
 extra_profile_dir = None
 
 use_abstractions = True
-### end our
+
 # To keep track of previously included profile fragments
 include = dict()
 
@@ -92,12 +91,10 @@ transitions = {}
 
 aa = {}  # Profiles originally in sd, replace by aa
 original_aa = hasher()
-### end our
 
 changed = dict()
 created = []
 helpers = dict()  # Preserve this between passes # was our
-### logprof ends
 
 
 def reset_aa():
@@ -293,7 +290,7 @@ def set_enforce(filename, program):
     aaui.UI_Info(_('Setting %s to enforce mode.') % (filename if program is None else program))
     delete_symlink('force-complain', filename)
     delete_symlink('disable', filename)
-    change_profile_flags(filename, program, ['complain', 'kill', 'unconfined', 'prompt','default_allow'], False)  # remove conflicting and complain mode flags
+    change_profile_flags(filename, program, ['complain', 'kill', 'unconfined', 'prompt', 'default_allow'], False)  # remove conflicting and complain mode flags
 
 
 def disable_abstractions():
@@ -979,9 +976,9 @@ def ask_exec(hashlog):
 
                         # Check profile exists for px
                         if exec_target.startswith(('/', '@', '{')):
-                              prof_filename = get_profile_filename_from_attachment(exec_target, True)
+                            prof_filename = get_profile_filename_from_attachment(exec_target, True)
                         else:  # named exec
-                              prof_filename = get_profile_filename_from_profile_name(exec_target, True)
+                            prof_filename = get_profile_filename_from_profile_name(exec_target, True)
 
                         if not os.path.exists(prof_filename):
                             ynans = 'y'
@@ -1028,6 +1025,7 @@ def ask_exec(hashlog):
 
                     else:
                         raise AppArmorBug('Unhandled ans %s, please open a bugreport!' % ans)
+
 
 def order_globs(globs, original_path):
     """Returns the globs in sorted order, more specific behind"""
@@ -2124,7 +2122,6 @@ def parse_pivot_root_rule(line):
     return aarules.Raw_Pivot_Root_Rule(line)
 
 
-
 def write_piece(profile_data, depth, name, nhat):
     pre = '  ' * depth
     data = []
@@ -2517,7 +2514,7 @@ def logger_path():
     return logger
 
 
-######Initialisations######
+# ------ Initialisations ------ #
 
 def init_aa(confdir=None, profiledir=None):
     global CONFDIR

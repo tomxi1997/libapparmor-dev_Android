@@ -135,7 +135,7 @@ class ReadLog:
                 ev['peer'] = event.peer
                 ev['peer_profile'] = event.peer_profile
             else:
-                ev['addr'] =  event.net_local_addr
+                ev['addr'] = event.net_local_addr
                 ev['peer_addr'] = event.net_foreign_addr
 
         elif ev['operation'] and ev['operation'].startswith('dbus_'):
@@ -214,7 +214,7 @@ class ReadLog:
 
         elif e['class'] and e['class'] == 'namespace':
             if e['denied_mask'].startswith('userns_'):
-                self.hashlog[aamode][full_profile]['userns'][ e['denied_mask'][7:] ] = True  # [7:] removes the 'userns_' prefix
+                self.hashlog[aamode][full_profile]['userns'][e['denied_mask'][7:]] = True  # [7:] removes the 'userns_' prefix
             return
 
         elif e['class'] and e['class'].endswith('mqueue'):
@@ -227,9 +227,9 @@ class ReadLog:
             return
 
         elif e['class'] and e['class'] == 'mount' or e['operation'] == 'mount':
-            if e['flags'] != None:
+            if e['flags'] is not None:
                 e['flags'] = ('=', e['flags'])
-            if e['fs_type'] != None:
+            if e['fs_type'] is not None:
                 e['fs_type'] = ('=', e['fs_type'])
 
             if e['operation'] == 'mount':
@@ -239,9 +239,9 @@ class ReadLog:
             return
 
         elif e['class'] and e['class'] == 'net' and e['family'] and e['family'] == 'unix':
-            rule  = (e['sock_type'], None) # Protocol is not supported yet.
+            rule = (e['sock_type'], None)  # Protocol is not supported yet.
             local = (e['addr'], None, e['attr'], None)
-            peer  = (e['peer_addr'], e['peer_profile'])
+            peer = (e['peer_addr'], e['peer_profile'])
             self.hashlog[aamode][full_profile]['unix'][e['denied_mask']][rule][local][peer] = True
             return
 
@@ -285,7 +285,7 @@ class ReadLog:
 
         elif self.op_type(e) == 'net':
             local = (e['addr'], e['port'])
-            peer  = (e['peer_addr'], e['remote_port'])
+            peer = (e['peer_addr'], e['remote_port'])
             self.hashlog[aamode][full_profile]['network'][e['accesses']][e['family']][e['sock_type']][e['protocol']][local][peer] = True
             return
 
@@ -399,9 +399,9 @@ class ReadLog:
     def op_type(self, event):
         """Returns the operation type if known, unknown otherwise"""
 
-        if event['operation'] and (event['operation'].startswith('file_') or
-                                   event['operation'].startswith('inode_') or
-                                   event['operation'] in self.OP_TYPE_FILE_OR_NET):
+        if event['operation'] and (event['operation'].startswith('file_')
+                                   or event['operation'].startswith('inode_')
+                                   or event['operation'] in self.OP_TYPE_FILE_OR_NET):
             # file or network event?
             if event['family'] and event['protocol'] and event['sock_type']:
                 # 'unix' events also use keywords like 'connect', but protocol is 0 and should therefore be filtered out

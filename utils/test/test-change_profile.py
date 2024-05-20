@@ -287,12 +287,12 @@ class ChangeProfileCoveredTest_02(ChangeProfileCoveredTest):
 
     tests = (
         #   rule                                     equal  strict equal covered  covered exact
-        (      'change_profile /foo,',              (False, False,       True,    False)),
+        ('      change_profile /foo,',              (False, False,       True,    False)),
         ('audit change_profile /foo,',              (True,  True,        True,    True)),
-        (      'change_profile /foo -> /bar,',      (False, False,       True,    False)),
-        (      'change_profile safe /foo -> /bar,', (False, False,       True,    False)),
+        ('      change_profile /foo -> /bar,',      (False, False,       True,    False)),
+        ('      change_profile safe /foo -> /bar,', (False, False,       True,    False)),
         ('audit change_profile /foo -> /bar,',      (False, False,       True,    True)),  # XXX is "covered exact" correct here?
-        (      'change_profile,',                   (False, False,       False,   False)),
+        ('      change_profile,',                   (False, False,       False,   False)),
         ('audit change_profile,',                   (False, False,       False,   False)),
         ('      change_profile -> /bar,',           (False, False,       False,   False)),
     )
@@ -303,15 +303,15 @@ class ChangeProfileCoveredTest_03(ChangeProfileCoveredTest):
 
     tests = (
         #   rule                                equal  strict equal  covered  covered exact
-        (      'change_profile /foo -> /bar,', (True,  True,         True,    True)),
+        ('      change_profile /foo -> /bar,', (True,  True,         True,    True)),
         ('allow change_profile /foo -> /bar,', (True,  False,        True,    True)),
-        (      'change_profile /foo,',         (False, False,        False,   False)),
-        (      'change_profile,',              (False, False,        False,   False)),
-        (      'change_profile /foo -> /xyz,', (False, False,        False,   False)),
+        ('      change_profile /foo,',         (False, False,        False,   False)),
+        ('      change_profile,',              (False, False,        False,   False)),
+        ('      change_profile /foo -> /xyz,', (False, False,        False,   False)),
         ('audit change_profile,',              (False, False,        False,   False)),
         ('audit change_profile /foo -> /bar,', (False, False,        False,   False)),
-        (      'change_profile      -> /bar,', (False, False,        False,   False)),
-        (      'change_profile,',              (False, False,        False,   False)),
+        ('      change_profile      -> /bar,', (False, False,        False,   False)),
+        ('      change_profile,',              (False, False,        False,   False)),
     )
 
 
@@ -320,12 +320,12 @@ class ChangeProfileCoveredTest_04(ChangeProfileCoveredTest):
 
     tests = (
         #   rule                                equal  strict equal  covered  covered exact
-        (      'change_profile,',              (True,  True,         True,    True)),
+        ('      change_profile,',              (True,  True,         True,    True)),
         ('allow change_profile,',              (True,  False,        True,    True)),
-        (      'change_profile /foo,',         (False, False,        True,    True)),
-        (      'change_profile /xyz -> bar,',  (False, False,        True,    True)),
-        (      'change_profile -> /bar,',      (False, False,        True,    True)),
-        (      'change_profile /foo -> /bar,', (False, False,        True,    True)),
+        ('      change_profile /foo,',         (False, False,        True,    True)),
+        ('      change_profile /xyz -> bar,',  (False, False,        True,    True)),
+        ('      change_profile -> /bar,',      (False, False,        True,    True)),
+        ('      change_profile /foo -> /bar,', (False, False,        True,    True)),
         ('audit change_profile,',              (False, False,        False,   False)),
         ('deny  change_profile,',              (False, False,        False,   False)),
     )
@@ -336,11 +336,11 @@ class ChangeProfileCoveredTest_05(ChangeProfileCoveredTest):
 
     tests = (
         #   rule                             equal  strict equal  covered  covered exact
-        (      'deny change_profile /foo,', (True,  True,         True,    True)),
+        ('      deny change_profile /foo,', (True,  True,         True,    True)),
         ('audit deny change_profile /foo,', (False, False,        False,   False)),
-        (           'change_profile /foo,', (False, False,        False,   False)),  # XXX should covered be true here?
-        (      'deny change_profile /bar,', (False, False,        False,   False)),
-        (      'deny change_profile,',      (False, False,        False,   False)),
+        ('           change_profile /foo,', (False, False,        False,   False)),  # XXX should covered be true here?
+        ('      deny change_profile /bar,', (False, False,        False,   False)),
+        ('      deny change_profile,',      (False, False,        False,   False)),
     )
 
 
@@ -349,11 +349,11 @@ class ChangeProfileCoveredTest_06(ChangeProfileCoveredTest):
 
     tests = (
         #   rule                             equal  strict equal  covered  covered exact
-        (      'deny change_profile /foo,', (False, False,        False,   False)),
+        ('      deny change_profile /foo,', (False, False,        False,   False)),
         ('audit deny change_profile /foo,', (False, False,        False,   False)),
-        (           'change_profile /foo,', (True,  False,        True,    True)),
-        (      'deny change_profile /bar,', (False, False,        False,   False)),
-        (      'deny change_profile,',      (False, False,        False,   False)),
+        ('           change_profile /foo,', (True,  False,        True,    True)),
+        ('      deny change_profile /bar,', (False, False,        False,   False)),
+        ('      deny change_profile,',      (False, False,        False,   False)),
     )
 
 
@@ -378,6 +378,7 @@ class ChangeProfileCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered(self):
         raw_rule = 'change_profile /foo,'
+
         class SomeOtherClass(ChangeProfileRule):
             pass
 
@@ -388,6 +389,7 @@ class ChangeProfileCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'change_profile -> /bar,'
+
         class SomeOtherClass(ChangeProfileRule):
             pass
 
@@ -399,10 +401,10 @@ class ChangeProfileCoveredTest_Invalid(AATest):
 
 class ChangeProfileLogprofHeaderTest(AATest):
     tests = (
-        ('change_profile,',                       [                                                        _('Exec Condition'), _('ALL'),  _('Target Profile'), _('ALL')]),
-        ('change_profile -> /bin/ping,',          [                                                        _('Exec Condition'), _('ALL'),  _('Target Profile'), '/bin/ping']),
-        ('change_profile /bar -> /bin/bar,',      [                                                        _('Exec Condition'), '/bar',    _('Target Profile'), '/bin/bar']),
-        ('change_profile safe /foo,',             [                              _('Exec Mode'), 'safe',   _('Exec Condition'), '/foo',    _('Target Profile'), _('ALL')]),
+        ('change_profile,',                       [                                                        _('Exec Condition'), _('ALL'),  _('Target Profile'), _('ALL')]),  # noqa: E201
+        ('change_profile -> /bin/ping,',          [                                                        _('Exec Condition'), _('ALL'),  _('Target Profile'), '/bin/ping']),  # noqa: E201
+        ('change_profile /bar -> /bin/bar,',      [                                                        _('Exec Condition'), '/bar',    _('Target Profile'), '/bin/bar']),  # noqa: E201
+        ('change_profile safe /foo,',             [                              _('Exec Mode'), 'safe',   _('Exec Condition'), '/foo',    _('Target Profile'), _('ALL')]),  # noqa: E201
         ('audit change_profile -> /bin/ping,',    [_('Qualifier'), 'audit',                                _('Exec Condition'), _('ALL'),  _('Target Profile'), '/bin/ping']),
         ('deny change_profile /bar -> /bin/bar,', [_('Qualifier'), 'deny',                                 _('Exec Condition'), '/bar',    _('Target Profile'), '/bin/bar']),
         ('allow change_profile unsafe /foo,',     [_('Qualifier'), 'allow',      _('Exec Mode'), 'unsafe', _('Exec Condition'), '/foo',    _('Target Profile'), _('ALL')]),

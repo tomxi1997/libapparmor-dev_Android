@@ -29,37 +29,37 @@ class MountTestParse(AATest):
 
     tests = (
         #                   Rule                                                     Operation   Filesystem                Options                  Source          Destination     Audit  Deny   Allow  Comment
-        ('mount -> **,',                                                    MountRule('mount',   MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  '**',           False, False, False, ''     )),
-        ('mount options=(rw, shared) -> **,',                               MountRule('mount',   MountRule.ALL,            ('=', ('rw', 'shared')), MountRule.ALL,  '**',           False, False, False, ''     )),
-        ('mount fstype=bpf options=rw bpf -> /sys/fs/bpf/,',                MountRule('mount',   ('=', ['bpf']),           ('=', ('rw')),           'bpf',          '/sys/fs/bpf/', False, False, False, ''     )),
-        ('mount fstype=fuse.obex* options=rw bpf -> /sys/fs/bpf/,',         MountRule('mount',   ('=', ['fuse.obex*']),    ('=', ('rw')),           'bpf',          '/sys/fs/bpf/', False, False, False, ''     )),
-        ('mount fstype=fuse.* options=rw bpf -> /sys/fs/bpf/,',             MountRule('mount',   ('=', ['fuse.*']),        ('=', ('rw')),           'bpf',          '/sys/fs/bpf/', False, False, False, ''     )),
-        ('mount fstype=bpf options=(rw) random_label -> /sys/fs/bpf/,',     MountRule('mount',   ('=', ['bpf']),           ('=', ('rw')),           'random_label', '/sys/fs/bpf/', False, False, False, ''     )),
-        ('mount,',                                                          MountRule('mount',   MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, ''     )),
-        ('mount fstype=(ext3, ext4),',                                      MountRule('mount',   ('=', ['ext3', 'ext4']),  MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, ''     )),
-        ('mount bpf,',                                                      MountRule('mount',   MountRule.ALL,            MountRule.ALL,           'bpf',          MountRule.ALL,  False, False, False, ''     )),
-        ('mount none,',                                                     MountRule('mount',   MountRule.ALL,            MountRule.ALL,           'none',         MountRule.ALL,  False, False, False, ''     )),
-        ('mount fstype=(ext3, ext4) options=(ro),',                         MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro')),           MountRule.ALL,  MountRule.ALL,  False, False, False, ''     )),
-        ('mount @{mntpnt},',                                                MountRule('mount',   MountRule.ALL,            MountRule.ALL,           '@{mntpnt}',    MountRule.ALL,  False, False, False, ''     )),
-        ('mount /a,',                                                       MountRule('mount',   MountRule.ALL,            MountRule.ALL,           '/a',           MountRule.ALL,  False, False, False, ''     )),
-        ('mount fstype=(ext3, ext4) /a -> /b,',                             MountRule('mount',   ('=', ['ext3', 'ext4']),  MountRule.ALL,           '/a',           '/b',           False, False, False, ''     )),
-        ('mount fstype=(ext3, ext4) options=(ro, rbind) /a -> /b,',         MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro', 'rbind')),  '/a',           '/b',           False, False, False, ''     )),
+        ('mount -> **,',                                                    MountRule('mount',   MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  '**',           False, False, False, '')),
+        ('mount options=(rw, shared) -> **,',                               MountRule('mount',   MountRule.ALL,            ('=', ('rw', 'shared')), MountRule.ALL,  '**',           False, False, False, '')),
+        ('mount fstype=bpf options=rw bpf -> /sys/fs/bpf/,',                MountRule('mount',   ('=', ['bpf']),           ('=', ('rw')),           'bpf',          '/sys/fs/bpf/', False, False, False, '')),
+        ('mount fstype=fuse.obex* options=rw bpf -> /sys/fs/bpf/,',         MountRule('mount',   ('=', ['fuse.obex*']),    ('=', ('rw')),           'bpf',          '/sys/fs/bpf/', False, False, False, '')),
+        ('mount fstype=fuse.* options=rw bpf -> /sys/fs/bpf/,',             MountRule('mount',   ('=', ['fuse.*']),        ('=', ('rw')),           'bpf',          '/sys/fs/bpf/', False, False, False, '')),
+        ('mount fstype=bpf options=(rw) random_label -> /sys/fs/bpf/,',     MountRule('mount',   ('=', ['bpf']),           ('=', ('rw')),           'random_label', '/sys/fs/bpf/', False, False, False, '')),
+        ('mount,',                                                          MountRule('mount',   MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
+        ('mount fstype=(ext3, ext4),',                                      MountRule('mount',   ('=', ['ext3', 'ext4']),  MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
+        ('mount bpf,',                                                      MountRule('mount',   MountRule.ALL,            MountRule.ALL,           'bpf',          MountRule.ALL,  False, False, False, '')),
+        ('mount none,',                                                     MountRule('mount',   MountRule.ALL,            MountRule.ALL,           'none',         MountRule.ALL,  False, False, False, '')),
+        ('mount fstype=(ext3, ext4) options=(ro),',                         MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro')),           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
+        ('mount @{mntpnt},',                                                MountRule('mount',   MountRule.ALL,            MountRule.ALL,           '@{mntpnt}',    MountRule.ALL,  False, False, False, '')),
+        ('mount /a,',                                                       MountRule('mount',   MountRule.ALL,            MountRule.ALL,           '/a',           MountRule.ALL,  False, False, False, '')),
+        ('mount fstype=(ext3, ext4) /a -> /b,',                             MountRule('mount',   ('=', ['ext3', 'ext4']),  MountRule.ALL,           '/a',           '/b',           False, False, False, '')),
+        ('mount fstype=(ext3, ext4) options=(ro, rbind) /a -> /b,',         MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro', 'rbind')),  '/a',           '/b',           False, False, False, '')),
         ('mount fstype=(ext3, ext4) options=(ro, rbind) /a -> /b, #cmt',    MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro', 'rbind')),  '/a',           '/b',           False, False, False, ' #cmt')),
-        ('mount fstype=({ext3,ext4}) options in (ro, rbind) /a -> /b,',     MountRule('mount',   ('=', ['{ext3,ext4}']),   ('in', ('ro', 'rbind')), '/a',           '/b',           False, False, False, ''     )),
+        ('mount fstype=({ext3,ext4}) options in (ro, rbind) /a -> /b,',     MountRule('mount',   ('=', ['{ext3,ext4}']),   ('in', ('ro', 'rbind')), '/a',           '/b',           False, False, False, '')),
         ('mount fstype in (ext3, ext4) options=(ro, rbind) /a -> /b, #cmt', MountRule('mount',   ('in', ['ext3', 'ext4']), ('=', ('ro', 'rbind')),  '/a',           '/b',           False, False, False, ' #cmt')),
         ('mount fstype in (ext3, ext4) option in (ro, rbind) /a, #cmt',     MountRule('mount',   ('in', ['ext3', 'ext4']), ('in', ('ro', 'rbind')), '/a',           MountRule.ALL,  False, False, False, ' #cmt')),
         ('mount fstype=(ext3, ext4) option=(ro, rbind) /a -> /b, #cmt',     MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro', 'rbind')),  '/a',           '/b',           False, False, False, ' #cmt')),
         ('mount options=(rw, rbind) {,/usr}/lib{,32,64,x32}/modules/ -> /tmp/snap.rootfs_*{,/usr}/lib/modules/,',
-                                                                            MountRule('mount',   MountRule.ALL,            ('=', ('rw', 'rbind')),  '{,/usr}/lib{,32,64,x32}/modules/',
-                                                                                                                                                                   '/tmp/snap.rootfs_*{,/usr}/lib/modules/',
-                                                                                                                                                                                    False, False, False, ''     )),
-        ('umount,',                                                         MountRule('umount',  MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, ''     )),
-        ('umount fstype=ext3,',                                             MountRule('umount',  ('=', ['ext3']),          MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, ''     )),
-        ('umount /a,',                                                      MountRule('umount',  MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  '/a',           False, False, False, ''     )),
+                                                                            MountRule('mount',   MountRule.ALL,            ('=', ('rw', 'rbind')),  '{,/usr}/lib{,32,64,x32}/modules/',  # noqa: E127
+                                                                                                                                                                   '/tmp/snap.rootfs_*{,/usr}/lib/modules/',  # noqa: E127
+                                                                                                                                                                                    False, False, False, '')),  # noqa: E127
+        ('umount,',                                                         MountRule('umount',  MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
+        ('umount fstype=ext3,',                                             MountRule('umount',  ('=', ['ext3']),          MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
+        ('umount /a,',                                                      MountRule('umount',  MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  '/a',           False, False, False, '')),
 
-        ('remount,',                                                        MountRule('remount', MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, ''     )),
-        ('remount fstype=ext4,',                                            MountRule('remount', ('=', ['ext4']),          MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, ''     )),
-        ('remount /b,',                                                     MountRule('remount', MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  '/b',           False, False, False, ''     )),
+        ('remount,',                                                        MountRule('remount', MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
+        ('remount fstype=ext4,',                                            MountRule('remount', ('=', ['ext4']),          MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
+        ('remount /b,',                                                     MountRule('remount', MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  '/b',           False, False, False, '')),
     )
 
     def _run_test(self, rawrule, expected):
@@ -99,8 +99,8 @@ class MountTestParseInvalid(AATest):
 
     def test_diff_invalid_fstype_aare(self):
         tests = [
-                'mount fstype=({unclosed_regex),',
-                'mount fstype=({closed}twice}),',
+            'mount fstype=({unclosed_regex),',
+            'mount fstype=({closed}twice}),',
         ]
 
         for t in tests:
@@ -109,9 +109,9 @@ class MountTestParseInvalid(AATest):
 
     def test_diff_invalid_fstype_aare_2(self):
         fslists = [
-                ['invalid_{_regex'],
-                ['ext4', 'invalid_}_regex'],
-                ['ext4', '{invalid} {regex}']
+            ['invalid_{_regex'],
+            ['ext4', 'invalid_}_regex'],
+            ['ext4', '{invalid} {regex}']
         ]
         for fslist in fslists:
             with self.assertRaises(AppArmorException):
@@ -227,6 +227,7 @@ class MountIsCoveredTest(AATest):
         for test in tests:
             self.assertTrue(obj.is_covered(MountRule(*test)))
             self.assertFalse(obj.is_equal(MountRule(*test)))
+
     def test_is_covered_aare_2(self):
         obj = MountRule('mount', ('=', ['ext{3,4}', '{cgroup*,fuse.*}']), ('=', ('ro')), 'tmpfs', MountRule.ALL)
         tests = [
@@ -240,15 +241,15 @@ class MountIsCoveredTest(AATest):
     def test_is_notcovered(self):
         obj = MountRule('mount', ('=', ['ext3', 'ext4']), ('=', ('ro')), '/foo/b*', '/b*')
         tests = [
-            ('mount',   ('in', ['ext3', 'ext4']),   ('=', ('ro')), '/foo/bar',     '/bar'    ),
-            ('mount',   ('=', ['procfs', 'ext4']),  ('=', ('ro')), '/foo/bar',     '/bar'    ),
-            ('mount',   ('=', ['ext3']),            ('=', ('rw')), '/foo/bar',     '/bar'    ),
-            ('mount',   ('=', ['ext3', 'ext4']),    MountRule.ALL, '/foo/b*',      '/bar'    ),
-            ('mount',   MountRule.ALL,              ('=', ('ro')), '/foo/b*',      '/bar'    ),
-            ('mount',   ('=', ['ext3', 'ext4']),    ('=', ('ro')), '/invalid/bar', '/bar'    ),
-            ('umount',  MountRule.ALL,              MountRule.ALL, MountRule.ALL,  '/bar'    ),
-            ('remount', MountRule.ALL,              MountRule.ALL, MountRule.ALL,  '/bar'    ),
-            ('mount',   ('=', ['ext3', 'ext4']),    ('=', ('ro')), 'tmpfs',        '/bar'    ),
+            ('mount',   ('in', ['ext3', 'ext4']),   ('=', ('ro')), '/foo/bar',     '/bar'),
+            ('mount',   ('=', ['procfs', 'ext4']),  ('=', ('ro')), '/foo/bar',     '/bar'),
+            ('mount',   ('=', ['ext3']),            ('=', ('rw')), '/foo/bar',     '/bar'),
+            ('mount',   ('=', ['ext3', 'ext4']),    MountRule.ALL, '/foo/b*',      '/bar'),
+            ('mount',   MountRule.ALL,              ('=', ('ro')), '/foo/b*',      '/bar'),
+            ('mount',   ('=', ['ext3', 'ext4']),    ('=', ('ro')), '/invalid/bar', '/bar'),
+            ('umount',  MountRule.ALL,              MountRule.ALL, MountRule.ALL,  '/bar'),
+            ('remount', MountRule.ALL,              MountRule.ALL, MountRule.ALL,  '/bar'),
+            ('mount',   ('=', ['ext3', 'ext4']),    ('=', ('ro')), 'tmpfs',        '/bar'),
             ('mount',   ('=', ['ext3', 'ext4']),    ('=', ('ro')), '/foo/b*',      '/invalid'),
         ]
         for test in tests:

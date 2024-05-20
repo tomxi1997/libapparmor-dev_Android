@@ -319,11 +319,11 @@ class SignalCoveredTest_02(SignalCoveredTest):
 
     tests = (
         #   rule                         equal  strict equal  covered  covered exact
-        (      'signal send,',          (False, False,        True,    False)),
+        ('      signal send,',          (False, False,        True,    False)),
         ('audit signal send,',          (True,  True,         True,    True)),
-        (      'signal send set=quit,', (False, False,        True,    False)),
+        ('      signal send set=quit,', (False, False,        True,    False)),
         ('audit signal send set=quit,', (False, False,        True,    True)),
-        (      'signal,',               (False, False,        False,   False)),
+        ('      signal,',               (False, False,        False,   False)),
         ('audit signal,',               (False, False,        False,   False)),
         ('signal receive,',             (False, False,        False,   False)),
     )
@@ -334,16 +334,16 @@ class SignalCoveredTest_03(SignalCoveredTest):
 
     tests = (
         #   rule                         equal  strict equal  covered  covered exact
-        (      'signal send set=quit,', (True,  True,         True,    True)),
+        ('      signal send set=quit,', (True,  True,         True,    True)),
         ('allow signal send set=quit,', (True,  False,        True,    True)),
-        (      'signal send,',          (False, False,        False,   False)),
-        (      'signal,',               (False, False,        False,   False)),
-        (      'signal send set=int,',  (False, False,        False,   False)),
+        ('      signal send,',          (False, False,        False,   False)),
+        ('      signal,',               (False, False,        False,   False)),
+        ('      signal send set=int,',  (False, False,        False,   False)),
         ('audit signal,',               (False, False,        False,   False)),
         ('audit signal send set=quit,', (False, False,        False,   False)),
         ('audit signal set=quit,',      (False, False,        False,   False)),
-        (      'signal send,',          (False, False,        False,   False)),
-        (      'signal,',               (False, False,        False,   False)),
+        ('      signal send,',          (False, False,        False,   False)),
+        ('      signal,',               (False, False,        False,   False)),
     )
 
 
@@ -352,12 +352,12 @@ class SignalCoveredTest_04(SignalCoveredTest):
 
     tests = (
         #   rule                         equal  strict equal  covered  covered exact
-        (      'signal,',               (True,  True,         True,    True)),
+        ('      signal,',               (True,  True,         True,    True)),
         ('allow signal,',               (True,  False,        True,    True)),
-        (      'signal send,',          (False, False,        True,    True)),
-        (      'signal w set=quit,',    (False, False,        True,    True)),
-        (      'signal set=int,',       (False, False,        True,    True)),
-        (      'signal send set=quit,', (False, False,        True,    True)),
+        ('      signal send,',          (False, False,        True,    True)),
+        ('      signal w set=quit,',    (False, False,        True,    True)),
+        ('      signal set=int,',       (False, False,        True,    True)),
+        ('      signal send set=quit,', (False, False,        True,    True)),
         ('audit signal,',               (False, False,        False,   False)),
         ('deny  signal,',               (False, False,        False,   False)),
     )
@@ -368,11 +368,11 @@ class SignalCoveredTest_05(SignalCoveredTest):
 
     tests = (
         #   rule                        equal  strict equal  covered  covered exact
-        (      'deny signal send,',    (True,  True,         True,    True)),
+        ('      deny signal send,',    (True,  True,         True,    True)),
         ('audit deny signal send,',    (False, False,        False,   False)),
-        (           'signal send,',    (False, False,        False,   False)),  # XXX should covered be true here?
-        (      'deny signal receive,', (False, False,        False,   False)),
-        (      'deny signal,',         (False, False,        False,   False)),
+        ('           signal send,',    (False, False,        False,   False)),  # XXX should covered be true here?
+        ('      deny signal receive,', (False, False,        False,   False)),
+        ('      deny signal,',         (False, False,        False,   False)),
     )
 
 
@@ -526,6 +526,7 @@ class SignalCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered(self):
         raw_rule = 'signal send,'
+
         class SomeOtherClass(SignalRule):
             pass
 
@@ -536,6 +537,7 @@ class SignalCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'signal send,'
+
         class SomeOtherClass(SignalRule):
             pass
 
@@ -547,16 +549,16 @@ class SignalCoveredTest_Invalid(AATest):
 
 class SignalLogprofHeaderTest(AATest):
     tests = (
-        ('signal,',                     [                              _('Access mode'), _('ALL'),       _('Signal'), _('ALL'),   _('Peer'), _('ALL')]),
-        ('signal send,',                [                              _('Access mode'), 'send',         _('Signal'), _('ALL'),   _('Peer'), _('ALL')]),
-        ('signal send set=quit,',       [                              _('Access mode'), 'send',         _('Signal'), 'quit',     _('Peer'), _('ALL')]),
+        ('signal,',                     [                              _('Access mode'), _('ALL'),       _('Signal'), _('ALL'),   _('Peer'), _('ALL')]),  # noqa: E201
+        ('signal send,',                [                              _('Access mode'), 'send',         _('Signal'), _('ALL'),   _('Peer'), _('ALL')]),  # noqa: E201
+        ('signal send set=quit,',       [                              _('Access mode'), 'send',         _('Signal'), 'quit',     _('Peer'), _('ALL')]),  # noqa: E201
         ('deny signal,',                [_('Qualifier'), 'deny',       _('Access mode'), _('ALL'),       _('Signal'), _('ALL'),   _('Peer'), _('ALL')]),
         ('allow signal send,',          [_('Qualifier'), 'allow',      _('Access mode'), 'send',         _('Signal'), _('ALL'),   _('Peer'), _('ALL')]),
         ('audit signal send set=quit,', [_('Qualifier'), 'audit',      _('Access mode'), 'send',         _('Signal'), 'quit',     _('Peer'), _('ALL')]),
         ('audit deny signal send,',     [_('Qualifier'), 'audit deny', _('Access mode'), 'send',         _('Signal'), _('ALL'),   _('Peer'), _('ALL')]),
-        ('signal set=(int, quit),',     [                              _('Access mode'), _('ALL'),       _('Signal'), 'int quit', _('Peer'), _('ALL')]),
-        ('signal set=( quit, int),',    [                              _('Access mode'), _('ALL'),       _('Signal'), 'int quit', _('Peer'), _('ALL')]),
-        ('signal (send, receive) set=( quit, int) peer=/foo,',    [    _('Access mode'), 'receive send', _('Signal'), 'int quit', _('Peer'), '/foo']),
+        ('signal set=(int, quit),',     [                              _('Access mode'), _('ALL'),       _('Signal'), 'int quit', _('Peer'), _('ALL')]),  # noqa: E201
+        ('signal set=( quit, int),',    [                              _('Access mode'), _('ALL'),       _('Signal'), 'int quit', _('Peer'), _('ALL')]),  # noqa: E201
+        ('signal (send, receive) set=( quit, int) peer=/foo,',        [_('Access mode'), 'receive send', _('Signal'), 'int quit', _('Peer'), '/foo']),
     )
 
     def _run_test(self, params, expected):
@@ -564,7 +566,7 @@ class SignalLogprofHeaderTest(AATest):
         self.assertEqual(obj.logprof_header(), expected)
 
 
-## --- tests for SignalRuleset --- #
+# --- tests for SignalRuleset --- #
 
 class SignalRulesTest(AATest):
     def test_empty_ruleset(self):

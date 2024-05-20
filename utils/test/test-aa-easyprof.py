@@ -911,10 +911,10 @@ POLICYGROUPS_DIR="{}/templates"
     def test_genpolicy_abstractions_bad(self):
         """Test genpolicy (abstractions - bad values)"""
         bad = (
-               "nonexistent",
-               "/../../../../etc/passwd",
-               "abstraction with spaces",
-              )
+            "nonexistent",
+            "/../../../../etc/passwd",
+            "abstraction with spaces",
+        )
         for s in bad:
             try:
                 self._gen_policy(extra_args=['--abstractions=' + s])
@@ -1322,16 +1322,16 @@ POLICYGROUPS_DIR="{}/templates"
     def test_genpolicy_templatevar_bad(self):
         """Test genpolicy (template-var - bad values)"""
         bad = [
-               "{FOO}=bar",
-               "@FOO}=bar",
-               "@{FOO=bar",
-               "FOO=bar",
-               "@FOO=bar",
-               "@{FOO}=/../../../etc/passwd",
-               "@{FOO}=bar=foo",
-               "@{FOO;BAZ}=bar",
-               '@{FOO}=bar"baz',
-              ]
+            "{FOO}=bar",
+            "@FOO}=bar",
+            "@{FOO=bar",
+            "FOO=bar",
+            "@FOO=bar",
+            "@{FOO}=/../../../etc/passwd",
+            "@{FOO}=bar=foo",
+            "@{FOO;BAZ}=bar",
+            '@{FOO}=bar"baz',
+        ]
         for s in bad:
             try:
                 self._gen_policy(extra_args=['--template-var=' + s])
@@ -2339,9 +2339,11 @@ POLICYGROUPS_DIR="{}/templates"
     }
    }
   }
-}''' % (files["com.example.foo"],
-        files["com.ubuntu.developer.myusername.MyCoolApp"],
-        files["usr.bin.baz"])
+}''' % (
+            files["com.example.foo"],
+            files["com.ubuntu.developer.myusername.MyCoolApp"],
+            files["usr.bin.baz"]
+        )
 
         out_dir = os.path.join(self.tmpdir, "output")
 

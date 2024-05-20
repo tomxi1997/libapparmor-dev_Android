@@ -298,6 +298,7 @@ class VariableCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered_3(self):
         raw_rule = '@{foo} = /bar'
+
         class SomeOtherClass(VariableRule):
             pass
 
@@ -308,6 +309,7 @@ class VariableCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = '@{foo} = /bar'
+
         class SomeOtherClass(VariableRule):
             pass
 

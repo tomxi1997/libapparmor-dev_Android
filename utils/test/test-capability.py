@@ -46,8 +46,8 @@ class CapabilityKeywordsTest(AATest):
             'on an newer kernel and will require updating the list of capability keywords in '
             'utils/apparmor/rule/capability.py')
 
-# --- tests for single CapabilityRule --- #
 
+# --- tests for single CapabilityRule --- #
 class CapabilityTest(AATest):
     def _compare_obj_with_rawrule(self, rawrule, expected):
 
@@ -414,6 +414,7 @@ class CapabilityCoveredTest(AATest):
 
     def test_invalid_is_covered(self):
         raw_rule = 'capability sys_admin,'
+
         class SomeOtherClass(CapabilityRule):
             pass
 
@@ -433,6 +434,7 @@ class CapabilityCoveredTest(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'capability sys_admin,'
+
         class SomeOtherClass(CapabilityRule):
             pass
 
@@ -490,9 +492,9 @@ class CapabiliySeverityTest(AATest):
 
 class CapabilityLogprofHeaderTest(AATest):
     tests = (
-        ('capability,',                    [                              _('Capability'), _('ALL')]),
-        ('capability chown,',              [                              _('Capability'), 'chown']),
-        ('capability chown fsetid,',       [                              _('Capability'), 'chown fsetid']),
+        ('capability,',                    [                              _('Capability'), _('ALL')]),  # noqa: E201
+        ('capability chown,',              [                              _('Capability'), 'chown']),  # noqa: E201
+        ('capability chown fsetid,',       [                              _('Capability'), 'chown fsetid']),  # noqa: E201
         ('audit capability,',              [_('Qualifier'), 'audit',      _('Capability'), _('ALL')]),
         ('deny capability chown,',         [_('Qualifier'), 'deny',       _('Capability'), 'chown']),
         ('allow capability chown fsetid,', [_('Qualifier'), 'allow',      _('Capability'), 'chown fsetid']),
@@ -505,7 +507,6 @@ class CapabilityLogprofHeaderTest(AATest):
 
 
 # --- tests for CapabilityRuleset --- #
-
 class CapabilityRulesTest(AATest):
     def test_empty_ruleset(self):
         ruleset = CapabilityRuleset()
@@ -602,53 +603,76 @@ class CapabilityRulesCoveredTest(AATest):
 
     def test_ruleset_is_covered_1(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability chown,')))
+
     def test_ruleset_is_covered_2(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability sys_admin,')))
+
     def test_ruleset_is_covered_3(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('allow capability sys_admin,')))
+
     def test_ruleset_is_covered_4(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability setuid,')))
+
     def test_ruleset_is_covered_5(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('allow capability setgid,')))
+
     def test_ruleset_is_covered_6(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability setgid setuid,')))
+
     def test_ruleset_is_covered_7(self):
         pass  # self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability sys_admin chown,')))  # fails because it is split over two rule objects internally
+
     def test_ruleset_is_covered_8(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability kill,')))
 
+    # deny
     def test_ruleset_is_covered_9(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability chown,')))
+
     def test_ruleset_is_covered_10(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability sys_admin,')))
+
     def test_ruleset_is_covered_11(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability sys_admin chown,')))
+
     def test_ruleset_is_covered_12(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability setgid,')))
+
     def test_ruleset_is_covered_13(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability kill,')))
 
+    # audit
     def test_ruleset_is_covered_14(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability chown,')))
+
     def test_ruleset_is_covered_15(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability sys_admin,')))
+
     def test_ruleset_is_covered_16(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability sys_admin chown,')))
+
     def test_ruleset_is_covered_17(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability setgid,')))
+
     def test_ruleset_is_covered_18(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability kill,')))
 
+    # combined flags
     def test_ruleset_is_covered_19(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability fowner,')))
+
     def test_ruleset_is_covered_20(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit deny capability fowner,')))
+
     def test_ruleset_is_covered_21(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('audit capability fowner,')))
+
     def test_ruleset_is_covered_22(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('capability fowner,')))
+
     def test_ruleset_is_covered_23(self):
         self.assertTrue(self.ruleset.is_covered(CapabilityRule.create_instance('capability fowner,'), check_allow_deny=False))
+
     def test_ruleset_is_covered_24(self):
         self.assertFalse(self.ruleset.is_covered(CapabilityRule.create_instance('deny capability chown,'), check_allow_deny=False))
 

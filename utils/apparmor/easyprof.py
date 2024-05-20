@@ -316,7 +316,7 @@ class AppArmorEasyProfile:
                                  self.policy_version)
                 if not os.path.isdir(d):
                     raise AppArmorException(
-                            "Could not find %s directory '%s'" % (i, d))
+                        "Could not find %s directory '%s'" % (i, d))
                 self.dirs[i] = d
 
         if 'templates' not in self.dirs:
@@ -743,7 +743,7 @@ def print_basefilenames(files):
 def print_files(files):
     for i in files:
         with open(i) as f:
-            sys.stdout.write(f.read()+"\n")
+            sys.stdout.write(f.read() + "\n")
 
 
 def check_manifest_conflict_args(option, opt_str, value, parser):

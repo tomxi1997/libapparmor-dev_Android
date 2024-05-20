@@ -104,7 +104,7 @@ class aa_tools:
             if program is None:
                 program = profile
 
-            if not program or not(os.path.exists(program) or profile in apparmor.aa):
+            if not program or not (os.path.exists(program) or profile in apparmor.aa):
                 if program and not program.startswith('/'):
                     program = aaui.UI_GetString(_('The given program cannot be found, please try with the fully qualified path name of the program: '), '')
                 else:

@@ -120,10 +120,10 @@ class Merge(object):
 
         # ask about preamble rules
         apparmor.aa.ask_rule_questions(
-                other.active_profiles.files[other.filename],            # prof_events aka log_dict
-                '[preamble]',                                           # displayed profile name
-                self.user.active_profiles.files[self.user.filename],    # profile to update
-                ['abi', 'inc_ie']                                       # rule types - TODO: don't hardcode
+            other.active_profiles.files[other.filename],            # prof_events aka log_dict
+            '[preamble]',                                           # displayed profile name
+            self.user.active_profiles.files[self.user.filename],    # profile to update
+            ['abi', 'inc_ie']                                       # rule types - TODO: don't hardcode
         )
 
         apparmor.aa.ask_the_questions(log_dict)

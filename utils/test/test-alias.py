@@ -218,6 +218,7 @@ class AliasCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered_3(self):
         raw_rule = 'alias /foo -> /bar,'
+
         class SomeOtherClass(AliasRule):
             pass
 
@@ -228,6 +229,7 @@ class AliasCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal(self):
         raw_rule = 'alias /foo -> /bar,'
+
         class SomeOtherClass(AliasRule):
             pass
 

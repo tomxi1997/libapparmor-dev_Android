@@ -81,7 +81,7 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835421] audit: type=1400 audit({epoc
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835696] audit: type=1400 audit({epoch}:120): apparmor="ALLOWED" operation="open" profile="libreoffice-soffice//null-/bin/uname" name="/usr/lib/locale/locale-archive" pid=4097 comm="uname" requested_mask="r" denied_mask="r" fsuid=1001 ouid=0
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.875891] audit: type=1400 audit({epoch}:121): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/usr/bin/file" pid=4111 comm="soffice.bin" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/usr/bin/file"
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoch}:122): apparmor="ALLOWED" operation="file_mmap" profile="libreoffice-soffice//null-/usr/bin/file" name="/usr/bin/file" pid=4111 comm="file" requested_mask="rm" denied_mask="rm" fsuid=1001 ouid=0
-'''.format(epoch=round(_time, 3) - 60 * 60 * 24 * 999)
+'''.format(epoch=round(_time, 3) - 60 * 60 * 24 * 999)  # noqa: E128
 
         test_logfile_contents_30_days_old = \
 '''Feb  4 13:40:38 XPS-13-9370 kernel: [128552.834382] audit: type=1400 audit({epoch}:113): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/bin/uname" pid=4097 comm="sh" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/bin/uname"
@@ -94,13 +94,13 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835421] audit: type=1400 audit({epoc
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835696] audit: type=1400 audit({epoch}:120): apparmor="ALLOWED" operation="open" profile="libreoffice-soffice//null-/bin/uname" name="/usr/lib/locale/locale-archive" pid=4097 comm="uname" requested_mask="r" denied_mask="r" fsuid=1001 ouid=0
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.875891] audit: type=1400 audit({epoch}:121): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/usr/bin/file" pid=4111 comm="soffice.bin" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/usr/bin/file"
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoch}:122): apparmor="ALLOWED" operation="file_mmap" profile="libreoffice-soffice//null-/usr/bin/file" name="/usr/bin/file" pid=4111 comm="file" requested_mask="rm" denied_mask="rm" fsuid=1001 ouid=0
-'''.format(epoch=round(_time, 3) - 60 * 60 * 24 * 30)
+'''.format(epoch=round(_time, 3) - 60 * 60 * 24 * 30)  # noqa: E128
 
         test_logfile_contents_unrelevant_entries = \
 '''Feb  1 19:35:44 XPS-13-9370 kernel: [99848.048761] audit: type=1400 audit(1549042544.968:72): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/snap/core/6350/usr/lib/snapd/snap-confine" pid=12871 comm="apparmor_parser"
 Feb  2 00:40:09 XPS-13-9370 kernel: [103014.549071] audit: type=1400 audit(1549060809.600:89): apparmor="STATUS" operation="profile_load" profile="unconfined" name="docker-default" pid=17195 comm="apparmor_parser"
 Feb  4 20:05:42 XPS-13-9370 kernel: [132557.202931] audit: type=1400 audit(1549303542.661:136): apparmor="STATUS" operation="profile_replace" info="same as current profile, skipping" profile="unconfined" name="snap.atom.apm" pid=11306 comm="apparmor_parser"
-'''
+'''  # noqa: E128
 
         test_logfile_contents_0_seconds_old = \
 '''Feb  4 13:40:38 XPS-13-9370 kernel: [128552.834382] audit: type=1400 audit({epoch}:113): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/bin/uname" pid=4097 comm="sh" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/bin/uname"
@@ -113,7 +113,7 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835421] audit: type=1400 audit({epoc
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835696] audit: type=1400 audit({epoch}:120): apparmor="ALLOWED" operation="open" profile="libreoffice-soffice//null-/bin/uname" name="/usr/lib/locale/locale-archive" pid=4097 comm="uname" requested_mask="r" denied_mask="r" fsuid=1001 ouid=0
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.875891] audit: type=1400 audit({epoch}:121): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/usr/bin/file" pid=4111 comm="soffice.bin" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/usr/bin/file"
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoch}:122): apparmor="ALLOWED" operation="file_mmap" profile="libreoffice-soffice//null-/usr/bin/file" name="/usr/bin/file" pid=4111 comm="file" requested_mask="rm" denied_mask="rm" fsuid=1001 ouid=0
-'''.format(epoch=round(_time, 3))
+'''.format(epoch=round(_time, 3))  # noqa: E128
 
         return test_logfile_contents_999_days_old \
             + test_logfile_contents_30_days_old \
@@ -190,7 +190,7 @@ class AANotifyTest(AANotifyBase):
                  [--filter.socket SOCKET]
 
 Display AppArmor notifications or messages for DENIED entries.
-'''
+'''  # noqa: E128
 
         expected_output_2 = \
 '''
@@ -224,7 +224,7 @@ Filtering options:
                         regular expression to match the network family
   --filter.socket SOCKET
                         regular expression to match the network socket type
-'''
+'''  # noqa: E128
 
         return_code, output = cmd(aanotify_bin + ['--help'])
         result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
@@ -326,7 +326,7 @@ Name: /usr/bin/file
 Denied: rm
 Logfile: {logfile}
 
-AppArmor denials: 10 (since'''.format(logfile=self.test_logfile_last_login)
+AppArmor denials: 10 (since'''.format(logfile=self.test_logfile_last_login)  # noqa: E128
 
         return_code, output = cmd(aanotify_bin + ['-f', self.test_logfile_last_login, '-l', '-v'])
         if "ERROR: Could not find last login" in output:

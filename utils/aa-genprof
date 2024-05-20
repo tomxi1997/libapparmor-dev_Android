@@ -191,7 +191,7 @@ for p in sorted(apparmor.helpers.keys()):
 
 aaui.UI_Info(_('\nReloaded AppArmor profiles in enforce mode.'))
 aaui.UI_Info(_('\nPlease consider contributing your new profile!\n'
-             'See the following wiki page for more information:')
-             + '\nhttps://gitlab.com/apparmor/apparmor/wikis/Profiles\n')
+               'See the following wiki page for more information:')
+             + '\nhttps://gitlab.com/apparmor/apparmor/wikis/Profiles\n')  # noqa: W503
 aaui.UI_Info(_('Finished generating profile for %s.') % program)
 sys.exit(0)

@@ -292,9 +292,9 @@ class PtraceCoveredTest_02(PtraceCoveredTest):
 
     tests = (
         #   rule                equal  strict equal  covered  covered exact
-        (      'ptrace read,', (False, False,        True,    False)),
+        ('      ptrace read,', (False, False,        True,    False)),
         ('audit ptrace read,', (True,  True,         True,    True)),
-        (      'ptrace,',      (False, False,        False,   False)),
+        ('      ptrace,',      (False, False,        False,   False)),
         ('audit ptrace,',      (False, False,        False,   False)),
         ('ptrace tracedby,',   (False, False,        False,   False)),
     )
@@ -305,10 +305,10 @@ class PtraceCoveredTest_03(PtraceCoveredTest):
 
     tests = (
         #   rule                equal  strict equal  covered  covered exact
-        (      'ptrace,',      (True,  True,         True,    True)),
+        ('      ptrace,',      (True,  True,         True,    True)),
         ('allow ptrace,',      (True,  False,        True,    True)),
-        (      'ptrace read,', (False, False,        True,    True)),
-        (      'ptrace w,',    (False, False,        True,    True)),
+        ('      ptrace read,', (False, False,        True,    True)),
+        ('      ptrace w,',    (False, False,        True,    True)),
         ('audit ptrace,',      (False, False,        False,   False)),
         ('deny  ptrace,',      (False, False,        False,   False)),
     )
@@ -319,11 +319,11 @@ class PtraceCoveredTest_04(PtraceCoveredTest):
 
     tests = (
         #   rule                         equal  strict equal  covered   covered exact
-        (      'deny ptrace read,',     (True,  True,         True,    True)),
+        ('      deny ptrace read,',     (True,  True,         True,    True)),
         ('audit deny ptrace read,',     (False, False,        False,   False)),
-        (           'ptrace read,',     (False, False,        False,   False)),  # XXX should covered be true here?
-        (      'deny ptrace tracedby,', (False, False,        False,   False)),
-        (      'deny ptrace,',          (False, False,        False,   False)),
+        ('           ptrace read,',     (False, False,        False,   False)),  # XXX should covered be true here?
+        ('      deny ptrace tracedby,', (False, False,        False,   False)),
+        ('      deny ptrace,',          (False, False,        False,   False)),
     )
 
 
@@ -455,6 +455,7 @@ class PtraceCoveredTest_Invalid(AATest):
 
     def test_invalid_is_covered(self):
         raw_rule = 'ptrace read,'
+
         class SomeOtherClass(PtraceRule):
             pass
 
@@ -465,6 +466,7 @@ class PtraceCoveredTest_Invalid(AATest):
 
     def test_invalid_is_equal_1(self):
         raw_rule = 'ptrace read,'
+
         class SomeOtherClass(PtraceRule):
             pass
 
@@ -485,13 +487,13 @@ class PtraceCoveredTest_Invalid(AATest):
 
 class PtraceLogprofHeaderTest(AATest):
     tests = (
-        ('ptrace,',                            [                              _('Access mode'), _('ALL'),        _('Peer'), _('ALL')]),
-        ('ptrace read,',                       [                              _('Access mode'), 'read',          _('Peer'), _('ALL')]),
-        ('deny ptrace,',                       [_('Qualifier'), 'deny',       _('Access mode'), _('ALL'),        _('Peer'), _('ALL')]),
+        ('ptrace,',                            [                              _('Access mode'), _('ALL'),        _('Peer'), _('ALL')]),  # noqa: E201
+        ('ptrace read,',                       [                              _('Access mode'), 'read',          _('Peer'), _('ALL')]),  # noqa: E201
+        ('deny ptrace,',                       [_('Qualifier'), 'deny',       _('Access mode'), _('ALL'),        _('Peer'), _('ALL')]),  # noqa: E201
         ('allow ptrace read,',                 [_('Qualifier'), 'allow',      _('Access mode'), 'read',          _('Peer'), _('ALL')]),
         ('audit ptrace read,',                 [_('Qualifier'), 'audit',      _('Access mode'), 'read',          _('Peer'), _('ALL')]),
         ('audit deny ptrace read,',            [_('Qualifier'), 'audit deny', _('Access mode'), 'read',          _('Peer'), _('ALL')]),
-        ('ptrace (read, tracedby) peer=/foo,', [                              _('Access mode'), 'read tracedby', _('Peer'), '/foo']),
+        ('ptrace (read, tracedby) peer=/foo,', [                              _('Access mode'), 'read tracedby', _('Peer'), '/foo']),  # noqa: E201
     )
 
     def _run_test(self, params, expected):
@@ -499,7 +501,7 @@ class PtraceLogprofHeaderTest(AATest):
         self.assertEqual(obj.logprof_header(), expected)
 
 
-## --- tests for PtraceRuleset --- #
+# --- tests for PtraceRuleset --- #
 
 class PtraceRulesTest(AATest):
     def test_empty_ruleset(self):

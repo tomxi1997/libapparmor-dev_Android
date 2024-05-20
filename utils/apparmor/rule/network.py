@@ -35,10 +35,8 @@ network_domain_keywords = [
 network_type_keywords = ['stream', 'dgram', 'seqpacket', 'rdm', 'raw', 'packet']
 network_protocol_keywords = ['tcp', 'udp', 'icmp']
 
-
-
-byte = r"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
-network_ipv4 = f"{byte}\.{byte}\.{byte}\.{byte}"
+byte = r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
+network_ipv4 = fr'{byte}\.{byte}\.{byte}\.{byte}'
 
 network_ipv6 = (
     r'('
@@ -60,8 +58,8 @@ network_ipv6 = (
 network_port = r'(port\s*=\s*(?P<%s>\d+))\s*'
 ip_cond = fr'\s*ip\s*=\s*(?P<%s>(({network_ipv4})|({network_ipv6})|none))\s*'
 
-RE_LOCAL_EXPR = f'((({ip_cond % "ip" })|({network_port % "port"}))*)'
-RE_PEER_EXPR  = fr'(peer\s*=\s*\(\s*(({ip_cond % "ip_peer"})|({network_port % "port_peer"}))+\s*\))'
+RE_LOCAL_EXPR = f'((({ip_cond % "ip"})|({network_port % "port"}))*)'
+RE_PEER_EXPR = fr'(peer\s*=\s*\(\s*(({ip_cond % "ip_peer"})|({network_port % "port_peer"}))+\s*\))'
 
 
 RE_NETWORK_DOMAIN = '(' + '|'.join(network_domain_keywords) + ')'
@@ -72,9 +70,9 @@ RE_NETWORK_DETAILS = re.compile(
     r'^\s*'
     + r'(\s*' + network_accesses + r')?\s*'
     + '(?P<domain>' + RE_NETWORK_DOMAIN + r')?\s*'  # optional domain
-    + r'(\s+(?P<type_or_protocol>' + RE_NETWORK_TYPE + '|' + RE_NETWORK_PROTOCOL + '))?\s*'  # optional type or protocol
+    + r'(\s+(?P<type_or_protocol>' + RE_NETWORK_TYPE + '|' + RE_NETWORK_PROTOCOL + r'))?\s*'  # optional type or protocol
     + '(' + RE_LOCAL_EXPR + r')?\s*'
-    + '(' + RE_PEER_EXPR + ')?\s*'
+    + '(' + RE_PEER_EXPR + r')?\s*'
     + r'$')
 
 
@@ -93,7 +91,6 @@ class NetworkRule(BaseRule):
 
     def __init__(self, accesses, domain, type_or_protocol, local_expr, peer_expr, audit=False, deny=False,
                  allow_keyword=False, comment='', log_event=None):
-
 
         super().__init__(audit=audit, deny=deny, allow_keyword=allow_keyword,
                          comment=comment, log_event=log_event)
@@ -115,14 +112,14 @@ class NetworkRule(BaseRule):
         self.peer_expr = check_dict_keys(peer_expr, {'ip', 'port'}, self.ALL)
 
         if self.local_expr != self.ALL and 'port' in self.local_expr and int(self.local_expr['port']) > 65535:
-            raise AppArmorException(f"Invalid port: {self.local_expr['port']}")
+            raise AppArmorException(f'Invalid port: {self.local_expr["port"]}')
         if self.peer_expr != self.ALL and 'port' in self.peer_expr and int(self.peer_expr['port']) > 65535:
-            raise AppArmorException(f"Invalid remote port: {self.peer_expr['port']}")
+            raise AppArmorException(f'Invalid remote port: {self.peer_expr["port"]}')
 
         if self.local_expr != self.ALL and 'ip' in self.local_expr and not is_valid_ip(self.local_expr['ip']):
-            raise AppArmorException(f"Invalid ip: {self.local_expr['ip']}")
+            raise AppArmorException(f'Invalid ip: {self.local_expr["ip"]}')
         if self.peer_expr != self.ALL and 'ip' in self.peer_expr and not is_valid_ip(self.peer_expr['ip']):
-            raise AppArmorException(f"Invalid ip: {self.peer_expr['ip']}")
+            raise AppArmorException(f'Invalid ip: {self.peer_expr["ip"]}')
 
         if not self.all_accesses and self.peer_expr != self.ALL and self.accesses & {'create', 'bind', 'listen', 'shutdown', 'getattr', 'setattr', 'getopt', 'setopt'}:
             raise AppArmorException('Cannot use a peer_expr and an access in {create, bind, listen, shutdown, getattr, setattr, getopt, setopt} simultaneously')
@@ -156,7 +153,6 @@ class NetworkRule(BaseRule):
         else:
             raise AppArmorBug('Passed unknown object to %s: %s' % (type(self).__name__, str(type_or_protocol)))
 
-
     @classmethod
     def _create_instance(cls, raw_rule, matches):
         """parse raw_rule and return instance of this class"""
@@ -170,7 +166,7 @@ class NetworkRule(BaseRule):
         if rule_details:
             details = RE_NETWORK_DETAILS.search(rule_details)
             if not details:
-                raise AppArmorException(_("Invalid or unknown keywords in 'network %s" % rule_details))
+                raise AppArmorException(_("Invalid or unknown keywords in 'network %s'" % rule_details))
 
             r = details.groupdict()
 
@@ -256,7 +252,6 @@ class NetworkRule(BaseRule):
                     return False
 
         return True
-
 
     def _is_equal_localvars(self, rule_obj, strict):
         """compare if rule-specific variables are equal"""

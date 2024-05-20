@@ -56,7 +56,7 @@ class TestLogprof(AATest):
             env={'LANG': 'C',
                  'PYTHONPATH': os.environ.get('PYTHONPATH', ''),
                  'LD_LIBRARY_PATH': os.environ.get('LD_LIBRARY_PATH', ''),
-            },
+                 },
         )
 
         return process
@@ -128,6 +128,7 @@ class TestLogprof(AATest):
         # give logprof some time to write the updated profile and terminate
         self.process.wait(timeout=0.3)
         self.assertEqual(self.process.returncode, 0)
+
 
 # if you import apparmor.aa and call init_aa() in your tests, uncomment this
 # setup_aa(aa)

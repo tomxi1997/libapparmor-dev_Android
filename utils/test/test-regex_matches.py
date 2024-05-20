@@ -350,8 +350,8 @@ class AARegexUnix(AARegexTest):
         ('unix (receive) peer=(label=unconfined),',                                                (None,    None,    'unix (receive) peer=(label=unconfined),',    '(receive) peer=(label=unconfined)',    None)),
         (' unix (getattr, shutdown) peer=(addr=none),',                                            (None,    None,    'unix (getattr, shutdown) peer=(addr=none),', '(getattr, shutdown) peer=(addr=none)', None)),
         ('unix (connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*"),', (None,    None,    'unix (connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*"),',
-                                                                                                                                                                    '(connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*")',
-                                                                                                                                                                                                            None)),
+                                                                                                                                                                    '(connect, receive, send) type=stream peer=(label=unconfined,addr="@/tmp/dbus-*")',  # noqa: E127
+                                                                                                                                                                                                            None)),  # noqa: E127
         ('unixlike', False),
         ('deny unixlike,', False),
     )
