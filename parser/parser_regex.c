@@ -1083,6 +1083,20 @@ static const char *mediates_sysv_mqueue = CLASS_STR(AA_CLASS_SYSV_MQUEUE);
 static const char *mediates_io_uring = CLASS_STR(AA_CLASS_IO_URING);
 static const char *deny_file = ".*";
 
+/* Set the mediates priority to the maximum possible. This is to help
+ * ensure that the mediates information is not wiped out by a rule
+ * of higher priority. Which for allow rules isn't really a problem
+ * in that these are only used as a place holder to ensure we have
+ * a valid state at the mediates check, and an allow rule that wipes
+ * these out would guarantee it. But a deny rule wiping these out
+ * could result in the dfa allowing stuff as unmediated when it shouldn't
+ *
+ * Note: it turns out the above bug does exist for dbus rules in parsers
+ * that do not support priority, and we don't have a way to fix it.
+ * We fix it here by capping user specified priority to be < INT_MAX.
+ */
+static int mediates_priority = INT_MAX;
+
 int process_profile_policydb(Profile *prof)
 {
 	int error = -1;
@@ -1098,7 +1112,7 @@ int process_profile_policydb(Profile *prof)
 	 * to be supported
 	 */
 	if (features_supports_userns &&
-	    !prof->policy.rules->add_rule(mediates_ns, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+	    !prof->policy.rules->add_rule(mediates_ns, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 		goto out;
 
 	/* don't add mediated classes to unconfined profiles */
@@ -1106,35 +1120,35 @@ int process_profile_policydb(Profile *prof)
 	    prof->flags.mode != MODE_DEFAULT_ALLOW) {
 		/* note: this activates fs based unix domain sockets mediation on connect */
 		if (kernel_abi_version > 5 &&
-		    !prof->policy.rules->add_rule(mediates_file, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_file, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_mount &&
-		    !prof->policy.rules->add_rule(mediates_mount, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_mount, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_dbus &&
-		    !prof->policy.rules->add_rule(mediates_dbus, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_dbus, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_signal &&
-		    !prof->policy.rules->add_rule(mediates_signal, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_signal, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_ptrace &&
-		    !prof->policy.rules->add_rule(mediates_ptrace, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_ptrace, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_networkv8 &&
-		    !prof->policy.rules->add_rule(mediates_netv8, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_netv8, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_unix &&
-		    (!prof->policy.rules->add_rule(mediates_extended_net, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts) ||
-		     !prof->policy.rules->add_rule(mediates_net_unix, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts)))
+		    (!prof->policy.rules->add_rule(mediates_extended_net, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts) ||
+		     !prof->policy.rules->add_rule(mediates_net_unix, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts)))
 			goto out;
 		if (features_supports_posix_mqueue &&
-		    !prof->policy.rules->add_rule(mediates_posix_mqueue, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_posix_mqueue, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_sysv_mqueue &&
-		    !prof->policy.rules->add_rule(mediates_sysv_mqueue, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_sysv_mqueue, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_io_uring &&
-		    !prof->policy.rules->add_rule(mediates_io_uring, 0, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_io_uring, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 	}
 
