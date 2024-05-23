@@ -32,6 +32,7 @@ from apparmor.rule.userns import UserNamespaceRule, UserNamespaceRuleset
 from apparmor.rule.mqueue import MessageQueueRule, MessageQueueRuleset
 from apparmor.rule.io_uring import IOUringRule, IOUringRuleset
 from apparmor.rule.mount import MountRule, MountRuleset
+from apparmor.rule.pivot_root import PivotRootRule, PivotRootRuleset
 from apparmor.rule.unix import UnixRule, UnixRuleset
 
 from apparmor.translations import init_translation
@@ -54,8 +55,8 @@ ruletypes = {
     'mqueue':         {'rule': MessageQueueRule,  'ruleset': MessageQueueRuleset},
     'io_uring':       {'rule': IOUringRule,       'ruleset': IOUringRuleset},
     'mount':          {'rule': MountRule,         'ruleset': MountRuleset},
+    'pivot_root':     {'rule': PivotRootRule,     'ruleset': PivotRootRuleset},
     'unix':           {'rule': UnixRule,          'ruleset': UnixRuleset},
-
 }
 
 
@@ -86,13 +87,6 @@ class ProfileStorage:
         data['profile_keyword'] = False
         data['is_hat'] = False  # profile or hat?
         data['hat_keyword'] = False  # True for 'hat foo', False for '^foo'
-
-        data['allow'] = dict()
-        data['deny'] = dict()
-
-        # pivot_root has a .get() fallback to list() - initialize it nevertheless
-        data['allow']['pivot_root'] = []
-        data['deny']['pivot_root'] = []
 
         self.data = data
 
@@ -184,11 +178,6 @@ class ProfileStorage:
            Note that the profile header and the closing "}" are _not_ included.
         """
 
-        # "old" write functions for rule types not implemented as *Rule class yet
-        write_functions = {
-            'pivot_root': write_pivot_root,
-        }
-
         write_order = [
             'abi',
             'inc_ie',
@@ -211,10 +200,7 @@ class ProfileStorage:
         data = []
 
         for ruletype in write_order:
-            if write_functions.get(ruletype):
-                data.extend(write_functions[ruletype](self.data, depth))
-            else:
-                data.extend(self.data[ruletype].get_clean(depth))
+            data.extend(self.data[ruletype].get_clean(depth))
 
         return data
 
@@ -310,23 +296,3 @@ def var_transform(ref):
             value = '""'
         data.append(quote_if_needed(value))
     return ' '.join(data)
-
-
-def write_pivot_root_rules(prof_data, depth, allow):
-    pre = '  ' * depth
-    data = []
-
-    # no pivot_root rules, so return
-    if not prof_data[allow].get('pivot_root', False):
-        return data
-
-    for pivot_root_rule in prof_data[allow]['pivot_root']:
-        data.append('%s%s' % (pre, pivot_root_rule.serialize()))
-    data.append('')
-    return data
-
-
-def write_pivot_root(prof_data, depth):
-    data = write_pivot_root_rules(prof_data, depth, 'deny')
-    data.extend(write_pivot_root_rules(prof_data, depth, 'allow'))
-    return data

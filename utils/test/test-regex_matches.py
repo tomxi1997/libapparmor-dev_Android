@@ -16,6 +16,7 @@ from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.regex import (
     RE_PROFILE_CAP, RE_PROFILE_DBUS, RE_PROFILE_MOUNT, RE_PROFILE_PTRACE, RE_PROFILE_SIGNAL,
     RE_PROFILE_START, parse_profile_start_line, re_match_include, RE_PROFILE_UNIX,
+    RE_PROFILE_PIVOT_ROOT,
     re_match_include_parse, strip_parenthesis, strip_quotes)
 from common_test import AATest, setup_aa, setup_all_loops
 
@@ -313,15 +314,15 @@ class AARegexPivotRoot(AARegexTest):
     """Tests for RE_PROFILE_PIVOT_ROOT"""
 
     def AASetup(self):
-        self.regex = aa.RE_PROFILE_PIVOT_ROOT
+        self.regex = RE_PROFILE_PIVOT_ROOT
 
     tests = (
-        ('   pivot_root,',                                      (None,    None, 'pivot_root,',                                None)),
-        ('   audit pivot_root,',                                ('audit', None, 'pivot_root,',                                None)),
-        ('   pivot_root oldroot=/new/old,',                     (None,    None, 'pivot_root oldroot=/new/old,',               None)),
-        ('   pivot_root oldroot=/new/old /new,',                (None,    None, 'pivot_root oldroot=/new/old /new,',          None)),
-        ('   pivot_root oldroot=/new/old /new -> child,',       (None,    None, 'pivot_root oldroot=/new/old /new -> child,', None)),
-        ('   audit pivot_root oldroot=/new/old /new -> child,', ('audit', None, 'pivot_root oldroot=/new/old /new -> child,', None)),
+        ('   pivot_root,',                                      (None,    None, 'pivot_root,',                                None,                                 None)),
+        ('   audit pivot_root,',                                ('audit', None, 'pivot_root,',                                None,                                 None)),
+        ('   pivot_root oldroot=/new/old,',                     (None,    None, 'pivot_root oldroot=/new/old,',               'oldroot=/new/old',                   None)),
+        ('   pivot_root oldroot=/new/old /new,',                (None,    None, 'pivot_root oldroot=/new/old /new,',          'oldroot=/new/old /new',              None)),
+        ('   pivot_root oldroot=/new/old /new -> child,',       (None,    None, 'pivot_root oldroot=/new/old /new -> child,', 'oldroot=/new/old /new -> child',     None)),
+        ('   audit pivot_root oldroot=/new/old /new -> child,', ('audit', None, 'pivot_root oldroot=/new/old /new -> child,', 'oldroot=/new/old /new -> child',     None)),
 
         ('pivot_root', False),  # comma missing
 

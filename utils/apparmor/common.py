@@ -20,8 +20,6 @@ import termios
 import tty
 from tempfile import NamedTemporaryFile
 
-import apparmor.rules as rules
-
 DEBUGGING = False
 
 
@@ -106,8 +104,6 @@ def recursive_print(src, dpth=0, key=''):
             for litem in src:
                 recursive_print(litem, dpth + 1)
             print(tabs + "]")
-    elif isinstance(src, rules._Raw_Rule):
-        src.recursive_print(dpth)
     else:
         if key:
             print(tabs + '%s = %s' % (key, src))
