@@ -27,13 +27,11 @@ include $(COMMONDIR)/Make.rules
 
 DESTDIR=/
 PROFILES_DEST=${DESTDIR}/etc/apparmor.d
-EXTRAS_DEST=${DESTDIR}/usr/share/apparmor/extra-profiles/
+EXTRAS_DEST=${DESTDIR}/usr/share/apparmor/extra-profiles
 PROFILES_SOURCE=./apparmor.d
 ABSTRACTIONS_SOURCE=./apparmor.d/abstractions
-EXTRAS_SOURCE=./apparmor/profiles/extras/
-
-SUBDIRS=$(shell find ${PROFILES_SOURCE} -type d -print)
-TOPLEVEL_PROFILES=$(filter-out ${SUBDIRS}, $(wildcard ${PROFILES_SOURCE}/*))
+EXTRAS_SOURCE=./apparmor/profiles/extras
+EXTRAS_ABSTRACTIONS_SOURCE=./apparmor/profiles/extras/abstractions
 
 ifdef USE_SYSTEM
     PYTHONPATH=
@@ -79,7 +77,7 @@ ifndef USE_SYSTEM
 endif
 
 local:
-	for profile in ${TOPLEVEL_PROFILES}; do \
+	for profile in $$(find ${PROFILES_SOURCE} -maxdepth 1 -type f) ; do \
 		fn=$$(basename $$profile); \
 		echo "# Site-specific additions and overrides for '$$fn'" > ${PROFILES_SOURCE}/local/$$fn; \
 		grep "include[[:space:]]\\+if[[:space:]]\\+exists[[:space:]]\\+<local/$$fn>" "$$profile" >/dev/null || { echo "$$profile doesn't contain include if exists <local/$$fn>" ; exit 1; } ; \
@@ -89,14 +87,17 @@ local:
 install:
 	install -m 755 -d ${PROFILES_DEST}
 	install -m 755 -d ${PROFILES_DEST}/disable
-	for dir in ${SUBDIRS} ; do \
-	    	install -m 755 -d "${PROFILES_DEST}/$${dir#${PROFILES_SOURCE}}" ; \
+	for dir in $$(cd ${PROFILES_SOURCE} && find . -type d -printf '%P\n') ; do \
+		install -m 755 -d "${PROFILES_DEST}/$${dir}" ; \
 	done
-	for file in $$(find ${PROFILES_SOURCE} -type f -print) ; do \
-	    	install -m 644 "$${file}" "${PROFILES_DEST}/$$(dirname $${file#${PROFILES_SOURCE}})" ; \
+	for file in $$(cd ${PROFILES_SOURCE} && find . -type f -printf '%P\n') ; do \
+		install -m 644 "${PROFILES_SOURCE}/$${file}" "${PROFILES_DEST}/$$(dirname $${file})" ; \
 	done
 	install -m 755 -d ${EXTRAS_DEST}
-	install -m 644 ${EXTRAS_SOURCE}/* ${EXTRAS_DEST}
+	install -m 755 -d ${EXTRAS_DEST}/abstractions
+	for file in $$(cd ${EXTRAS_SOURCE} && find . -type f -printf '%P\n') ; do \
+		install -m 644 "${EXTRAS_SOURCE}/$${file}" "${EXTRAS_DEST}/$$(dirname $${file})" ; \
+	done
 
 LOCAL_ADDITIONS=$(filter-out ${PROFILES_SOURCE}/local/README, $(wildcard ${PROFILES_SOURCE}/local/*))
 .PHONY: clean
@@ -113,27 +114,36 @@ endif
 # docs: should we have some here?
 docs:
 
-IGNORE_FILES=${EXTRAS_SOURCE}/README
-CHECK_PROFILES=$(filter-out ${IGNORE_FILES} ${SUBDIRS}, $(wildcard ${PROFILES_SOURCE}/*) $(wildcard ${EXTRAS_SOURCE}/*))
-# use find because Make wildcard is not recursive:
-CHECK_ABSTRACTIONS=$(shell find ${ABSTRACTIONS_SOURCE} -type f -print)
-
 .PHONY: check
-check: check-parser check-logprof check-abstractions.d check-tunables.d check-extras
+check: check-parser check-logprof check-abstractions.d check-tunables.d check-local
 
 .PHONY: check-parser
 check-parser: test-dependencies
-	@echo "*** Checking profiles from ${PROFILES_SOURCE} and ${EXTRAS_SOURCE} against apparmor_parser"
-	$(Q)for profile in ${CHECK_PROFILES} ; do \
-	        [ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
-		${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PWD}/apparmor.d $${profile} > /dev/null || exit 1; \
+	@echo "*** Checking profiles from ${PROFILES_SOURCE} against apparmor_parser"
+	$(Q)for profile in $$(find ${PROFILES_SOURCE} -maxdepth 1 -type f) ; do \
+		[ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
+		${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
+	done
+
+	@echo "*** Checking profiles from ${EXTRAS_SOURCE} against apparmor_parser"
+	$(Q)for profile in $$(find ${EXTRAS_SOURCE} -maxdepth 1 -type f -not -name README) ; do \
+		[ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
+		${PARSER} --config-file=../parser/tst/parser.conf -S -b ${EXTRAS_SOURCE} -I ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
 	done
 
 	@echo "*** Checking abstractions from ${ABSTRACTIONS_SOURCE} against apparmor_parser"
-	$(Q)for abstraction in ${CHECK_ABSTRACTIONS} ; do \
-	        [ -n "${VERBOSE}" ] && echo "Testing $${abstraction}" ; \
-		echo "abi <abi/4.0>, #include <tunables/global> profile test { #include <$${abstraction}> }" \
-		| ${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PWD}/apparmor.d -I ${PWD} > /dev/null \
+	$(Q)for abstraction in $$(find ${ABSTRACTIONS_SOURCE} -maxdepth 1 -type f -printf '%P\n') ; do \
+		[ -n "${VERBOSE}" ] && echo "Testing ${ABSTRACTIONS_SOURCE}/$${abstraction}" ; \
+		echo "abi <abi/4.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
+		| ${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} > /dev/null \
+		|| exit 1; \
+	done
+
+	@echo "*** Checking abstractions from ${EXTRAS_ABSTRACTIONS_SOURCE} against apparmor_parser"
+	$(Q)for abstraction in $$(find ${EXTRAS_ABSTRACTIONS_SOURCE} -maxdepth 1 -type f -printf '%P\n') ; do \
+		[ -n "${VERBOSE}" ] && echo "Testing ${EXTRAS_ABSTRACTIONS_SOURCE}/$${abstraction}" ; \
+		echo "abi <abi/4.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
+		| ${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} -I ${EXTRAS_SOURCE} > /dev/null \
 		|| exit 1; \
 	done
 
@@ -144,27 +154,27 @@ check-logprof: test-dependencies
 
 .PHONY: check-abstractions.d
 check-abstractions.d:
-	@echo "*** Checking if all abstractions (with a few exceptions) contain include if exists <abstractions/*.d>"
-	$(Q)cd apparmor.d/abstractions && for file in * ; do \
-		test -d "$$file" &&  continue ;  \
-		test "$$file" = 'ubuntu-browsers' && continue ; \
-		test "$$file" = 'ubuntu-helpers' && continue ; \
-		grep -q "^  include if exists <abstractions/$${file}.d>$$" $$file || { echo "$$file does not contain 'include if exists <abstractions/$${file}.d>'"; exit 1; } ; \
+	@echo "*** Checking if all abstractions (with a few exceptions) contain 'include if exists <abstractions/*.d>'"
+	$(Q)for file in $$(find ${ABSTRACTIONS_SOURCE} ${EXTRAS_ABSTRACTIONS_SOURCE} -maxdepth 1 -type f) ; do \
+		case "$${file}" in */ubuntu-browsers | */ubuntu-helpers) continue ;; esac ; \
+		include="include if exists <abstractions/$$(basename $${file}).d>" ; \
+		grep -q "^  $${include}\$$" $${file} || { echo "$${file} does not contain '$${include}'"; exit 1; } ; \
 	done
 
 .PHONY: check-tunables.d
 check-tunables.d:
-	@echo "*** Checking if all tunables (with a few exceptions) contain include if exists <tunables/*.d>"
-	$(Q)cd apparmor.d/tunables && for file in * ; do \
-		test -d "$$file" &&  continue ;  \
-		test "$$file" = 'sys' && continue ; \
-		grep -q "^include if exists <tunables/$${file}.d>$$" $$file || { echo "$$file does not contain 'include if exists <tunables/$${file}.d>'"; exit 1; } ; \
+	@echo "*** Checking if all tunables (with a few exceptions) contain 'include if exists <tunables/*.d>'"
+	$(Q)for file in $$(find ${PROFILES_SOURCE}/tunables -maxdepth 1 -type f) ; do \
+		case "$${file}" in */sys) continue ;; esac ; \
+		include="include if exists <tunables/$$(basename $${file}).d>" ; \
+		grep -q "^$${include}\$$" $${file} || { echo "$${file} does not contain '$${include}'"; exit 1; } ; \
 	done
 
-.PHONY: check-extras
-check-extras:
-	@echo "*** Checking if all extra profiles contain include if exists <local/*>"
-	$(Q)cd ${EXTRAS_SOURCE} && for file in * ; do \
-		test "$$file" = 'README' && continue ; \
-		grep -q "^  include if exists <local/$${file}>$$" $$file || { echo "$$file does not contain 'include if exists <local/$${file}>'"; exit 1; } ; \
+.PHONY: check-local
+check-local:
+	@echo "*** Checking if all profiles contain 'include if exists <local/*>'"
+	$(Q)for file in $$(find ${PROFILES_SOURCE} ${EXTRAS_SOURCE} -maxdepth 1 -type f) ; do \
+		case "$${file}" in */README) continue ;; esac ; \
+		include="include if exists <local/$$(basename $${file})>" ; \
+		grep -q "^  *$${include}\$$" $${file} || { echo "$${file} does not contain '$${include}'"; exit 1; } ; \
 	done
