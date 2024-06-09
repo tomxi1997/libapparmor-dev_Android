@@ -148,6 +148,9 @@ typedef struct
 	unsigned long net_local_port;
 	char *net_foreign_addr;
 	unsigned long net_foreign_port;
+
+	char *execpath;
+
 	char *dbus_bus;
 	char *dbus_path;
 	char *dbus_interface;

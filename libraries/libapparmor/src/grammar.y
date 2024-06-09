@@ -189,6 +189,7 @@ aa_record_event_type lookup_aa_event(unsigned int type)
 %token TOK_KEY_FLAGS
 %token TOK_KEY_SRCNAME
 %token TOK_KEY_UNIX_PEER_ADDR
+%token TOK_KEY_EXECPATH
 %token TOK_KEY_CLASS
 
 %token TOK_SOCKLOGD_KERNEL
@@ -431,6 +432,8 @@ key: TOK_KEY_OPERATION TOK_EQUALS TOK_QUOTED_STRING
 	{ ret_record->flags = $3; }
 	| TOK_KEY_SRCNAME TOK_EQUALS TOK_QUOTED_STRING
 	{ ret_record->src_name = $3; }
+	| TOK_KEY_EXECPATH TOK_EQUALS TOK_QUOTED_STRING
+	{ ret_record->execpath = $3; }
 	| TOK_MSG_REST
 	{
 		ret_record->event = AA_RECORD_INVALID;

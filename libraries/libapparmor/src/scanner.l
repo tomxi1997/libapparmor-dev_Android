@@ -179,6 +179,7 @@ key_srcname		"srcname"
 key_class		"class"
 key_tcontext		"tcontext"
 key_unix_peer_addr	"peer_addr"
+key_execpath		"execpath"
 audit			"audit"
 
 /* network addrs */
@@ -377,6 +378,7 @@ yy_flex_debug = 0;
 {key_flags}		{ BEGIN(safe_string); return(TOK_KEY_FLAGS); }
 {key_srcname}		{ BEGIN(safe_string); return(TOK_KEY_SRCNAME); }
 {key_unix_peer_addr}    { BEGIN(safe_string); return(TOK_KEY_UNIX_PEER_ADDR); }
+{key_execpath}		{ BEGIN(safe_string); return(TOK_KEY_EXECPATH); }
 {key_class}		{ BEGIN(safe_string); return(TOK_KEY_CLASS); }
 
 {socklogd_kernel}	{ BEGIN(dmesg_timestamp); return(TOK_SOCKLOGD_KERNEL); }
