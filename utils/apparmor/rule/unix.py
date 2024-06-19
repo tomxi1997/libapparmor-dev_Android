@@ -23,8 +23,8 @@ from apparmor.translations import init_translation
 
 _ = init_translation()
 
-_aare = r'([][!/\\\,().*@{}\w^-]+)'
-_quoted_aare = r'"([][!/\\\,().*@{}\w\s^-]+)"'
+_aare = r'([][!/\\\,().*?@{}\w^-]+)'
+_quoted_aare = r'"([][!/\\\,().*?@{}\w\s^-]+)"'
 aare = rf'({_aare}|{_quoted_aare}|\(({_aare}|{_quoted_aare})\))'
 aare_set = rf'({_aare}|{_quoted_aare}|\(({_aare}|{_quoted_aare})+\))'
 
