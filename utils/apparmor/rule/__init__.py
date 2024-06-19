@@ -17,6 +17,7 @@ from abc import ABCMeta, abstractmethod
 
 from apparmor.aare import AARE
 from apparmor.common import AppArmorBug, AppArmorException
+from apparmor.regex import strip_quotes
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -574,7 +575,7 @@ def check_dict_keys(d, possible_keys, type_all):
 
 def initialize_cond_dict(d, keys, suffix, type_all):
     out = {
-        key: d[f'{key}{suffix}']
+        key: strip_quotes(d[f'{key}{suffix}'])
         for key in keys
         if f'{key}{suffix}' in d and d[f'{key}{suffix}'] is not None
     }
@@ -592,7 +593,7 @@ def tuple_to_dict(t, keys):
 def print_dict_values(d, type_all, prefix=None):
     if d == type_all:
         return ''
-    to_print = ' '.join(f'{k}={v}' for k, v in d.items())
+    to_print = ' '.join(f'{k}={quote_if_needed(str(v))}' for k, v in d.items())
     if prefix:
         return f' {prefix}=({to_print})'
     else:
