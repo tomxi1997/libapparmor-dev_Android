@@ -37,6 +37,9 @@ class UnixTestParse(AATest):
         ('unix (accept, rw) protocol=AA type=BB,',          UnixRule(('accept', 'rw'),  {'type': 'BB', 'protocol': 'AA'}, UnixRule.ALL,                 UnixRule.ALL,                   False, False, False, '')),
         ('unix shutdown addr=@srv,',                        UnixRule('shutdown',        UnixRule.ALL,                     {'addr': '@srv'},             UnixRule.ALL,                   False, False, False, '')),
         ('unix send addr=@foo{a,b} peer=(label=splat),',    UnixRule('send',            UnixRule.ALL,                     {'addr': '@foo{a,b}'},        {'label': 'splat'},             False, False, False, '')),
+        ('unix peer=(addr=@/tmp/foo-??????),',              UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                 {'addr': '@/tmp/foo-??????'},   False, False, False, '')),
+        ('unix peer=(addr="@/tmp/f o-??????"),',            UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                 {'addr': '@/tmp/f o-??????'},   False, False, False, '')),
+        ('unix peer=(addr=@/tmp/foo-*),',                   UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                 {'addr': '@/tmp/foo-*'},        False, False, False, '')),
         ('unix (accept, rw) protocol=AA type=BB opt=AA label=bb peer=(addr=a label=bb),',
                                                             UnixRule(('accept', 'rw'),  {'type': 'BB', 'protocol': 'AA'}, {'opt': 'AA', 'label': 'bb'}, {'addr': 'a', 'label': 'bb'},   False, False, False, '')),  # noqa: E127
     )
@@ -45,7 +48,7 @@ class UnixTestParse(AATest):
         self.assertTrue(UnixRule.match(rawrule))
         obj = UnixRule.create_instance(rawrule)
         expected.raw_rule = rawrule.strip()
-        self.assertTrue(obj.is_equal(expected, True))
+        self.assertTrue(obj.is_equal(expected, True), f'\n  {rawrule}   expected,\n  {obj.get_clean()}   returned by obj.get_clean()\n  {expected.get_clean()}   returned by expected.get_clean()')
 
     def test_diff_local(self):
         obj1 = UnixRule('send', UnixRule.ALL, {'addr': 'foo'}, UnixRule.ALL, )
