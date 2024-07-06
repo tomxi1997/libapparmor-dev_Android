@@ -27,7 +27,7 @@ not have AppArmor profiles loaded
 
 =head1 SYNOPSIS
 
-B<aa-unconfined [I<--paranoid>] [I<--with-ss> | I<--with-netstat>]>
+B<aa-unconfined [options] [I<--with-ss> | I<--with-netstat>]>
 
 =head1 OPTIONS
 
@@ -35,8 +35,18 @@ B<aa-unconfined [I<--paranoid>] [I<--with-ss> | I<--with-netstat>]>
 
 =item B<--paranoid>
 
-Displays all processes from F</proc> filesystem with tcp or udp ports
-that do not have AppArmor profiles loaded.
+Displays all processes visible from F</proc> filesystem, and whether they
+are confined by a profile or "not confined". Equivalent to
+I<--show=all>.
+
+=item B<--show=(all|server)>
+
+Determines the set of processes to be displayed.
+
+I<--show=all> show all processes is equivalent to I<--paranoid>
+
+I<--show=server> show only processes with listening sockets open. This is
+the B<default> value if I<--show=> or I<--paranoid> are not specified.
 
 =item B<--with-ss>
 
