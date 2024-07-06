@@ -30,7 +30,7 @@ _ = init_translation()  # setup module translations
 
 parser = argparse.ArgumentParser(description=_("Lists unconfined processes having tcp or udp ports"))
 parser.add_argument("--paranoid", action="store_true", help=_("scan all processes"))
-parser.add_argument("--show", default=None, type=str, help=_("show specified processes"))
+parser.add_argument("--show", default=None, type=str, help=_("all | server | client"))
 parser.add_argument('--configdir', type=str, help=argparse.SUPPRESS)
 bin_group = parser.add_mutually_exclusive_group()
 bin_group.add_argument("--with-ss", action='store_true', help=_("use ss(8) to find listening processes (default)"))
@@ -45,10 +45,9 @@ if args.paranoid:
         raise AppArmorException(_("Arguments --paranoid and --show=%s conflict") % args.show)
     show = 'all'
 if args.show is not None:
-    if not args.show or args.show not in ['all', 'server']:
+    if not args.show or args.show not in ['all', 'server', 'client']:
         raise AppArmorException(_("Argument --show invalid value '%s'") % args.show)
     show = args.show
-
 
 aa.init_aa(confdir=args.configdir)
 
@@ -57,12 +56,19 @@ if not aa_mountpoint:
     raise AppArmorException(_("It seems AppArmor was not started. Please enable AppArmor and try again."))
 
 
+def map_show_to_flags(show):
+    flags = '-nlp'
+    if show == 'client':
+        flags = '-np'
+    return flags
+
+
 def get_all_pids():
     """Return a set of all pids via walking /proc"""
     return set(filter(lambda x: re.search(r"^\d+$", x), aa.get_subdirectories("/proc")))
 
 
-def get_pids_ss(ss='ss'):
+def get_pids_ss(flags, ss='ss'):
     """Get a set of pids listening on network sockets via ss(8)"""
     regex_lines = re.compile(r"^(tcp|udp|raw|p_dgr)\s.+\s+users:(?P<users>\(\(.*\)\))$")
     regex_users_pids = re.compile(r'(\("[^"]+",(pid=)?(\d+),[^)]+\))')
@@ -72,7 +78,7 @@ def get_pids_ss(ss='ss'):
     my_env['LANG'] = 'C'
     my_env['PATH'] = '/bin:/usr/bin:/sbin:/usr/sbin'
     for family in ['inet', 'inet6', 'link']:
-        cmd = [ss, '-nlp', '--family', family]
+        cmd = [ss, flags, '--family', family]
         if sys.version_info < (3, 0):
             output = subprocess.check_output(cmd, shell=False, env=my_env).split("\n")
         else:
@@ -88,11 +94,11 @@ def get_pids_ss(ss='ss'):
     return pids
 
 
-def get_pids_netstat(netstat='netstat'):
+def get_pids_netstat(flags, netstat='netstat'):
     """Get a set of pids listening on network sockets via netstat(8)"""
     regex_tcp_udp = re.compile(r"^(tcp|udp|raw)6?\s+\d+\s+\d+\s+\S+:(\d+)\s+\S+:(\*|\d+)\s+(LISTEN|\d+|\s+)\s+(?P<pid>\d+)/(\S+)")
 
-    cmd = [netstat, '-nlp', '--protocol', 'inet,inet6']
+    cmd = [netstat, flags, '--protocol', 'inet,inet6']
     my_env = os.environ.copy()
     my_env['LANG'] = 'C'
     my_env['PATH'] = '/bin:/usr/bin:/sbin:/usr/sbin'
@@ -142,9 +148,9 @@ pids = set()
 if show == 'all':
     pids = get_all_pids()
 elif args.with_ss or (not args.with_netstat and (aa.which("ss") is not None)):
-    pids = get_pids_ss()
+    pids = get_pids_ss(map_show_to_flags(show))
 else:
-    pids = get_pids_netstat()
+    pids = get_pids_netstat(map_show_to_flags(show))
 
 for pid in sorted(map(int, pids)):
     try:

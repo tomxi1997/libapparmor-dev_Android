@@ -39,7 +39,7 @@ Displays all processes visible from F</proc> filesystem, and whether they
 are confined by a profile or "not confined". Equivalent to
 I<--show=all>.
 
-=item B<--show=(all|server)>
+=item B<--show=(all|server|client)>
 
 Determines the set of processes to be displayed.
 
@@ -47,6 +47,8 @@ I<--show=all> show all processes is equivalent to I<--paranoid>
 
 I<--show=server> show only processes with listening sockets open. This is
 the B<default> value if I<--show=> or I<--paranoid> are not specified.
+
+I<--show=client> show only processes with non-listening sockets open.
 
 =item B<--with-ss>
 
