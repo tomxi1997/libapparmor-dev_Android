@@ -29,14 +29,26 @@ enable_aa_exception_handler()  # setup exception handling
 _ = init_translation()  # setup module translations
 
 parser = argparse.ArgumentParser(description=_("Lists unconfined processes having tcp or udp ports"))
-parser.add_argument("--paranoid", action="store_true", help=_("scan all processes from /proc"))
+parser.add_argument("--paranoid", action="store_true", help=_("scan all processes"))
+parser.add_argument("--show", default=None, type=str, help=_("all | network | server | client"))
+parser.add_argument("--short", action="store_true", help=_("only display processes that are unconfined"))
 parser.add_argument('--configdir', type=str, help=argparse.SUPPRESS)
 bin_group = parser.add_mutually_exclusive_group()
 bin_group.add_argument("--with-ss", action='store_true', help=_("use ss(8) to find listening processes (default)"))
 bin_group.add_argument("--with-netstat", action='store_true', help=_("use netstat(8) to find listening processes"))
 args = parser.parse_args()
 
-paranoid = args.paranoid
+# set default set of processes to show
+show = 'server'
+
+if args.paranoid:
+    if args.show is not None and args.show != 'all':
+        raise AppArmorException(_("Arguments --paranoid and --show=%s conflict") % args.show)
+    show = 'all'
+if args.show is not None:
+    if not args.show or args.show not in ['all', 'network', 'server', 'client']:
+        raise AppArmorException(_("Argument --show invalid value '%s'") % args.show)
+    show = args.show
 
 aa.init_aa(confdir=args.configdir)
 
@@ -45,12 +57,21 @@ if not aa_mountpoint:
     raise AppArmorException(_("It seems AppArmor was not started. Please enable AppArmor and try again."))
 
 
+def map_show_to_flags(show):
+    flags = '-nlp'
+    if show == 'client':
+        flags = '-np'
+    elif show == 'network':
+        flags = '-nap'
+    return flags
+
+
 def get_all_pids():
     """Return a set of all pids via walking /proc"""
     return set(filter(lambda x: re.search(r"^\d+$", x), aa.get_subdirectories("/proc")))
 
 
-def get_pids_ss(ss='ss'):
+def get_pids_ss(flags, ss='ss'):
     """Get a set of pids listening on network sockets via ss(8)"""
     regex_lines = re.compile(r"^(tcp|udp|raw|p_dgr)\s.+\s+users:(?P<users>\(\(.*\)\))$")
     regex_users_pids = re.compile(r'(\("[^"]+",(pid=)?(\d+),[^)]+\))')
@@ -60,7 +81,7 @@ def get_pids_ss(ss='ss'):
     my_env['LANG'] = 'C'
     my_env['PATH'] = '/bin:/usr/bin:/sbin:/usr/sbin'
     for family in ['inet', 'inet6', 'link']:
-        cmd = [ss, '-nlp', '--family', family]
+        cmd = [ss, flags, '--family', family]
         if sys.version_info < (3, 0):
             output = subprocess.check_output(cmd, shell=False, env=my_env).split("\n")
         else:
@@ -76,11 +97,11 @@ def get_pids_ss(ss='ss'):
     return pids
 
 
-def get_pids_netstat(netstat='netstat'):
+def get_pids_netstat(flags, netstat='netstat'):
     """Get a set of pids listening on network sockets via netstat(8)"""
     regex_tcp_udp = re.compile(r"^(tcp|udp|raw)6?\s+\d+\s+\d+\s+\S+:(\d+)\s+\S+:(\*|\d+)\s+(LISTEN|\d+|\s+)\s+(?P<pid>\d+)/(\S+)")
 
-    cmd = [netstat, '-nlp', '--protocol', 'inet,inet6']
+    cmd = [netstat, flags, '--protocol', 'inet,inet6']
     my_env = os.environ.copy()
     my_env['LANG'] = 'C'
     my_env['PATH'] = '/bin:/usr/bin:/sbin:/usr/sbin'
@@ -106,7 +127,7 @@ def read_proc_current(filename):
         with open_file_read(filename) as current:
             for line in current:
                 line = line.strip()
-                if line.endswith(' (complain)', 1) or line.endswith(' (enforce)', 1) or line.endswith(' (kill)', 1):  # enforce at least one char as profile name
+                if line.endswith(' (complain)', 1) or line.endswith(' (enforce)', 1) or line.endswith(' (kill)', 1) or line.endswith(' (user)', 1) or line.endswith(' (mixed)', 1):  # enforce at least one char as profile name
                     # intentionally not checking for '(unconfined)', because   $binary confined by $profile (unconfined)   would look very confusing
                     attr = line
     except OSError:
@@ -127,12 +148,12 @@ def escape_special_chars(data):
 
 
 pids = set()
-if paranoid:
+if show == 'all':
     pids = get_all_pids()
 elif args.with_ss or (not args.with_netstat and (aa.which("ss") is not None)):
-    pids = get_pids_ss()
+    pids = get_pids_ss(map_show_to_flags(show))
 else:
-    pids = get_pids_netstat()
+    pids = get_pids_netstat(map_show_to_flags(show))
 
 for pid in sorted(map(int, pids)):
     try:
@@ -169,7 +190,7 @@ for pid in sorted(map(int, pids)):
             if pname and pname[-1] == ')':
                 pname = ' ' + pname
             ui.UI_Info(_("%(pid)s %(program)s%(pname)s not confined") % {'pid': pid, 'program': prog, 'pname': pname})
-    else:
+    elif not args.short:
         if regex_interpreter.search(prog):
             cmdline = re.sub(r"\0", " ", cmdline)
             cmdline = re.sub(r"\s+$", "", cmdline).strip()
