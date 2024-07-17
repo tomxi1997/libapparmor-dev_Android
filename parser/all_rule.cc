@@ -39,7 +39,7 @@ void all_rule::add_implied_rules(Profile &prof)
 	prefix_rule_t *rule;
 	const prefixes *prefix = this;
 
-	rule = new unix_rule(0, audit, rule_mode);
+	rule = new unix_rule(0xffffffff, audit, rule_mode);
 	(void) rule->add_prefix(*prefix);
 	prof.rule_ents.push_back(rule);
 
