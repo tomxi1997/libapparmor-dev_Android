@@ -368,7 +368,7 @@ template<class Iter>
 	os << fill64(sizeof(td) + sizeof(*pos) * size);
 }
 
-void CHFA::flex_table(ostream &os, const char *name)
+void CHFA::flex_table(ostream &os)
 {
 	const char th_version[] = "notflex";
 	struct table_set_header th = { 0, 0, 0, 0 };
@@ -419,7 +419,8 @@ void CHFA::flex_table(ostream &os, const char *name)
 
 	/* Write the actual flex parser table. */
 	/* TODO: add max_oob */
-	size_t hsize = pad64(sizeof(th) + sizeof(th_version) + strlen(name) + 1);
+	// sizeof(th_version) includes trailing \0
+	size_t hsize = pad64(sizeof(th) + sizeof(th_version));
 	th.th_magic = htonl(YYTH_REGEX_MAGIC);
 	th.th_flags = htons(chfaflags);
 	th.th_hsize = htonl(hsize);
@@ -432,8 +433,8 @@ void CHFA::flex_table(ostream &os, const char *name)
 			    flex_table_size(next_vec.begin(), next_vec.end()) +
 			    flex_table_size(check_vec.begin(), check_vec.end()));
 	os.write((char *)&th, sizeof(th));
-	os << th_version << (char)0 << name << (char)0;
-	os << fill64(sizeof(th) + sizeof(th_version) + strlen(name) + 1);
+	os.write(th_version, sizeof(th_version));
+	os << fill64(sizeof(th) + sizeof(th_version));
 
 	write_flex_table(os, YYTD_ID_ACCEPT, accept.begin(), accept.end());
 	write_flex_table(os, YYTD_ID_ACCEPT2, accept2.begin(), accept2.end());
