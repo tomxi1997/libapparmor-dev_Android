@@ -419,7 +419,7 @@ void CHFA::flex_table(ostream &os, const char *name)
 
 	/* Write the actual flex parser table. */
 	/* TODO: add max_oob */
-	size_t hsize = pad64(sizeof(th) + sizeof(th_version) + 1 + strlen(name) + 1);
+	size_t hsize = pad64(sizeof(th) + sizeof(th_version) + strlen(name) + 1);
 	th.th_magic = htonl(YYTH_REGEX_MAGIC);
 	th.th_flags = htons(chfaflags);
 	th.th_hsize = htonl(hsize);
@@ -433,7 +433,7 @@ void CHFA::flex_table(ostream &os, const char *name)
 			    flex_table_size(check_vec.begin(), check_vec.end()));
 	os.write((char *)&th, sizeof(th));
 	os << th_version << (char)0 << name << (char)0;
-	os << fill64(sizeof(th) + 1 + sizeof(th_version) + strlen(name) + 1);
+	os << fill64(sizeof(th) + sizeof(th_version) + strlen(name) + 1);
 
 	write_flex_table(os, YYTD_ID_ACCEPT, accept.begin(), accept.end());
 	write_flex_table(os, YYTD_ID_ACCEPT2, accept2.begin(), accept2.end());
