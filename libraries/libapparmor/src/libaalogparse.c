@@ -107,6 +107,8 @@ void free_record(aa_log_record *record)
 			free(record->net_addr);
 		if (record->peer_addr != NULL)
 			free(record->peer_addr);
+		if (record->execpath != NULL)
+			free(record->execpath);
 
 		if (record->class != NULL)
 			free(record->class);
