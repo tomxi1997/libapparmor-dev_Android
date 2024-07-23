@@ -16,7 +16,7 @@
 from abc import ABCMeta, abstractmethod
 
 from apparmor.aare import AARE
-from apparmor.common import AppArmorBug, AppArmorException
+from apparmor.common import AppArmorBug, AppArmorException, hasher
 from apparmor.regex import strip_quotes
 from apparmor.translations import init_translation
 
@@ -115,6 +115,38 @@ class BaseRule(metaclass=ABCMeta):
         """returns a Rule object created from parsing the raw rule.
            required to be implemented by subclasses; raise exception if not"""
         raise NotImplementedError("'%s' needs to implement _create_instance(), but didn't" % (str(cls)))
+
+    @staticmethod
+    def generate_rules_from_hashlog(hashlog, nb_keys):
+        """yields all key sequences from a hashlog of depth nb_keys"""
+        stack = [(hashlog, [], nb_keys)]
+
+        while stack:
+            items, path, depth = stack.pop()
+
+            if depth == 0:
+                yield path
+                continue
+
+            for next_key in items:
+                stack.append((items[next_key], path + [next_key], depth - 1))
+
+    @classmethod
+    def create_from_ev(cls, ev):
+        """returns a rule that would allow an event"""
+        hl = hasher()
+        cls.hashlog_from_event(hl, ev)
+        return next(cls.from_hashlog(hl))
+
+    @staticmethod
+    def hashlog_from_event(hl, ev):
+        """stores an event in the hashlog"""
+        raise NotImplementedError('hashlog_from_event should be called on a rule class and not directly on BaseRule.')
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        """constructs and yields all rules that would allow denials stored in a hashlog"""
+        raise NotImplementedError("'%s' needs to implement from_hashlog(), but didn't" % (str(cls)))
 
     @abstractmethod
     def get_clean(self, depth=0):

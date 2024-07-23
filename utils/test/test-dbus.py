@@ -376,6 +376,13 @@ class InvalidDbusTest(AATest):
         with self.assertRaises(AppArmorBug):
             obj.get_clean(1)
 
+    def test_invalid_event_access(self):
+        parser = ReadLog('', '', '')
+        event = 'type=USER_AVC msg=audit(1375323372.644:157): pid=363 uid=102 auid=4294967295 ses=4294967295  msg=\'apparmor="DENIED" operation="dbus_method_call"  bus="system" name="org.freedesktop.DBus" path="/org/freedesktop/DBus" interface="org.freedesktop.DBus" member="Hello" mask="invalid_access" pid=2833 profile="/tmp/apparmor-2.8.0/tests/regression/apparmor/dbus_service" peer_profile="unconfined"  exe="/bin/dbus-daemon" sauid=102 hostname=? addr=? terminal=?\''
+        ev = parser.parse_event(event)
+        with self.assertRaises(AppArmorBug):
+            DbusRule.create_from_ev(ev)
+
 
 class WriteDbusTest(AATest):
     def _run_test(self, rawrule, expected):

@@ -77,6 +77,18 @@ class UserNamespaceRule(BaseRule):
         return cls(access, audit=audit, deny=deny,
                    allow_keyword=allow_keyword, comment=comment)
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        if e['denied_mask']:
+            hl[e['denied_mask'][7:]] = True  # [7:] removes the 'userns_' prefix
+        else:
+            hl[e['request_mask'][7:]] = True  # To support transition to special profiles
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for access in BaseRule.generate_rules_from_hashlog(hl, 1):
+            yield cls(access)
+
     def get_clean(self, depth=0):
         '''return rule (in clean/default formatting)'''
 

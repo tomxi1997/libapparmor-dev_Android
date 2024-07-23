@@ -425,6 +425,50 @@ class FileRule(BaseRule):
         self.path = AARE(newpath, True)  # might raise AppArmorException if the new path doesn't start with / or a variable
         self.raw_rule = None
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        # Map c (create) and d (delete) to w (logging is more detailed than the profile language)
+        dmask = e['denied_mask']
+        dmask = dmask.replace('c', 'w')
+        dmask = dmask.replace('d', 'w')
+
+        owner = False
+
+        if '::' in dmask:
+            # old log styles used :: to indicate if permissions are meant for owner or other
+            (owner_d, other_d) = dmask.split('::')
+            if owner_d and other_d:
+                raise AppArmorException(
+                    'Found log event with both owner and other permissions. Please open a bugreport!')
+            if owner_d:
+                dmask = owner_d
+                owner = True
+            else:
+                dmask = other_d
+
+        if e.get('ouid') is not None and e['fsuid'] == e['ouid']:
+            # in current log style, owner permissions are indicated by a match of fsuid and ouid
+            owner = True
+
+        if 'x' in dmask and dmask != 'x':
+            dmask = dmask.replace('x', '')  # if dmask contains x and another mode, drop x here - we should see a separate exec event
+
+        for perm in dmask:
+            if perm in 'mrwalk':  # intentionally not allowing 'x' here
+                hl[e['name']][owner][perm] = True
+            else:
+                raise AppArmorException(_('Log contains unknown mode %s') % dmask)
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for path, owner in BaseRule.generate_rules_from_hashlog(hl, 2):
+            mode = set(hl[path][owner].keys())
+            # logparser sums up multiple log events, so both 'a' and 'w' can be present
+            if 'a' in mode and 'w' in mode:
+                mode.remove('a')
+            yield cls(path, mode, None, FileRule.ALL, owner=owner, log_event=True)
+            # TODO: check for existing rules with this path, and merge them into one rule
+
 
 class FileRuleset(BaseRuleset):
     """Class to handle and store a collection of file rules"""

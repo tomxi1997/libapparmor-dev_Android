@@ -15,10 +15,13 @@
 
 import unittest
 from collections import namedtuple
+
+from apparmor.logparser import ReadLog
+
 from common_test import AATest, setup_all_loops
 
 from apparmor.rule.userns import UserNamespaceRule, UserNamespaceRuleset
-from apparmor.common import AppArmorException, AppArmorBug
+from apparmor.common import AppArmorException, AppArmorBug, hasher
 from apparmor.translations import init_translation
 _ = init_translation()
 
@@ -141,6 +144,27 @@ class UserNamespaceLogprofHeaderTest(AATest):
     def _run_test(self, params, expected):
         obj = UserNamespaceRule.create_instance(params)
         self.assertEqual(obj.logprof_header(), expected)
+
+    def test_unconfined_usens_from_log(self):
+
+        log = 'type=AVC msg=audit(1720613712.153:168): apparmor="AUDIT" operation="userns_create" class="namespace" info="Userns create - transitioning profile" profile="unconfined" pid=5630 comm="unshare" requested="userns_create" target="unprivileged_userns" execpath="/usr/bin/unshare"'
+        parser = ReadLog('', '', '')
+
+        hl = hasher()
+
+        ev = parser.parse_event(log)
+        UserNamespaceRule.hashlog_from_event(hl, ev)
+
+        expected = {'create': True}
+        self.assertEqual(hl, expected)
+
+        ur = UserNamespaceRule.from_hashlog(hl)
+
+        expected = UserNamespaceRule('create')
+
+        self.assertTrue(expected.is_equal(next(ur)))
+        with self.assertRaises(StopIteration):
+            next(ur)
 
 
 class UserNamespaceGlobTestAATest(AATest):

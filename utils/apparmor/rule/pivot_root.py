@@ -193,6 +193,16 @@ class PivotRootRule(BaseRule):
             _('Target profile'), profile_name,
         )
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        # TODO: can the log contain the target profile?
+        hl[e['src_name']][e['name']] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for oldroot, newroot in BaseRule.generate_rules_from_hashlog(hl, 2):
+            yield cls(oldroot, newroot, cls.ALL, log_event=True)
+
 
 class PivotRootRuleset(BaseRuleset):
     '''Class to handle and store a collection of pivot_root rules'''

@@ -291,6 +291,17 @@ class NetworkRule(BaseRule):
             _('Peer'), peer_expr,
         )
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        local = (e['addr'], e['port'])
+        peer = (e['peer_addr'], e['remote_port'])
+        hl[e['accesses']][e['family']][e['sock_type']][e['protocol']][local][peer] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for access, family, sock_type, protocol, local_event, peer_event in BaseRule.generate_rules_from_hashlog(hl, 6):
+            yield cls(access, family, sock_type, local_event, peer_event, log_event=True)
+
 
 class NetworkRuleset(BaseRuleset):
     """Class to handle and store a collection of network rules"""

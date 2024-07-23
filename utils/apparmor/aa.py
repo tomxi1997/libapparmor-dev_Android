@@ -40,20 +40,9 @@ from apparmor.regex import (
     RE_PROFILE_HAT_DEF, RE_PROFILE_START,
     RE_RULE_HAS_COMMA, parse_profile_start_line, re_match_include)
 from apparmor.rule.abi import AbiRule
-from apparmor.rule.capability import CapabilityRule
-from apparmor.rule.change_profile import ChangeProfileRule
-from apparmor.rule.dbus import DbusRule
 from apparmor.rule.file import FileRule
 from apparmor.rule.include import IncludeRule
-from apparmor.rule.network import NetworkRule
-from apparmor.rule.pivot_root import PivotRootRule
-from apparmor.rule.ptrace import PtraceRule
-from apparmor.rule.signal import SignalRule
-from apparmor.rule.userns import UserNamespaceRule
-from apparmor.rule.mqueue import MessageQueueRule
-from apparmor.rule.io_uring import IOUringRule
-from apparmor.rule.mount import MountRule
-from apparmor.rule.unix import UnixRule
+from apparmor.logparser import ReadLog
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -1610,137 +1599,14 @@ def collapse_log(hashlog, ignore_null_profiles=True):
                 # with execs in ix mode, we already have ProfileStorage initialized and should keep the content it already has
                 log_dict[aamode][final_name] = ProfileStorage(profile, hat, 'collapse_log()')
 
-            for path in hashlog[aamode][full_profile]['path'].keys():
-                for owner in hashlog[aamode][full_profile]['path'][path]:
-                    mode = set(hashlog[aamode][full_profile]['path'][path][owner].keys())
-
-                    # logparser sums up multiple log events, so both 'a' and 'w' can be present
-                    if 'a' in mode and 'w' in mode:
-                        mode.remove('a')
-
-                    file_event = FileRule(path, mode, None, FileRule.ALL, owner=owner, log_event=True)
-
-                    if not hat_exists or not is_known_rule(aa[profile][hat], 'file', file_event):
-                        log_dict[aamode][final_name]['file'].add(file_event)
-                        # TODO: check for existing rules with this path, and merge them into one rule
-
-            for cap in hashlog[aamode][full_profile]['capability'].keys():
-                cap_event = CapabilityRule(cap, log_event=True)
-                if not hat_exists or not is_known_rule(aa[profile][hat], 'capability', cap_event):
-                    log_dict[aamode][final_name]['capability'].add(cap_event)
-
-            for cp in hashlog[aamode][full_profile]['change_profile'].keys():
-                cp_event = ChangeProfileRule(None, ChangeProfileRule.ALL, cp, log_event=True)
-                if not hat_exists or not is_known_rule(aa[profile][hat], 'change_profile', cp_event):
-                    log_dict[aamode][final_name]['change_profile'].add(cp_event)
-
-            dbus = hashlog[aamode][full_profile]['dbus']
-            for access in                               dbus:                                      # noqa: E271
-                for bus in                              dbus[access]:                              # noqa: E271
-                    for path in                         dbus[access][bus]:                         # noqa: E271
-                        for name in                     dbus[access][bus][path]:                   # noqa: E271
-                            for interface in            dbus[access][bus][path][name]:             # noqa: E271
-                                for member in           dbus[access][bus][path][name][interface]:  # noqa: E271
-                                    for peer_profile in dbus[access][bus][path][name][interface][member]:
-                                        # Depending on the access type, not all parameters are allowed.
-                                        # Ignore them, even if some of them appear in the log.
-                                        # Also, the log doesn't provide a peer name, therefore always use ALL.
-                                        if access in ('send', 'receive'):
-                                            dbus_event = DbusRule(access, bus, path,         DbusRule.ALL, interface,    member,       DbusRule.ALL, peer_profile, log_event=True)
-                                        elif access == 'bind':
-                                            dbus_event = DbusRule(access, bus, DbusRule.ALL, name,         DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, log_event=True)
-                                        elif access == 'eavesdrop':
-                                            dbus_event = DbusRule(access, bus, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, DbusRule.ALL, log_event=True)
-                                        else:
-                                            raise AppArmorBug('unexpected dbus access: {}'.format(access))
-
-                                        if not hat_exists or not is_known_rule(aa[profile][hat], 'dbus', dbus_event):
-                                            log_dict[aamode][final_name]['dbus'].add(dbus_event)
-
-            nd = hashlog[aamode][full_profile]['network']
-            for access in nd.keys():
-                for family in nd[access].keys():
-                    for sock_type in nd[access][family].keys():
-                        for protocol in nd[access][family][sock_type].keys():
-                            for local_event in nd[access][family][sock_type][protocol].keys():
-                                for peer_event in nd[access][family][sock_type][protocol][local_event].keys():
-                                    net_event = NetworkRule(access, family, sock_type, local_event, peer_event, log_event=True)
-                                    if not hat_exists or not is_known_rule(aa[profile][hat], 'network', net_event):
-                                        log_dict[aamode][final_name]['network'].add(net_event)
-
-            ptrace = hashlog[aamode][full_profile]['ptrace']
-            for peer in ptrace.keys():
-                if '//null-' in peer:
-                    continue  # ignore null-* peers
-
-                for access in ptrace[peer].keys():
-                    ptrace_event = PtraceRule(access, peer, log_event=True)
-                    if not hat_exists or not is_known_rule(aa[profile][hat], 'ptrace', ptrace_event):
-                        log_dict[aamode][final_name]['ptrace'].add(ptrace_event)
-
-            sig = hashlog[aamode][full_profile]['signal']
-            for peer in sig.keys():
-                if '//null-' in peer:
-                    continue  # ignore null-* peers
-
-                for access in sig[peer].keys():
-                    for signal in sig[peer][access].keys():
-                        signal_event = SignalRule(access, signal, peer, log_event=True)
-                        if not hat_exists or not is_known_rule(aa[profile][hat], 'signal', signal_event):
-                            log_dict[aamode][final_name]['signal'].add(signal_event)
-
-            userns = hashlog[aamode][full_profile]['userns']
-            for access in userns.keys():
-                userns_event = UserNamespaceRule(access)
-                if not hat_exists or not is_known_rule(aa[profile][hat], 'userns', userns_event):
-                    log_dict[aamode][final_name]['userns'].add(userns_event)
-
-            mqueue = hashlog[aamode][full_profile]['mqueue']
-            for access in mqueue.keys():
-                for mqueue_type in mqueue[access]:
-                    for mqueue_name in mqueue[access][mqueue_type]:
-                        mqueue_event = MessageQueueRule(access, mqueue_type, MessageQueueRule.ALL, mqueue_name, log_event=True)
-                        if not hat_exists or not is_known_rule(aa[profile][hat], 'mqueue', mqueue_event):
-                            log_dict[aamode][final_name]['mqueue'].add(mqueue_event)
-
-            io_uring = hashlog[aamode][full_profile]['io_uring']
-            for access in io_uring.keys():
-                for label in io_uring[access]:
-                    if not label:
-                        label = IOUringRule.ALL
-                    io_uring_event = IOUringRule(access, label, log_event=True)
-                    if not hat_exists or not is_known_rule(aa[profile][hat], 'io_uring', io_uring_event):
-                        log_dict[aamode][final_name]['io_uring'].add(io_uring_event)
-
-            unix = hashlog[aamode][full_profile]['unix']
-            for unix_access in unix.keys():
-                for unix_rule in unix[unix_access]:
-                    for unix_local in unix[unix_access][unix_rule]:
-                        for unix_peer in unix[unix_access][unix_rule][unix_local]:
-                            unix_event = UnixRule(unix_access, unix_rule, unix_local, unix_peer)
-                            if not hat_exists or not is_known_rule(aa[profile][hat], 'unix', unix_event):
-                                log_dict[aamode][final_name]['unix'].add(unix_event)
-
-            mount = hashlog[aamode][full_profile]['mount']
-            for operation, operation_val in mount.items():
-                for options, options_val in operation_val.items():
-                    for fstype, fstype_value in options_val.items():
-                        for dest, dest_value in fstype_value.items():
-                            for source, source_value in dest_value.items():
-                                _options = (options[0], options[1].split(', ')) if options is not None else MountRule.ALL
-                                _fstype = (fstype[0], fstype[1].split(', ')) if fstype is not None else MountRule.ALL
-                                _source = source if source is not None else MountRule.ALL
-                                _dest = dest if dest is not None else MountRule.ALL
-                                mount_event = MountRule(operation=operation, fstype=_fstype, options=_options, source=_source, dest=_dest)
-                                if not hat_exists or not is_known_rule(aa[profile][hat], 'mount', mount_event):
-                                    log_dict[aamode][final_name]['mount'].add(mount_event)
-
-            pivot_root = hashlog[aamode][full_profile]['pivot_root']
-            for oldroot in pivot_root.keys():
-                for newroot in pivot_root[oldroot]:
-                    pivot_root_event = PivotRootRule(oldroot, newroot, PivotRootRule.ALL, log_event=True)
-                    if not hat_exists or not is_known_rule(aa[profile][hat], 'pivot_root', pivot_root_event):
-                        log_dict[aamode][final_name]['pivot_root'].add(pivot_root_event)
+            for ev_type, ev_class in ReadLog.ruletypes.items():
+                if ev_class == FileRule:  # TODO: fix the name in the hashlog for FileRule
+                    ev_type_hashlog = 'path'
+                else:
+                    ev_type_hashlog = ev_type
+                for event in ev_class.from_hashlog(hashlog[aamode][full_profile][ev_type_hashlog]):
+                    if not hat_exists or not is_known_rule(aa[profile][hat], ev_type, event):
+                        log_dict[aamode][final_name][ev_type].add(event)
 
     return log_dict
 

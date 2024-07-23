@@ -153,6 +153,17 @@ class IOUringRule(BaseRule):
             _('Label'), label,
         )
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        hl[e['denied_mask']][e['peer_profile']] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for access, label in BaseRule.generate_rules_from_hashlog(hl, 2):
+            if not label:
+                label = IOUringRule.ALL
+            yield cls(access, label, log_event=True)
+
 
 class IOUringRuleset(BaseRuleset):
     '''Class to handle and store a collection of io_uring rules'''

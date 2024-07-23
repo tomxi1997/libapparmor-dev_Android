@@ -156,6 +156,19 @@ class PtraceRule(BaseRule):
             _('Peer'), peer,
         )
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        hl[e['peer']][e['denied_mask']] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for peer in hl.keys():
+            if '//null-' in peer:
+                continue  # ignore null-* peers
+
+            for access in hl[peer].keys():
+                yield cls(access, peer, log_event=True)
+
 
 class PtraceRuleset(BaseRuleset):
     """Class to handle and store a collection of ptrace rules"""

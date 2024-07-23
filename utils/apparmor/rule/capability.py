@@ -141,6 +141,15 @@ class CapabilityRule(BaseRule):
 
         return _('Capability'), cap_txt
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        hl[e['name']] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for cap in hl.keys():
+            yield cls(cap, log_event=True)
+
 
 class CapabilityRuleset(BaseRuleset):
     """Class to handle and store a collection of capability rules"""
