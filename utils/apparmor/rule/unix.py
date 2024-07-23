@@ -158,6 +158,19 @@ class UnixRule(BaseRule):
 
         return True
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        rule = (e['sock_type'], None)  # Protocol is not supported yet.
+        local = (e['addr'], None, e['attr'], None)
+        peer = (e['peer_addr'], e['peer_profile'])
+
+        hl[e['denied_mask']][rule][local][peer] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for denied_mask, rule, local, peer in BaseRule.generate_rules_from_hashlog(hl, 4):
+            yield cls(denied_mask, rule, local, peer)
+
     def glob(self):
         '''Change path to next possible glob'''
         if self.peer_expr != self.ALL:

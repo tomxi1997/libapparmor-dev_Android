@@ -261,6 +261,26 @@ class MountRule(BaseRule):
 
         return True
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        if e['flags'] is not None:
+            e['flags'] = ('=', e['flags'])
+        if e['fs_type'] is not None:
+            e['fs_type'] = ('=', e['fs_type'])
+        if e['operation'] == 'mount':
+            hl[e['operation']][e['flags']][e['fs_type']][e['name']][e['src_name']] = True
+        else:  # Umount
+            hl[e['operation']][e['flags']][e['fs_type']][e['name']][None] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for operation, options, fstype, dest, source in cls.generate_rules_from_hashlog(hl, 5):
+            _options = (options[0], options[1].split(', ')) if options is not None else MountRule.ALL
+            _fstype = (fstype[0], fstype[1].split(', ')) if fstype is not None else MountRule.ALL
+            _source = source if source is not None else MountRule.ALL
+            _dest = dest if dest is not None else MountRule.ALL
+            yield cls(operation=operation, fstype=_fstype, options=_options, source=_source, dest=_dest)
+
     def glob(self):
         '''Change path to next possible glob'''
         if self.all_source and self.all_options:

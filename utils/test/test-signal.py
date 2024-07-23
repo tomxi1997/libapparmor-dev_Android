@@ -16,7 +16,7 @@
 import unittest
 from collections import namedtuple
 
-from apparmor.common import AppArmorBug, AppArmorException
+from apparmor.common import AppArmorBug, AppArmorException, hasher
 from apparmor.logparser import ReadLog
 from apparmor.rule.signal import SignalRule, SignalRuleset
 from apparmor.translations import init_translation
@@ -133,6 +133,24 @@ class SignalTestParseFromLog(SignalTest):
         self._compare_obj(obj, expected)
 
         self.assertEqual(obj.get_raw(1), '  signal send set=term peer=/usr/bin/pulseaudio///usr/lib/pulseaudio/pulse/gconf-helper,')
+
+    def test_null_signal_from_log(self):
+
+        log = 'type=AVC msg=audit(1409438250.564:201): apparmor="DENIED" operation="signal" profile="/usr/bin/pulseaudio" pid=2531 comm="pulseaudio" requested_mask="send" denied_mask="send" signal=term peer="//null-"'
+        parser = ReadLog('', '', '')
+
+        hl = hasher()
+
+        ev = parser.parse_event(log)
+        SignalRule.hashlog_from_event(hl, ev)
+
+        expected = {'//null-': {'send': {'term': True}}}
+        self.assertEqual(hl, expected)
+
+        sr = SignalRule.from_hashlog(hl)
+
+        with self.assertRaises(StopIteration):
+            next(sr)
 
 
 class SignalFromInit(SignalTest):

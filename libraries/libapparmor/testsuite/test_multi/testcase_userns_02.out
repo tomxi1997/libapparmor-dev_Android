@@ -1,0 +1,15 @@
+START
+File: testcase_userns_02.in
+Event type: AA_RECORD_AUDIT
+Audit ID: 1720613712.153:168
+Operation: userns_create
+Mask: userns_create
+Profile: unconfined
+Command: unshare
+Name2: unprivileged_userns
+Info: Userns create - transitioning profile
+PID: 5630
+Execpath: /usr/bin/unshare
+Class: namespace
+Epoch: 1720613712
+Audit subid: 168

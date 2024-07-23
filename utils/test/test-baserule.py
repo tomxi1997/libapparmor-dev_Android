@@ -13,7 +13,7 @@ import re
 import unittest
 
 import apparmor.severity as severity
-from apparmor.common import AppArmorBug
+from apparmor.common import AppArmorBug, hasher
 from apparmor.rule import BaseRule, parse_modifiers
 from common_test import AATest, setup_all_loops
 
@@ -97,6 +97,15 @@ class TestBaserule(AATest):
         obj = self.ValidSubclass()
         with self.assertRaises(NotImplementedError):
             obj.store_edit('/foo')
+
+    def test_from_hashlog(self):
+        obj = self.ValidSubclass()
+        with self.assertRaises(NotImplementedError):
+            obj.from_hashlog(hasher())
+
+    def test_hashlog_from_event(self):
+        with self.assertRaises(NotImplementedError):
+            BaseRule.hashlog_from_event(None, None)
 
 
 setup_all_loops(__name__)

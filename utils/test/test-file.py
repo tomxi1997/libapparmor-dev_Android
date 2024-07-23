@@ -17,7 +17,7 @@ import unittest
 from collections import namedtuple
 
 import apparmor.severity as severity
-from apparmor.common import AppArmorBug, AppArmorException
+from apparmor.common import AppArmorBug, AppArmorException, hasher
 from apparmor.logparser import ReadLog
 from apparmor.rule.file import FileRule, FileRuleset
 from apparmor.translations import init_translation
@@ -1217,6 +1217,30 @@ class FileGetExecConflictRules_1(AATest):
         rule_obj = FileRule.create_instance(params)
         conflicts = ruleset.get_exec_conflict_rules(rule_obj)
         self. assertEqual(conflicts.get_clean(), expected)
+
+
+class FileModeTest(AATest):
+    def test_write_append(self):
+        parser = ReadLog('', '', '')
+        events = [
+            '[ 9614.885136] audit: type=1400 audit(1720429924.397:191): apparmor="DENIED" operation="open" class="file" profile="/home/user/test/a" name="/home/user/test/foo" pid=24460 comm="a" requested_mask="w" denied_mask="w" fsuid=1000 ouid=1000',
+            '[ 9614.885149] audit: type=1400 audit(1720429924.397:192): apparmor="DENIED" operation="open" class="file" profile="/home/user/test/a" name="/home/user/test/foo" pid=24460 comm="a" requested_mask="a" denied_mask="a" fsuid=1000 ouid=1000'
+        ]
+        hl = hasher()
+        for raw_ev in events:
+            ev = parser.parse_event(raw_ev)
+            FileRule.hashlog_from_event(hl, ev)
+
+        expected = {'/home/user/test/foo': {True: {'w': True, 'a': True}}}
+        self.assertEqual(hl, expected)
+
+        fr = FileRule.from_hashlog(hl)
+
+        expected = FileRule('/home/user/test/foo', 'w', None, FileRule.ALL, True)
+
+        self.assertTrue(expected.is_equal(next(fr)))
+        with self.assertRaises(StopIteration):
+            next(fr)
 
 
 setup_all_loops(__name__)

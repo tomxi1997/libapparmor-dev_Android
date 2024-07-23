@@ -16,7 +16,7 @@
 import unittest
 from collections import namedtuple
 
-from apparmor.common import AppArmorBug, AppArmorException
+from apparmor.common import AppArmorBug, AppArmorException, hasher
 from apparmor.logparser import ReadLog
 from apparmor.rule.ptrace import PtraceRule, PtraceRuleset
 from apparmor.translations import init_translation
@@ -130,6 +130,23 @@ class PtraceTestParseFromLog(PtraceTest):
         self.assertEqual(
             obj.get_raw(1),
             '  ptrace tracedby peer=/home/ubuntu/bzr/apparmor/tests/regression/apparmor/ptrace,')
+
+    def test_null_ptrace_from(self):
+        log = 'type=AVC msg=audit(1495217772.047:4471): apparmor="DENIED" operation="ptrace" profile="/usr/bin/pidgin" pid=21704 comm="pidgin" peer="//null-"'
+        parser = ReadLog('', '', '')
+
+        hl = hasher()
+
+        ev = parser.parse_event(log)
+        PtraceRule.hashlog_from_event(hl, ev)
+
+        expected = {'//null-': {None: True}}
+        self.assertEqual(hl, expected)
+
+        sr = PtraceRule.from_hashlog(hl)
+
+        with self.assertRaises(StopIteration):
+            next(sr)
 
 
 class PtraceFromInit(PtraceTest):

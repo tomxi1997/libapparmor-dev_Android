@@ -217,6 +217,19 @@ class SignalRule(BaseRule):
             _('Peer'), peer,
         )
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        hl[e['peer']][e['denied_mask']][e['signal']] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for peer in hl.keys():
+            if '//null-' in peer:
+                continue  # ignore null-* peers
+
+            for access, signal in BaseRule.generate_rules_from_hashlog(hl[peer], 2):
+                yield cls(access, signal, peer, log_event=True)
+
 
 class SignalRuleset(BaseRuleset):
     """Class to handle and store a collection of signal rules"""

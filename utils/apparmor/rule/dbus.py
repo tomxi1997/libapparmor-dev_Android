@@ -308,6 +308,25 @@ class DbusRule(BaseRule):
             _('Peer label'),  peerlabel,
         )
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        hl[e['denied_mask']][e['bus']][e['path']][e['name']][e['interface']][e['member']][e['peer_profile']] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for access, bus, path, name, interface, member, peer_profile in BaseRule.generate_rules_from_hashlog(hl, 7):
+            # Depending on the access type, not all parameters are allowed.
+            # Ignore them, even if some of them appear in the log.
+            # Also, the log doesn't provide a peer name, therefore always use ALL.
+            if access in ('send', 'receive'):
+                yield cls(access, bus, path, cls.ALL, interface, member, cls.ALL, peer_profile, log_event=True)
+            elif access == 'bind':
+                yield cls(access, bus, cls.ALL, name, cls.ALL, cls.ALL, cls.ALL, cls.ALL, log_event=True)
+            elif access == 'eavesdrop':
+                yield cls(access, bus, cls.ALL, cls.ALL, cls.ALL, cls.ALL, cls.ALL, cls.ALL, log_event=True)
+            else:
+                raise AppArmorBug('unexpected dbus access: {}'.format(access))
+
 
 class DbusRuleset(BaseRuleset):
     """Class to handle and store a collection of dbus rules"""

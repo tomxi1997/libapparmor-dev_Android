@@ -174,6 +174,15 @@ class ChangeProfileRule(BaseRule):
         ))
         return headers
 
+    @staticmethod
+    def hashlog_from_event(hl, e):
+        hl[e['name2']] = True
+
+    @classmethod
+    def from_hashlog(cls, hl):
+        for cp in hl.keys():
+            yield cls(None, cls.ALL, cp, log_event=True)
+
 
 class ChangeProfileRuleset(BaseRuleset):
     """Class to handle and store a collection of change_profile rules"""

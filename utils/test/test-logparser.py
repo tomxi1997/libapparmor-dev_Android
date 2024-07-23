@@ -100,6 +100,20 @@ class TestParseEvent(AATest):
 
         self.assertIsNotNone(ReadLog.RE_LOG_ALL.search(event))
 
+    def test_get_rule_type(self):
+        rules = [
+            ('mount fstype=bpf options=(rw) random_label -> /sys/fs/bpf/,', 'mount'),
+            ('unix send addr=@foo{a,b} peer=(label=splat),',                'unix'),
+            ('userns create, # cmt',                                        'userns'),
+            ('allow /tmp/foo ra,',                                          'file'),
+            ('file rwix /foo,',                                             'file'),
+            ('signal set=quit peer=unconfined,',                            'signal')
+        ]
+        for r, exp in rules:
+            self.assertEqual(self.parser.get_rule_type(r)[0], exp)
+
+        self.assertEqual(self.parser.get_rule_type('invalid rule,'), None)
+
 
 class TestParseEventForTreeInvalid(AATest):
     tests = (
