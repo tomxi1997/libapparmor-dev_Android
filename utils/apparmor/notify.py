@@ -20,6 +20,8 @@ from apparmor.common import AppArmorBug, DebugLogger
 
 debug_logger = DebugLogger('apparmor.notify')
 
+def get_last_login_timestamp(username, filename='/var/log/wtmp'):
+    return get_last_login_timestamp_wtmp(username, filename)
 
 def sane_timestamp(timestamp):
     """Check if the given timestamp is in a date range that makes sense for a wtmp file"""
@@ -32,7 +34,7 @@ def sane_timestamp(timestamp):
     return True
 
 
-def get_last_login_timestamp(username, filename='/var/log/wtmp'):
+def get_last_login_timestamp_wtmp(username, filename='/var/log/wtmp'):
     """Directly read wtmp and get last login for user as epoch timestamp"""
     timestamp = 0
     last_login = 0
