@@ -1,0 +1,33 @@
+#!/bin/bash
+
+test "$1" = "-u" || {
+	echo 'invalid parameter' >&2
+	exit 42
+}
+
+case "$2" in
+	"root")
+		echo 'Username         Port     From                                       Latest'
+		echo 'root             tty4                                                Tue Jul 16 00:53:40 +0200 2024'
+		;;
+	"cb")
+		echo 'Username         Port     From                                       Latest'
+		echo 'cb               tty2     :0                                         Mon Jul  1 10:35:46 +0200 2024'
+		;;
+	"net")
+		echo 'Username         Port     From                                       Latest'
+		echo 'net              ssh      192.168.0.103                              Sun Jul 28 14:26:17 +0200 2024'
+		;;
+	"whoever")
+		echo 'Username         Port     From                                       Latest'
+		echo 'whoever                                                              **Never logged in**'
+		;;
+	"notexist")
+		echo "lastlog2: User 'notexist' does not exist." >&2
+		exit 1
+		;;
+	*)
+		echo 'invalid parameter' >&2
+		exit 42
+		;;
+esac

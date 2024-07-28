@@ -11,33 +11,39 @@
 
 import unittest
 
-from apparmor.common import AppArmorBug
+from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.notify import get_last_login_timestamp, get_last_login_timestamp_wtmp, sane_timestamp
 from common_test import AATest, setup_all_loops
 
 
 class TestGet_last_login_timestamp(AATest):
     tests = (
-        (('wtmp-x86_64',    'root'),      1635070346),  # Sun Oct 24 12:12:26 CEST 2021
-        (('wtmp-x86_64',    'whoever'),   0),
-        (('wtmp-s390x',     'root'),      1626368763),  # Thu Jul 15 19:06:03 CEST 2021
-        (('wtmp-s390x',     'linux1'),    1626368772),  # Thu Jul 15 19:06:12 CEST 2021
-        (('wtmp-s390x',     'whoever'),   0),
-        (('wtmp-aarch64',   'guillaume'), 1611562789),  # Mon Jan 25 09:19:49 CET 2021
-        (('wtmp-aarch64',   'whoever'),   0),
-        (('wtmp-truncated', 'root'),      0),
-        (('wtmp-truncated', 'whoever'),   0),
+        (('wtmp-x86_64',    './fake_lastlog2',  'root'),      1721084020),  # Tue Jul 16 00:53:40 CEST 2024
+        (('wtmp-x86_64',    './fake_lastlog2',  'whoever'),   0),
+        (('wtmp-x86_64',    './fake_lastlog2',  'cb'),        1719822946),  # Mon Jul  1 10:35:46 CEST 2024
+        (('wtmp-x86_64',    './fake_lastlog2',  'net'),       1722169577),  # Sun Jul 28 14:26:17 CEST 2024
+        (('wtmp-s390x',     './fake_lastlog2',  'root'),      1721084020),  # Tue Jul 16 00:53:40 CEST 2024
+        (('wtmp-s390x',     './does-not-exist', 'linux1'),    1626368772),  # Thu Jul 15 19:06:12 CEST 2021
+        (('wtmp-s390x',     './fake_lastlog2',  'whoever'),   0),
+        (('wtmp-aarch64',   './does-not-exist', 'guillaume'), 1611562789),  # Mon Jan 25 09:19:49 CET 2021
+        (('wtmp-aarch64',   './fake_lastlog2',  'whoever'),   0),
+        (('wtmp-truncated', './fake_lastlog2',  'root'),      1721084020),  # Tue Jul 16 00:53:40 CEST 2024
+        (('wtmp-truncated', './fake_lastlog2',  'whoever'),   0),
     )
 
     def _run_test(self, params, expected):
-        filename, user = params
+        filename, fake_lastlog, user = params
         filename = 'wtmp-examples/' + filename
-        self.assertEqual(get_last_login_timestamp(user, filename), expected)
+        self.assertEqual(get_last_login_timestamp(user, filename, fake_lastlog), expected)
 
     def test_date_1999(self):
         with self.assertRaises(AppArmorBug):
             # wtmp-x86_64-past is hand-edited to Thu Dec 30 00:00:00 CET 1999, which is outside the expected data range
-            get_last_login_timestamp('root', 'wtmp-examples/wtmp-x86_64-past')
+            get_last_login_timestamp('root', 'wtmp-examples/wtmp-x86_64-past', './does-not-exist')
+
+    def test_unknown_user(self):
+        with self.assertRaises(AppArmorException):
+            get_last_login_timestamp('notexist', 'wtmp-examples/wtmp-x86_64', './fake_lastlog2')
 
 
 class TestSane_timestamp(AATest):
