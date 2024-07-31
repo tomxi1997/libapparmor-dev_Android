@@ -1,11 +1,15 @@
 root_was_shared="no"
+root="/"
 
 # systemd mounts / and everything under it MS_SHARED. This breaks
 # pivot_root and mount "move" operations entirely, so attempt to
-# detect it, and remount / MS_PRIVATE temporarily.
+# detect from which mount point the test is running from, and remount
+# it MS_PRIVATE temporarily.
 FINDMNT=/bin/findmnt
-if [ -x "${FINDMNT}" ] && ${FINDMNT} -no PROPAGATION / > /dev/null 2>&1 ; then
-	if [ "$(${FINDMNT} -no PROPAGATION /)" = "shared" ] ; then
+if [ -x "${FINDMNT}" ] && ${FINDMNT} -no TARGET,PROPAGATION -T $tmpdir > /dev/null 2>&1 ; then
+	output="$(${FINDMNT} -no TARGET,PROPAGATION -T $tmpdir)"
+	root="$(echo $output | cut -d' ' -f1)"
+	if [ "$(echo $output | cut -d' ' -f2)" == "shared" ] ; then
 		root_was_shared="yes"
 	fi
 elif [ "$(ps hp1  -ocomm)" = "systemd" ] ; then
@@ -14,13 +18,13 @@ elif [ "$(ps hp1  -ocomm)" = "systemd" ] ; then
 	root_was_shared="yes"
 fi
 if [ "${root_was_shared}" = "yes" ] ; then
-	[ -n "$VERBOSE" ] && echo 'notice: re-mounting / as private'
-	mount --make-private /
+	[ -n "$VERBOSE" ] && echo "notice: re-mounting $root as private"
+	mount --make-private $root
 fi
 
 prop_cleanup() {
 	if [ "${root_was_shared}" = "yes" ] ; then
-		[ -n "$VERBOSE" ] && echo 'notice: re-mounting / as shared'
-		mount --make-shared /
+		[ -n "$VERBOSE" ] && echo "notice: re-mounting $root as shared"
+		mount --make-shared $root
 	fi
 }
