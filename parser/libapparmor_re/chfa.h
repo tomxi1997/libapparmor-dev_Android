@@ -39,7 +39,7 @@ class CHFA {
       public:
 	CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts);
 	void dump(ostream & os);
-	void flex_table(ostream &os, const char *name);
+	void flex_table(ostream &os);
 	void init_free_list(vector<pair<size_t, size_t> > &free_list,
 			    size_t prev, size_t start);
 	bool fits_in(vector<pair<size_t, size_t> > &free_list, size_t base,

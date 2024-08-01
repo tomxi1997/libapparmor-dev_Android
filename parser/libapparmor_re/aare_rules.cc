@@ -307,7 +307,7 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 		CHFA chfa(dfa, eq, opts);
 		if (opts.dump & DUMP_DFA_TRANS_TABLE)
 			chfa.dump(cerr);
-		chfa.flex_table(stream, "");
+		chfa.flex_table(stream);
 	}
 	catch(int error) {
 		*size = 0;
