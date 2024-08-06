@@ -138,6 +138,7 @@ class CapabilityTest(AATest):
             'active_hat': None,
             'pid': 15454,
             'task': 0,
+            'comm': 'ping',
             'attr': None,
             'name2': None,
             'name': 'net_raw',
