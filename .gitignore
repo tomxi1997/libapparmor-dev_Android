@@ -1,4 +1,4 @@
-apparmor-*
+apparmor-
 cscope.*
 binutils/aa-enabled
 binutils/aa-enabled.1
@@ -213,6 +213,7 @@ utils/apparmor/*.pyc
 utils/apparmor/rule/*.pyc
 utils/apparmor.egg-info/
 utils/build/
+!utils/emacs/apparmor-mode.el
 utils/htmlcov/
 utils/test/common_test.pyc
 utils/test/.coverage
