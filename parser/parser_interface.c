@@ -545,13 +545,13 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 		sd_write_struct(buf, "policydb");
 		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
 				 profile->policy.perms_table);
-	if (profile->policy.dfa) {
-		// fprintf(stderr, "profile %s: policy xtable\n", profile->name);
-		// TODO: this is dummy exec make dependent on V1
-		sd_serialize_xtable(buf, profile->exec_table,
-				    profile->uses_prompt_rules && prompt_compat_mode == PROMPT_COMPAT_PERMSV1 ?
-				    profile->policy.perms_table.size() : 0);
-	}
+		if (kernel_supports_permstable32) {
+			sd_serialize_xtable(buf, profile->exec_table,
+				profile->uses_prompt_rules &&
+				prompt_compat_mode == PROMPT_COMPAT_PERMSV1 ?
+					profile->policy.perms_table.size() : 0);
+
+		}
 		sd_write_structend(buf);
 	}
 
