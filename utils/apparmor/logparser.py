@@ -238,6 +238,8 @@ class ReadLog:
 
             case 'io_uring':
                 ev['peer_profile'] = event.peer_profile
+            case 'capability':
+                ev['comm'] = event.comm
 
         if not ev['time']:
             ev['time'] = int(time.time())
