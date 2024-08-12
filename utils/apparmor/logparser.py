@@ -82,8 +82,8 @@ class ReadLog:
             'change_profile': {},  # flat, no hasher needed  (at least in logparser which doesn't support EXEC MODE and EXEC COND)
             'dbus':         hasher(),
             'exec':         hasher(),
+            'file':         hasher(),
             'network':      hasher(),
-            'path':         hasher(),
             'pivot_root':   hasher(),
             'ptrace':       hasher(),
             'signal':       hasher(),
@@ -337,7 +337,7 @@ class ReadLog:
             return
 
         elif self.op_type(e) == 'file':
-            FileRule.hashlog_from_event(self.hashlog[aamode][full_profile]['path'], e)
+            FileRule.hashlog_from_event(self.hashlog[aamode][full_profile]['file'], e)
 
         elif e['operation'] == 'capable':
             CapabilityRule.hashlog_from_event(self.hashlog[aamode][full_profile]['capability'], e)
