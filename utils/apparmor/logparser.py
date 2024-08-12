@@ -132,7 +132,7 @@ class ReadLog:
         elif e['class'] and e['class'] == 'net' and e['family'] and e['family'] == 'unix':
             return 'unix'
         elif self.op_type(e) == 'file':
-            return 'path'
+            return 'file'
         elif e['operation'] == 'capable':
             return 'capability'
         elif self.op_type(e) == 'net':
