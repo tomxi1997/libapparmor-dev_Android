@@ -161,11 +161,14 @@ class ReadLog:
         return None
 
     def create_rule_from_ev(self, ev):
-        ruletype = self.ruletypes[self.get_event_type(ev)]
+        event_type = self.get_event_type(ev)
+        if not event_type:
+            return None
+        ruletype = self.ruletypes[event_type]
 
         try:
             return ruletype.create_from_ev(ev)
-        except Exception:
+        except (AppArmorException, AppArmorBug):
             return None
 
     def parse_record(self, event):
