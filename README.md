@@ -354,6 +354,9 @@ The aa-notify tool's Python dependencies can be satisfied by installing the
 following packages (Debian package names, other distros may vary):
 * python3-notify2
 * python3-psutil
+* python3-tk
+* python3-ttkthemes
+* python3-gi
 
 Perl is no longer needed since none of the utilities shipped to end users depend
 on it anymore.

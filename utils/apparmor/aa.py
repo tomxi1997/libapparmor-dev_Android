@@ -1607,6 +1607,14 @@ def collapse_log(hashlog, ignore_null_profiles=True):
     return log_dict
 
 
+def update_profiles(ui_msg=False, skip_profiles=()):
+    reset_aa()
+    try:
+        read_profiles(ui_msg, skip_profiles)
+    except AppArmorException as e:
+        print(_("Error while loading profiles: {}").format(e))
+
+
 def read_profiles(ui_msg=False, skip_profiles=()):
     # we'll read all profiles from disk, so reset the storage first (autodep() might have created/stored
     # a profile already, which would cause a 'Conflicting profile' error in attach_profile_data())

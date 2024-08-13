@@ -51,7 +51,7 @@ po/${NAME}.pot: ${TOOLS} ${PYMODULES}
 .PHONY: install
 install: ${MANPAGES} ${HTMLMANPAGES}
 	install -d ${CONFDIR}
-	install -m 644 logprof.conf severity.db notify.conf ${CONFDIR}
+	install -m 644 logprof.conf severity.db notify.conf default_unconfined.template ${CONFDIR}
 	install -d ${BINDIR}
 	# aa-easyprof is installed by python-tools-setup.py
 	install -m 755 $(filter-out aa-easyprof, ${TOOLS}) ${BINDIR}
