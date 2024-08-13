@@ -55,6 +55,24 @@ class Install(_install):
         for d in data:
             self.copy_tree(d, os.path.join(prefix + "/usr/share/apparmor/easyprof", os.path.basename(d)))
 
+        # Make update_profile.py executable
+        update_profile_path = os.path.join(self.install_lib, 'apparmor/update_profile.py')
+        print('changing mode of {} to 755'.format(update_profile_path))
+        os.chmod(update_profile_path, 0o755)
+
+        pkexec_action_name = 'com.ubuntu.pkexec.aa-notify.policy'
+        print('Installing {} to /usr/share/polkit-1/actions/ mode 644'.format(pkexec_action_name))
+        with open(pkexec_action_name, 'r') as f:
+            polkit_template = f.read()
+
+        polkit = polkit_template.format(LIB_PATH=self.install_lib)
+
+        if not os.path.exists(prefix + '/usr/share/polkit-1/actions/'):
+            os.mkdir(prefix + '/usr/share/polkit-1/actions/')
+        with open(prefix + '/usr/share/polkit-1/actions/' + pkexec_action_name, 'w') as f:
+            f.write(polkit)
+        os.chmod(prefix + '/usr/share/polkit-1/actions/' + pkexec_action_name, 0o644)
+
 
 if os.path.exists('staging'):
     shutil.rmtree('staging')
