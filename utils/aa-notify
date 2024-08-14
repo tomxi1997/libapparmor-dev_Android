@@ -506,9 +506,9 @@ def cb_more_info(notification, action, _args):
         profile_path = aa.get_profile_filename_from_profile_name(parsed_event['profile'])
         if profile_path:
             out += _('If you want to allow this operation you can add the line below in profile {}\n').format(profile_path)
+            out += rule.get_clean()
         else:
             out += _('However {0} is not in {1}\nIt is likely that the profile was not stored in {1} or was removed.\n').format(parsed_event['profile'], aa.profile_dir)
-        out += rule.get_clean()
     else:  # Should not happen
         out += _('ERROR: Could not create rule from event.')
         return
