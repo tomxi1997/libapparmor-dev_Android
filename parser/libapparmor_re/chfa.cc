@@ -489,7 +489,8 @@ void flex_table_serialize(CHFA &chfa, ostream &os,
 
 void CHFA::flex_table(ostream &os, optflags const &opts) {
 
-	if (opts.control & CONTROL_DFA_STATE32) {
+	if (opts.control & CONTROL_DFA_STATE32 &&
+	    default_base.size() > (1 << 16) - 1) {
 // TODO: implement support for flags in separate table
 //		if (opts.control & CONTROL_DFA_FLAGS_TABLE) {
 //			if (opts.dump & DUMP_FLAGS_TABLE)
