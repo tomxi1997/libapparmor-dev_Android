@@ -188,6 +188,7 @@ static void abi_features(char *filename, bool search);
 	#include "io_uring.h"
 	#include "network.h"
 	#include "all_rule.h"
+	#include "cond_expr.h"
 }
 
 %union {
@@ -225,6 +226,7 @@ static void abi_features(char *filename, bool search);
 	IncludeCache_t *includecache;
 	audit_t audit;
 	rule_mode_t rule_mode;
+	cond_expr *cond;
 }
 
 %type <id> 	TOK_ID
@@ -260,7 +262,7 @@ static void abi_features(char *filename, bool search);
 %type <bool_var> TOK_BOOL_VAR
 %type <var_val>	TOK_VALUE
 %type <val_list> valuelist
-%type <boolean> expr
+%type <cond> expr
 %type <id>	id_or_var
 %type <id>	opt_id_or_var
 %type <boolean> opt_subset_flag
@@ -901,11 +903,12 @@ cond_rule: TOK_IF expr block
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional rules\n");
-		if ($2) {
+		if ($2->eval()) {
 			ret = $3;
 		} else {
 			delete $3;
 		}
+		delete $2;
 		$$ = ret;
 	}
 
@@ -913,13 +916,14 @@ cond_rule: TOK_IF expr block TOK_ELSE block
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else rules\n");
-		if ($2) {
+		if ($2->eval()) {
 			ret = $3;
 			delete $5;
 		} else {
 			ret = $5;
 			delete $3;
 		}
+		delete $2;
 		$$ = ret;
 	}
 
@@ -927,53 +931,45 @@ cond_rule: TOK_IF expr block TOK_ELSE cond_rule
 	{
 		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else-if rules\n");
-		if ($2) {
+		if ($2->eval()) {
 			ret = $3;
 			delete $5;
 		} else {
 			ret = $5;
 			delete $3;
 		}
+		delete $2;
 		$$ = ret;
 	}
 
 expr:	TOK_NOT expr
 	{
-		$$ = !$2;
+		cond_expr *conds = new cond_expr(!$2->eval());
+		delete $2;
+		$$ = conds;
 	}
 
 expr:	TOK_BOOL_VAR
 	{
-		char *var_name = process_var($1);
-		int boolean  = get_boolean_var(var_name);
-		PDEBUG("Matched: boolean expr %s value: %d\n", $1, boolean);
-		if (boolean < 0) {
-			/* FIXME check for set var */
-			yyerror(_("Unset boolean variable %s used in if-expression"),
-				$1);
-		}
-		$$ = boolean;
-		free(var_name);
+		cond_expr *conds = new cond_expr($1, false);
+		PDEBUG("Matched: boolean expr %s value: %d\n", $1, conds->eval());
+		$$ = conds;
 		free($1);
 	}
 
 expr:	TOK_DEFINED TOK_SET_VAR
 	{
-		char *var_name = process_var($2);
-		void *set_value = get_set_var(var_name);
-		PDEBUG("Matched: defined set expr %s value %lx\n", $2, (long) set_value);
-		$$ = !! (long) set_value;
-		free(var_name);
+		cond_expr *conds = new cond_expr($2, true);
+		PDEBUG("Matched: defined set expr %s value %d\n", $2, conds->eval());
+		$$ = conds;
 		free($2);
 	}
 
 expr:	TOK_DEFINED TOK_BOOL_VAR
 	{
-		char *var_name = process_var($2);
-		int boolean = get_boolean_var(var_name);
-		PDEBUG("Matched: defined set expr %s value %d\n", $2, boolean);
-		$$ = (boolean != -1);
-		free(var_name);
+		cond_expr *conds = new cond_expr($2, false);
+		PDEBUG("Matched: defined set expr %s value %d\n", $2, conds->eval());
+		$$ = conds;
 		free($2);
 	}
 
