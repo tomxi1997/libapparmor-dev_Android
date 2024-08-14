@@ -34,15 +34,16 @@
 
 using namespace std;
 
+typedef vector<pair<const State *, size_t> > DefaultBase;
+typedef vector<pair<const State *, const State *> > NextCheck;
+
 class CHFA {
-	typedef vector<pair<const State *, size_t> > DefaultBase;
-	typedef vector<pair<const State *, const State *> > NextCheck;
       public:
 	CHFA(void);
 	CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 	     bool permindex, bool prompt);
 	void dump(ostream & os);
-	void flex_table(ostream &os);
+	void flex_table(ostream &os, optflags const &opts);
 	void init_free_list(vector<pair<size_t, size_t> > &free_list,
 			    size_t prev, size_t start);
 	bool fits_in(vector<pair<size_t, size_t> > &free_list, size_t base,
@@ -54,7 +55,9 @@ class CHFA {
 				 vector <aa_perms>  &policy_perms,
 				 vector <aa_perms> &file_perms);
 
-      private:
+	// private:
+	// sigh templates suck, friend declaration does not work so for now
+	// make these public
 	vector<uint32_t> accept;
 	vector<uint32_t> accept2;
 	DefaultBase default_base;
@@ -62,9 +65,10 @@ class CHFA {
 	const State *start;
 	map<const State *, size_t> num;
 	map<transchar, transchar> eq;
+	unsigned int chfaflags;
+      private:
 	transchar max_eq;
 	ssize_t first_free;
-	unsigned int chfaflags;
 };
 
 #endif /* __LIBAA_RE_CHFA_H */

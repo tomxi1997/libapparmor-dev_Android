@@ -364,6 +364,8 @@ extern int kernel_supports_promptdev;
 extern int kernel_supports_permstable32;
 extern int kernel_supports_permstable32_v1;
 extern int prompt_compat_mode;
+extern int kernel_supports_state32;
+extern int kernel_supports_flags_table;
 extern int conf_verbose;
 extern int conf_quiet;
 extern int names_only;

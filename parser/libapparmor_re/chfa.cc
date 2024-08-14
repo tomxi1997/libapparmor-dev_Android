@@ -396,7 +396,9 @@ template<class Iter>
 	os << fill64(sizeof(td) + sizeof(*pos) * size);
 }
 
-void CHFA::flex_table(ostream &os)
+template<class STATE_TYPE>
+void flex_table_serialize(CHFA &chfa, ostream &os,
+			  uint32_t max_size)
 {
 	const char th_version[] = "notflex";
 	struct table_set_header th = { 0, 0, 0, 0 };
@@ -405,16 +407,15 @@ void CHFA::flex_table(ostream &os)
 	 * Change the following two data types to adjust the maximum flex
 	 * table size.
 	 */
-	typedef uint16_t state_t;
 	typedef uint32_t trans_t;
 
-	if (default_base.size() >= (state_t) - 1) {
-		cerr << "Too many states (" << default_base.size() << ") for "
+	if (chfa.default_base.size() >= (max_size)) {
+		cerr << "Too many states (" << chfa.default_base.size() << ") for "
 		    "type state_t\n";
 		exit(1);
 	}
-	if (next_check.size() >= (trans_t) - 1) {
-		cerr << "Too many transitions (" << next_check.size()
+	if (chfa.next_check.size() >= (trans_t) - 1) {
+		cerr << "Too many transitions (" << chfa.next_check.size()
 		     << ") for " "type trans_t\n";
 		exit(1);
 	}
@@ -424,25 +425,25 @@ void CHFA::flex_table(ostream &os)
 	 * using the generic write_flex_table() routine.
 	 */
 	vector<uint8_t> equiv_vec;
-	if (eq.size()) {
+	if (chfa.eq.size()) {
 		equiv_vec.resize(256);
-		for (map<transchar, transchar>::iterator i = eq.begin(); i != eq.end(); i++) {
+		for (map<transchar, transchar>::iterator i = chfa.eq.begin(); i != chfa.eq.end(); i++) {
 			equiv_vec[i->first.c] = i->second.c;
 		}
 	}
 
-	vector<state_t> default_vec;
+	vector<STATE_TYPE> default_vec;
 	vector<trans_t> base_vec;
-	for (DefaultBase::iterator i = default_base.begin(); i != default_base.end(); i++) {
-		default_vec.push_back(num[i->first]);
+	for (DefaultBase::iterator i = chfa.default_base.begin(); i != chfa.default_base.end(); i++) {
+		default_vec.push_back(chfa.num[i->first]);
 		base_vec.push_back(i->second);
 	}
 
-	vector<state_t> next_vec;
-	vector<state_t> check_vec;
-	for (NextCheck::iterator i = next_check.begin(); i != next_check.end(); i++) {
-		next_vec.push_back(num[i->first]);
-		check_vec.push_back(num[i->second]);
+	vector<STATE_TYPE> next_vec;
+	vector<STATE_TYPE> check_vec;
+	for (NextCheck::iterator i = chfa.next_check.begin(); i != chfa.next_check.end(); i++) {
+		next_vec.push_back(chfa.num[i->first]);
+		check_vec.push_back(chfa.num[i->second]);
 	}
 
 	/* Write the actual flex parser table. */
@@ -450,31 +451,63 @@ void CHFA::flex_table(ostream &os)
 	// sizeof(th_version) includes trailing \0
 	size_t hsize = pad64(sizeof(th) + sizeof(th_version));
 	th.th_magic = htonl(YYTH_REGEX_MAGIC);
-	th.th_flags = htons(chfaflags);
+	th.th_flags = htons(chfa.chfaflags);
 	th.th_hsize = htonl(hsize);
 	th.th_ssize = htonl(hsize +
-			    flex_table_size(accept.begin(), accept.end()) +
-			    (accept2.size() ? flex_table_size(accept2.begin(), accept2.end()) : 0) +
-			    (eq.size() ? flex_table_size(equiv_vec.begin(), equiv_vec.end()) : 0) +
-			    flex_table_size(base_vec.begin(), base_vec.end()) +
-			    flex_table_size(default_vec.begin(), default_vec.end()) +
+			    flex_table_size(chfa.accept.begin(),
+					    chfa.accept.end()) +
+			    (chfa.accept2.size() ?
+			     flex_table_size(chfa.accept2.begin(),
+					     chfa.accept2.end()) : 0) +
+			    (chfa.eq.size() ?
+			     flex_table_size(equiv_vec.begin(),
+					     equiv_vec.end()) : 0) +
+			    flex_table_size(base_vec.begin(),
+					    base_vec.end()) +
+			    flex_table_size(default_vec.begin(),
+					    default_vec.end()) +
 			    flex_table_size(next_vec.begin(), next_vec.end()) +
-			    flex_table_size(check_vec.begin(), check_vec.end()));
+			    flex_table_size(check_vec.begin(),
+					    check_vec.end()));
 	os.write((char *)&th, sizeof(th));
 	os.write(th_version, sizeof(th_version));
 	os << fill64(sizeof(th) + sizeof(th_version));
 
-	write_flex_table(os, YYTD_ID_ACCEPT, accept.begin(), accept.end());
-	if (accept2.size())
-		write_flex_table(os, YYTD_ID_ACCEPT2, accept2.begin(),
-				 accept2.end());
-	if (eq.size())
+	write_flex_table(os, YYTD_ID_ACCEPT, chfa.accept.begin(),
+			 chfa.accept.end());
+	if (chfa.accept2.size())
+		write_flex_table(os, YYTD_ID_ACCEPT2, chfa.accept2.begin(),
+				 chfa.accept2.end());
+	if (chfa.eq.size())
 		write_flex_table(os, YYTD_ID_EC, equiv_vec.begin(),
 				 equiv_vec.end());
 	write_flex_table(os, YYTD_ID_BASE, base_vec.begin(), base_vec.end());
 	write_flex_table(os, YYTD_ID_DEF, default_vec.begin(), default_vec.end());
 	write_flex_table(os, YYTD_ID_NXT, next_vec.begin(), next_vec.end());
 	write_flex_table(os, YYTD_ID_CHK, check_vec.begin(), check_vec.end());
+}
+
+void CHFA::flex_table(ostream &os, optflags const &opts) {
+
+	if (opts.control & CONTROL_DFA_STATE32) {
+// TODO: implement support for flags in separate table
+//		if (opts.control & CONTROL_DFA_FLAGS_TABLE) {
+//			if (opts.dump & DUMP_FLAGS_TABLE)
+//				cerr << "using flags table\n";
+//			flex_table_serialize(os, uint32_t, (1 << 32) - 1);
+//		} else { /* only 24 bits available */
+		if (opts.dump & DUMP_DFA_STATE32)
+			cerr << "using 32 bit state tables, embedded flags\n";
+		flex_table_serialize<uint32_t>(*this, os, (1 << 24) - 1);
+	} else {
+		if (opts.control & CONTROL_DFA_FLAGS_TABLE) {
+			cerr << "Flags table specified when using 16 bit state\n";
+			exit(1);
+		}
+		if (opts.dump & DUMP_DFA_STATE32)
+			cerr << "using 16 bit state tables, embedded flags\n";
+		flex_table_serialize<uint16_t>(*this, os, (1 << 16) - 1);
+	}
 }
 
 /*
