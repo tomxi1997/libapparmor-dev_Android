@@ -1,7 +1,6 @@
 import os
 import tkinter as tk
 import tkinter.ttk as ttk
-import tkinter.messagebox as messagebox
 import tkinter.font as font
 import subprocess
 import ttkthemes
@@ -15,7 +14,7 @@ from apparmor.translations import init_translation
 _ = init_translation()
 
 notification_custom_msg = {
-    'userns': _('Application {0} wants to create an user namespace which could be used to compromise your system\nDo you want to allow it next time {0} is run?\nApplication path is {1}')
+    'userns': _('Application {0} wants to create an user namespace which could be used to compromise your system\nDo you want to allow it next time {0} is run?')
 }
 
 global interface_theme
@@ -136,7 +135,7 @@ class UsernsGUI(GUI):
 
         self.master.title(_('AppArmor - User namespace creation restricted'))
 
-        label_text = notification_custom_msg['userns'].format(name, path)
+        label_text = notification_custom_msg['userns'].format(name)
         self.label = ttk.Label(self.label_frame, text=label_text, wraplength=460)
         self.label.pack()
         link = ttk.Label(self.master, text=_('More information'), foreground='blue', cursor='hand2')
@@ -152,18 +151,17 @@ class UsernsGUI(GUI):
         self.do_nothing_button = ttk.Button(self.master, text=_('Do nothing'), command=self.master.destroy)
         self.do_nothing_button.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-    @staticmethod
-    def more_info(ev):
+    def more_info(self, ev):
         more_info_text = _("""
 In Linux, user namespaces enable non-root users to perform certain privileged operations. This feature can be useful for several legitimate use cases.
 
 However, this feature also introduces security risks, (e.g. privilege escalation exploits).
 
-This dialog allows you to choose whether you want to enable user namespaces for this application.""")
-        messagebox.showinfo(
-            _('AppArmor: More info'),
-            more_info_text,
-        )
+This dialog allows you to choose whether you want to enable user namespaces for this application.
+
+The application path is {}""".format(self.path))
+        more_gui = ShowMoreGUI(self.path, more_info_text, profile_found=False)
+        more_gui.show()
 
     def set_result(self, result):
         self.result = result
