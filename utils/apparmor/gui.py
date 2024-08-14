@@ -31,6 +31,7 @@ class GUI:
         style = ttkthemes.ThemedStyle(self.master)
         style.theme_use(interface_theme)
         self.bg_color = style.lookup('TLabel', 'background')
+        self.fg_color = style.lookup('TLabel', 'foreground')
         self.master.configure(background=self.bg_color)
 
         self.label_frame = ttk.Frame(self.master, padding=(20, 10))
@@ -114,8 +115,9 @@ class ShowMoreGUI(GUI):
 
         self.master.title(_('AppArmor - More info'))
 
-        self.label = tk.Label(self.label_frame, background=self.bg_color, text=self.msg, anchor='w', justify=tk.LEFT, wraplength=460)
-        self.label.pack()
+        self.label = tk.Label(self.label_frame, background=self.bg_color, foreground=self.fg_color,
+                              text=self.msg, anchor='w', justify=tk.LEFT, wraplength=460)
+        self.label.pack(pady=(0, 10) if not self.profile_found else (0, 0))
 
         if self.profile_found:
             self.show_profile_button = ttk.Button(self.button_frame, text=_('Show Current Profile'), command=lambda: open_with_default_editor(self.profile_path))
