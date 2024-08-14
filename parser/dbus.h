@@ -23,7 +23,7 @@
 #include "rule.h"
 #include "profile.h"
 
-extern int parse_dbus_perms(const char *str_mode, perms_t *mode, int fail);
+extern int parse_dbus_perms(const char *str_mode, perm32_t *mode, int fail);
 
 class dbus_rule: public perms_rule_t {
 	void move_conditionals(struct cond_entry *conds);
@@ -40,7 +40,7 @@ public:
 	char *interface;
 	char *member;
 
-	dbus_rule(perms_t perms_p, struct cond_entry *conds,
+	dbus_rule(perm32_t perms_p, struct cond_entry *conds,
 		  struct cond_entry *peer_conds);
 	virtual ~dbus_rule() {
 		free(bus);
@@ -51,7 +51,7 @@ public:
 		free(member);
 	};
 	virtual bool valid_prefix(const prefixes &p, const char *&error) {
-		if (p.owner) {
+		if (p.owner != OWNER_UNSPECIFIED) {
 			error = "owner prefix not allowed on dbus rules";
 			return false;
 		}

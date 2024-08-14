@@ -22,9 +22,18 @@
 #include <list>
 #include <ostream>
 
+#include "perms.h"
 #include "policydb.h"
 
 using namespace std;
+
+#define PROMPT_COMPAT_UNKNOWN  0
+#define PROMPT_COMPAT_IGNORE  1
+#define PROMPT_COMPAT_PERMSV2 2
+#define PROMPT_COMPAT_DEV 3
+#define PROMPT_COMPAT_FLAG 4
+#define PROMPT_COMPAT_PERMSV1 5
+
 
 class Profile;
 
@@ -151,9 +160,10 @@ std::ostream &operator<<(std::ostream &os, rule_t &rule);
 typedef std::list<rule_t *> RuleList;
 
 /* Not classes so they can be used in the bison front end */
-typedef uint32_t perms_t;
 typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
-typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY } rule_mode_t;
+typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY, RULE_PROMPT } rule_mode_t;
+typedef enum { OWNER_UNSPECIFIED, OWNER_SPECIFIED, OWNER_NOT } owner_t;
+
 
 /* NOTE: we can not have a constructor for class prefixes. This is
  * because it will break bison, and we would need to transition to
@@ -165,7 +175,7 @@ class prefixes {
 public:
 	audit_t audit;
 	rule_mode_t rule_mode;
-	int owner;
+	owner_t owner;
 
 	ostream &dump(ostream &os)
 	{
@@ -183,6 +193,13 @@ public:
 		}
 
 		switch (rule_mode) {
+		case RULE_ALLOW:
+			if (output)
+				os << " ";
+
+			os << "allow";
+			output = true;
+			break;
 		case RULE_DENY:
 			if (output)
 				os << " ";
@@ -190,15 +207,32 @@ public:
 			os << "deny";
 			output = true;
 			break;
+		case RULE_PROMPT:
+			if (output)
+				os << " ";
+
+			os << "prompt";
+			output = true;
+			break;
 		default:
 			break;
 		}
 
-		if (owner) {
+		switch (owner) {
+		case OWNER_SPECIFIED:
 			if (output)
 				os << " ";
 			os << "owner";
 			output = true;
+			break;
+		case OWNER_NOT:
+			if (output)
+				os << " ";
+			os << "!owner";
+			output = true;
+			break;
+		default:
+			break;
 		}
 
 		if (output)
@@ -216,9 +250,9 @@ public:
 			return -1;
 		if ((uint) rule_mode > (uint) rhs.rule_mode)
 			return 1;
-		if (owner < rhs.owner)
+		if ((uint) owner < (uint) rhs.owner)
 			return -1;
-		if (owner > rhs.owner)
+		if ((uint) owner > (uint) rhs.owner)
 			return 1;
 		return 0;
 	}
@@ -228,7 +262,7 @@ public:
 			return true;
 		if ((uint) rule_mode < (uint) rhs.rule_mode)
 			return true;
-		if (owner < rhs.owner)
+		if ((uint) owner < (uint) rhs.owner)
 			return true;
 		return false;
 	}
@@ -241,7 +275,7 @@ public:
 		/* Must construct prefix here see note on prefixes */
 		audit = AUDIT_UNSPECIFIED;
 		rule_mode = RULE_UNSPECIFIED;
-		owner = 0;
+		owner = OWNER_UNSPECIFIED;
 	};
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) = 0;
@@ -271,13 +305,15 @@ public:
 
 		/* owner !owner conflicts */
 		if (p.owner) {
-			if (owner && owner != p.owner) {
+			if (owner != OWNER_UNSPECIFIED &&
+			    owner != p.owner) {
 				error = "conflicting owner prefix";
 				return false;
 			}
 			owner = p.owner;
 		}
 
+		/* TODO: MOVE this ! */
 		/* does the prefix imply a modifier */
 		if (p.rule_mode == RULE_DENY && p.audit == AUDIT_FORCE) {
 			rule_mode = RULE_DENY;
@@ -393,7 +429,7 @@ public:
 		return os;
 	}
 
-	perms_t perms, saved;
+	perm32_t perms, saved;
 };
 
 // alternate perms rule class that only does dedup instead of perms merging
@@ -418,7 +454,7 @@ public:
 		return os;
 	}
 
-	perms_t perms;
+	perm32_t perms;
 };
 
 

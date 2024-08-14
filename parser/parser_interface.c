@@ -323,10 +323,49 @@ static inline void sd_write_listend(std::ostringstream &buf)
 	sd_write8(buf, SD_LISTEND);
 }
 
-void sd_serialize_dfa(std::ostringstream &buf, void *dfa, size_t size)
+void sd_serialize_perm(std::ostringstream &buf, aa_perms &perms)
 {
-	if (dfa)
+	sd_write_uint32(buf, 0);	/* reserved */
+	sd_write_uint32(buf, perms.allow);
+	sd_write_uint32(buf, perms.deny);
+	sd_write_uint32(buf, perms.subtree);
+	sd_write_uint32(buf, perms.cond);
+	sd_write_uint32(buf, perms.kill);
+	sd_write_uint32(buf, perms.complain);
+	sd_write_uint32(buf, perms.prompt);
+	sd_write_uint32(buf, perms.audit);
+	sd_write_uint32(buf, perms.quiet);
+	sd_write_uint32(buf, perms.hide);
+	sd_write_uint32(buf, perms.xindex);
+	sd_write_uint32(buf, perms.tag);
+	sd_write_uint32(buf, perms.label);
+}
+
+void sd_serialize_permstable(std::ostringstream &buf, vector <aa_perms> &perms_table)
+{
+	sd_write_struct(buf, "perms");
+	sd_write_name(buf, "version");
+	sd_write_uint32(buf, 1);
+	sd_write_array(buf, NULL, perms_table.size());
+	for (size_t i = 0; i < perms_table.size(); i++) {
+		sd_serialize_perm(buf, perms_table[i]);
+	}
+	sd_write_arrayend(buf);
+	sd_write_structend(buf);
+}
+
+void sd_serialize_dfa(std::ostringstream &buf, void *dfa, size_t size,
+	vector <aa_perms> &perms_table)
+{
+	if (dfa) {
+		if (kernel_supports_permstable32 && perms_table.size() > 0) {
+			//fprintf(stderr, "writing perms table %d\n", size);
+			sd_serialize_permstable(buf, perms_table);
+		} else {
+			//fprintf(stderr, "skipping permtable32 %d, size %d\n", kernel_supports_permstable32, perms_table.size());
+		}
 		sd_write_aligned_blob(buf, dfa, size, "aadfa");
+	}
 }
 
 void sd_serialize_rlimits(std::ostringstream &buf, struct aa_rlimits *limits)
@@ -344,10 +383,13 @@ void sd_serialize_rlimits(std::ostringstream &buf, struct aa_rlimits *limits)
 	sd_write_structend(buf);
 }
 
-void sd_serialize_xtable(std::ostringstream &buf, char **table)
+void sd_serialize_xtable(std::ostringstream &buf, char **table,
+			 size_t min_size)
 {
-	int count;
-	if (!table[4])
+	size_t count;
+	size_t size;
+
+	if (!table[4] && min_size == 0)
 		return;
 	sd_write_struct(buf, "xtable");
 	count = 0;
@@ -356,9 +398,11 @@ void sd_serialize_xtable(std::ostringstream &buf, char **table)
 			count++;
 	}
 
-	sd_write_array(buf, NULL, count);
-	for (int i = 4; i < count + 4; i++) {
-		int len = strlen(table[i]) + 1;
+	size = max(min_size, count);
+
+	sd_write_array(buf, NULL, size);
+	for (size_t i = 4; i < count + 4; i++) {
+		size_t len = strlen(table[i]) + 1;
 
 		/* if its a namespace make sure the second : is overwritten
 		 * with 0, so that the namespace and name are \0 separated
@@ -369,6 +413,14 @@ void sd_serialize_xtable(std::ostringstream &buf, char **table)
 		}
 		sd_write_strn(buf, table[i], len, NULL);
 	}
+	if (min_size > count) {
+		//fprintf(stderr, "Adding padding to xtable count %lu, min %lu\n", count, min_size);
+		for (; count < min_size; count++) {
+			/* fill with null strings */
+			sd_write_strn(buf, "\000", 1, NULL);
+		}
+	}
+
 	sd_write_arrayend(buf);
 	sd_write_structend(buf);
 }
@@ -411,7 +463,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	/* only emit this if current kernel at least supports "create" */
 	if (perms_create) {
 		if (profile->xmatch) {
-			sd_serialize_dfa(buf, profile->xmatch, profile->xmatch_size);
+			sd_serialize_dfa(buf, profile->xmatch, profile->xmatch_size, profile->xmatch_perms_table);
 			sd_write_uint32(buf, profile->xmatch_len);
 		}
 	}
@@ -491,14 +543,42 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 
 	if (profile->policy.dfa) {
 		sd_write_struct(buf, "policydb");
-		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size);
+		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
+				 profile->policy.perms_table);
+		if (kernel_supports_permstable32) {
+			sd_serialize_xtable(buf, profile->exec_table,
+				profile->uses_prompt_rules &&
+				prompt_compat_mode == PROMPT_COMPAT_PERMSV1 ?
+					profile->policy.perms_table.size() : 0);
+
+		}
 		sd_write_structend(buf);
 	}
 
 	/* either have a single dfa or lists of different entry types */
-	sd_serialize_dfa(buf, profile->dfa.dfa, profile->dfa.size);
-	sd_serialize_xtable(buf, profile->exec_table);
-
+	if (profile->uses_prompt_rules && prompt_compat_mode == PROMPT_COMPAT_PERMSV1) {
+		/* special compat mode to work around verification problem */
+		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
+				 profile->policy.perms_table);
+		sd_write_name(buf,  "dfa_start");
+		sd_write_uint32(buf, profile->policy.file_start);
+		if (profile->policy.dfa) {
+			// fprintf(stderr, "profile %s: policy xtable\n", profile->name);
+			// TODO: this is dummy exec make dependent on V1
+			sd_serialize_xtable(buf, profile->exec_table,
+					    //permstable32_v1 workaround
+					    profile->policy.perms_table.size());
+		}
+	} else {
+		sd_serialize_dfa(buf, profile->dfa.dfa, profile->dfa.size,
+				 profile->dfa.perms_table);
+		if (profile->dfa.dfa) {
+			// fprintf(stderr, "profile %s: dfa xtable\n", profile->name);
+			sd_serialize_xtable(buf, profile->exec_table,
+					    //??? work around
+					    profile->dfa.perms_table.size());
+		}
+	}
 	sd_write_structend(buf);
 }
 

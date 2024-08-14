@@ -116,7 +116,7 @@ static const char *const sig_names[MAXMAPPED_SIG + 1] = {
 };
 
 
-int parse_signal_perms(const char *str_perms, perms_t *perms, int fail)
+int parse_signal_perms(const char *str_perms, perm32_t *perms, int fail)
 {
 	return parse_X_perms("signal", AA_VALID_SIGNAL_PERMS, str_perms, perms, fail);
 }
@@ -173,7 +173,7 @@ void signal_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-signal_rule::signal_rule(perms_t perms_p, struct cond_entry *conds):
+signal_rule::signal_rule(perm32_t perms_p, struct cond_entry *conds):
 	perms_rule_t(AA_CLASS_SIGNAL), signals(), peer_label(NULL)
 {
 	if (perms_p) {
@@ -316,8 +316,9 @@ int signal_rule::gen_policy_re(Profile &prof)
 
 	buf = buffer.str();
 	if (perms & (AA_MAY_SEND | AA_MAY_RECEIVE)) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, perms, audit == AUDIT_FORCE ? perms : 0,
-						 parseopts))
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode,
+					perms, audit == AUDIT_FORCE ? perms : 0,
+					parseopts))
 			goto fail;
 	}
 

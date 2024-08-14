@@ -32,6 +32,7 @@
 #include "hfa.h"
 #include "chfa.h"
 #include "../immunix.h"
+#include "../policydb.h"
 #include "flex-tables.h"
 
 void CHFA::init_free_list(vector<pair<size_t, size_t> > &free_list,
@@ -46,11 +47,15 @@ void CHFA::init_free_list(vector<pair<size_t, size_t> > &free_list,
 	free_list[free_list.size() - 1].second = 0;
 }
 
+
 /**
  * new Construct the transition table.
+ *
+ * TODO: split dfaflags into separate control and dump so we can fold in
+ *       permtable index flag
  */
-CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
-	eq(eq)
+CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
+	   bool permindex, bool prompt): eq(eq)
 {
 	if (opts.dump & DUMP_DFA_TRANS_PROGRESS)
 		fprintf(stderr, "Compressing HFA:\r");
@@ -101,18 +106,29 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
 	num.insert(make_pair(dfa.nonmatching, num.size()));
 
 	accept.resize(max(dfa.states.size(), (size_t) 2));
-	accept2.resize(max(dfa.states.size(), (size_t) 2));
+	if (permindex) {
+		accept[0] = dfa.nonmatching->idx;
+		accept[1] = dfa.start->idx;
+	} else {
+		uint32_t accept3;
+		accept2.resize(max(dfa.states.size(), (size_t) 2));
+		dfa.nonmatching->map_perms_to_accept(accept[0],
+						     accept2[0],
+						     accept3,
+						     prompt);
+		dfa.start->map_perms_to_accept(accept[1],
+					       accept2[1],
+					       accept3,
+					       prompt);
+	}
 	next_check.resize(max(optimal, (size_t) dfa.max_range));
 	free_list.resize(next_check.size());
 
-	accept[0] = 0;
-	accept2[0] = 0;
 	first_free = 1;
 	init_free_list(free_list, 0, 1);
 
+	start = dfa.start;
 	insert_state(free_list, dfa.start, dfa);
-	accept[1] = 0;
-	accept2[1] = 0;
 	num.insert(make_pair(dfa.start, num.size()));
 
 	int count = 2;
@@ -120,9 +136,15 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
 	if (!(opts.control & CONTROL_DFA_TRANS_HIGH)) {
 		for (Partition::iterator i = dfa.states.begin(); i != dfa.states.end(); i++) {
 			if (*i != dfa.nonmatching && *i != dfa.start) {
+				uint32_t accept3;
 				insert_state(free_list, *i, dfa);
-				accept[num.size()] = (*i)->perms.allow;
-				accept2[num.size()] = PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny);
+				if (permindex)
+					accept[num.size()] = (*i)->idx;
+				else
+					(*i)->map_perms_to_accept(accept[num.size()],
+								  accept2[num.size()],
+								  accept3,
+								  prompt);
 				num.insert(make_pair(*i, num.size()));
 			}
 			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
@@ -137,9 +159,15 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts):
 		     i != order.end(); i++) {
 			if (i->second != dfa.nonmatching &&
 			    i->second != dfa.start) {
+				uint32_t accept3;
 				insert_state(free_list, i->second, dfa);
-				accept[num.size()] = i->second->perms.allow;
-				accept2[num.size()] = PACK_AUDIT_CTL(i->second->perms.audit, i->second->perms.quiet & i->second->perms.deny);
+				if (permindex)
+					accept[num.size()] = i->second->idx;
+				else
+					i->second->map_perms_to_accept(accept[num.size()],
+								       accept2[num.size()],
+								       accept3,
+								       prompt);
 				num.insert(make_pair(i->second, num.size()));
 			}
 			if (opts.dump & (DUMP_DFA_TRANS_PROGRESS)) {
@@ -426,7 +454,7 @@ void CHFA::flex_table(ostream &os)
 	th.th_hsize = htonl(hsize);
 	th.th_ssize = htonl(hsize +
 			    flex_table_size(accept.begin(), accept.end()) +
-			    flex_table_size(accept2.begin(), accept2.end()) +
+			    (accept2.size() ? flex_table_size(accept2.begin(), accept2.end()) : 0) +
 			    (eq.size() ? flex_table_size(equiv_vec.begin(), equiv_vec.end()) : 0) +
 			    flex_table_size(base_vec.begin(), base_vec.end()) +
 			    flex_table_size(default_vec.begin(), default_vec.end()) +
@@ -437,7 +465,9 @@ void CHFA::flex_table(ostream &os)
 	os << fill64(sizeof(th) + sizeof(th_version));
 
 	write_flex_table(os, YYTD_ID_ACCEPT, accept.begin(), accept.end());
-	write_flex_table(os, YYTD_ID_ACCEPT2, accept2.begin(), accept2.end());
+	if (accept2.size())
+		write_flex_table(os, YYTD_ID_ACCEPT2, accept2.begin(),
+				 accept2.end());
 	if (eq.size())
 		write_flex_table(os, YYTD_ID_EC, equiv_vec.begin(),
 				 equiv_vec.end());
@@ -445,4 +475,116 @@ void CHFA::flex_table(ostream &os)
 	write_flex_table(os, YYTD_ID_DEF, default_vec.begin(), default_vec.end());
 	write_flex_table(os, YYTD_ID_NXT, next_vec.begin(), next_vec.end());
 	write_flex_table(os, YYTD_ID_CHK, check_vec.begin(), check_vec.end());
+}
+
+/*
+ * @file_chfa: chfa to add on to the policy chfa
+ * @new_start: new start state for where the @file_dfa is in the new chfa
+ *
+ * Make a new chfa that is a combination of policy and file chfas. It
+ * assumes policy is built with AA_CLASS_FILE support transition. The
+ * resultant chfa will have file states and indexes offset except for
+ * start and null states.
+ *
+ * NOTE:
+ * - modifies chfa
+ * requires:
+ * - no ec
+ * - policy chfa has transitions state[start].next[AA_CLASS_FILE]
+ * - policy perms table is build if using permstable
+
+ */
+void CHFA::weld_file_to_policy(CHFA &file_chfa, size_t &new_start,
+			       bool accept_idx, bool prompt,
+			       vector <aa_perms>  &policy_perms,
+			       vector <aa_perms> &file_perms)
+{
+	// doesn't support remapping eq classes yet
+	if (eq.size() > 0 || file_chfa.eq.size() > 0)
+		throw 1;
+
+	size_t old_base_size = default_base.size();
+	size_t old_next_size = next_check.size();
+
+	const State *nonmatching = default_base[0].first;
+	//const State *start = default_base[1].first;
+	const State *file_nonmatching = file_chfa.default_base[0].first;
+
+	// renumber states from file_dfa by appending to policy dfa
+	num.insert(make_pair(file_nonmatching, 0));	// remap to policy nonmatching
+	for (map<const State *, size_t>::iterator i = file_chfa.num.begin(); i != file_chfa.num.end() ; i++) {
+		if (i->first == file_nonmatching)
+			continue;
+		num.insert(make_pair(i->first, i->second + old_base_size));
+	}
+
+	// handle default and base table expansion, and setup renumbering
+	// while we remap file_nonmatch within the table, we still keep its
+	// slot.
+	bool first = true;
+	for (DefaultBase::iterator i = file_chfa.default_base.begin(); i != file_chfa.default_base.end(); i++) {
+		const State *def;
+		size_t base;
+		if (first) {
+			first = false;
+			// remap file_nonmatch to nonmatch
+			def = nonmatching;
+			base = 0;
+		} else {
+			def = i->first;
+			base = i->second + old_next_size;
+		}
+		default_base.push_back(make_pair(def, base));
+	}
+
+	// mapping for these are handled by num[]
+	for (NextCheck::iterator i = file_chfa.next_check.begin(); i != file_chfa.next_check.end(); i++) {
+		next_check.push_back(*i);
+	}
+
+	// append file perms to policy perms, and rework permsidx if needed
+	if (accept_idx) {
+		// policy idx double
+		// file + doubled offset
+		// Requires: policy perms table, so we can double and
+		//           update indexes
+		//         * file perm idx to start on even idx
+		//         * policy perms table size to double and entries
+		//           to repeat
+		assert(accept.size() == old_base_size);
+		accept.resize(accept.size() + file_chfa.accept.size());
+		size_t size = policy_perms.size();
+		policy_perms.resize(size*2 + file_perms.size());
+		// shift and double the policy perms
+		for (size_t i = size - 1; size >= 0; i--) {
+			policy_perms[i*2] = policy_perms[i];
+			policy_perms[i*2 + 1] = policy_perms[i];
+		}
+		// update policy accept idx for the new shifted perms table
+		for (size_t i = 0; i < old_base_size; i++) {
+			accept[i] = accept[i]*2;
+		}
+		// copy over file perms
+		for (size_t i = 0; i < file_perms.size(); i++) {
+			policy_perms[size*2 + i] = file_perms[i];
+		}
+		// shift file accept indexs
+		for (size_t i = 0; i < file_chfa.accept.size(); i++) {
+			accept[old_base_size + i] = file_chfa.accept[i] + size*2;
+		}
+	} else {
+		// perms are stored in accept just append the perms
+		size_t size = accept.size();
+		accept.resize(size + file_chfa.accept.size());
+		accept2.resize(size + file_chfa.accept.size());
+		for (size_t i = 0; i < file_chfa.accept.size(); i++) {
+			accept[size + i] = file_chfa.accept[i];
+			accept2[size + i] = file_chfa.accept2[i];
+		}
+	}
+
+	// Rework transition state[start].next[AA_CLASS_FILE]
+	next_check[default_base[1].second + AA_CLASS_FILE].first = file_chfa.start;
+
+	new_start = num[file_chfa.start];
 }

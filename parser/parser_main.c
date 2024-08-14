@@ -137,6 +137,8 @@ static const char *config_file = "/etc/apparmor/parser.conf";
 #define EARLY_ARG_CONFIG_FILE		142
 #define ARG_WERROR			143
 #define ARG_ESTIMATED_COMPILE_SIZE	144
+#define ARG_PROMPT_COMPAT		145
+#define ARG_PRINT_PROMPT_COMPAT		146
 
 /* Make sure to update BOTH the short and long_options */
 static const char *short_options = "ad::f:h::rRVvI:b:BCD:NSm:M:qQn:XKTWkL:O:po:j:";
@@ -192,6 +194,8 @@ struct option long_options[] = {
 	{"override-policy-abi",	1, 0, ARG_OVERRIDE_POLICY_ABI},	/* no short option */
 	{"config-file",		1, 0, EARLY_ARG_CONFIG_FILE},	/* early option, no short option */
 	{"estimated-compile-size", 1, 0, ARG_ESTIMATED_COMPILE_SIZE}, /* no short option, not in help */
+	{"prompt-compat",	1, 0, ARG_PROMPT_COMPAT},	/* no short option */
+	{"print-prompt-compat",	1, 0, ARG_PRINT_PROMPT_COMPAT},	/* no short option */
 
 	{NULL, 0, 0, 0},
 };
@@ -788,6 +792,30 @@ static int process_arg(int c, char *optarg)
 			}
 			estimated_job_size = tmp * mult;
 		}
+		break;
+	case ARG_PROMPT_COMPAT:
+		if (strcmp(optarg, "permsv2") == 0) {
+			prompt_compat_mode = PROMPT_COMPAT_PERMSV2;
+		} else if (strcmp(optarg, "permsv1") == 0) {
+			prompt_compat_mode = PROMPT_COMPAT_PERMSV1;
+		} else if (strcmp(optarg, "default") == 0) {
+			prompt_compat_mode = default_prompt_compat_mode();
+		} else if (strcmp(optarg, "dev") == 0) {
+			prompt_compat_mode = PROMPT_COMPAT_DEV;
+		} else if (strcmp(optarg, "ignore") == 0) {
+			prompt_compat_mode = PROMPT_COMPAT_IGNORE;
+		} else if (strcmp(optarg, "flag") == 0) {
+			prompt_compat_mode = PROMPT_COMPAT_FLAG;
+		} else {
+			PERROR("%s: Invalid --prompt-compat option '%s'\n",
+			       progname, optarg);
+			exit(1);
+		}
+		break;
+	case ARG_PRINT_PROMPT_COMPAT:
+		fprintf(stderr, "Prompt compat mode: ");
+		print_prompt_compat_mode(stderr);
+		fprintf(stderr, "\n");
 		break;
 	default:
 		/* 'unrecognized option' error message gets printed by getopt_long() */
@@ -1544,6 +1572,20 @@ static bool get_kernel_features(struct aa_features **features)
 	else if (aa_features_supports(*features, "policy/versions/v6"))
 		kernel_abi_version = 6;
 
+	kernel_supports_promptdev = aa_features_supports(*features, "policy/perms_compatprompt");
+	kernel_supports_permstable32 = aa_features_supports(*features, "policy/permstable32");
+	if (kernel_supports_permstable32) {
+		//fprintf(stderr, "kernel supports prompt\n");
+	}
+	kernel_supports_permstable32_v1 = aa_features_supports(*features, "policy/permstable32_version/0x000001");
+	if (kernel_supports_permstable32_v1) {
+		//fprintf(stderr, "kernel supports prompt_v1\n");
+	}
+
+	/* set default prompt_compat_mode to the best that is supported */
+	if (prompt_compat_mode == PROMPT_COMPAT_UNKNOWN) {
+		prompt_compat_mode = default_prompt_compat_mode();
+	}
 	if (!kernel_supports_diff_encode)
 		/* clear diff_encode because it is not supported */
 		parseopts.control &= ~CONTROL_DFA_DIFF_ENCODE;

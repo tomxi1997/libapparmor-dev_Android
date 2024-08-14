@@ -27,11 +27,15 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <iostream>
 
 #include <assert.h>
 #include <stdint.h>
 
 #include "expr-tree.h"
+#include "policy_compat.h"
+#include "../rule.h"
+extern int prompt_compat_mode;
 
 #define DiffEncodeFlag 1
 
@@ -49,16 +53,20 @@ class perms_t {
 public:
 	perms_t(void): allow(0), deny(0), audit(0), quiet(0), exact(0) { };
 
-	bool is_accept(void) { return (allow | audit | quiet); }
+	bool is_accept(void) { return (allow | prompt | audit | quiet); }
 
+	void dump_header(ostream &os)
+	{
+		os << "(allow/deny/prompt/audit/quiet)";
+	}
 	void dump(ostream &os)
 	{
 		os << " (0x " << hex
-		   << allow << "/" << deny << "/" << audit << "/" << quiet
+		   << allow << "/" << deny << "/" << "/" << prompt << "/" << audit << "/" << quiet
 		   << ')' << dec;
 	}
 
-	void clear(void) { allow = deny = audit = quiet = 0; }
+	void clear(void) { allow = deny = prompt = audit = quiet = 0; }
 	void add(perms_t &rhs, bool filedfa)
 	{
 		deny |= rhs.deny;
@@ -95,6 +103,7 @@ public:
 			allow = (allow | (rhs.allow & ~ALL_AA_EXEC_TYPE));
 		else
 			allow |= rhs.allow;
+		prompt |= rhs.prompt;
 		audit |= rhs.audit;
 		quiet = (quiet | rhs.quiet);
 
@@ -112,6 +121,7 @@ public:
 	{
 		if (deny) {
 			allow &= ~deny;
+			prompt &= ~deny;
 			quiet &= deny;
 			deny = 0;
 			return !is_accept();
@@ -125,12 +135,14 @@ public:
 			return allow < rhs.allow;
 		if (deny < rhs.deny)
 			return deny < rhs.deny;
+		if (prompt < rhs.prompt)
+			return prompt < rhs.prompt;
 		if (audit < rhs.audit)
 			return audit < rhs.audit;
 		return quiet < rhs.quiet;
 	}
 
-	uint32_t allow, deny, audit, quiet, exact;
+	perm32_t allow, deny, prompt, audit, quiet, exact;
 };
 
 int accept_perms(NodeVec *state, perms_t &perms, bool filedfa);
@@ -198,7 +210,7 @@ struct DiffDag {
 class State {
 public:
 	State(int l, ProtoState &n, State *other, bool filedfa):
-		label(l), flags(0), perms(), trans()
+		label(l), flags(0), idx(0), perms(), trans()
 	{
 		int error;
 
@@ -248,9 +260,20 @@ public:
 	void flatten_relative(State *, int upper_bound);
 
 	int apply_and_clear_deny(void) { return perms.apply_and_clear_deny(); }
+	void map_perms_to_accept(perm32_t &accept1, perm32_t &accept2,
+				 perm32_t &accept3, bool prompt)
+	{
+		accept1 = perms.allow;
+		if (prompt && prompt_compat_mode == PROMPT_COMPAT_DEV)
+		  accept2 = PACK_AUDIT_CTL(perms.prompt, perms.quiet & perms.deny);
+		else
+		accept2 = PACK_AUDIT_CTL(perms.audit, perms.quiet & perms.deny);
+		accept3 = perms.prompt;
+	}
 
 	int label;
 	int flags;
+	int idx;
 	perms_t perms;
 	StateTrans trans;
 	State *otherwise;
@@ -298,7 +321,6 @@ public:
 	}
 };
 
-
 /* Transitions in the DFA. */
 class DFA {
 	void dump_node_to_dfa(void);
@@ -340,6 +362,12 @@ public:
 
 	map<transchar, transchar> equivalence_classes(optflags const &flags);
 	void apply_equivalence_classes(map<transchar, transchar> &eq);
+
+	void compute_perms_table_ent(State *state, size_t pos,
+				     vector <aa_perms> &perms_table,
+				     bool prompt);
+	void compute_perms_table(vector <aa_perms> &perms_table,
+				 bool prompt);
 
 	unsigned int diffcount;
 	int oob_range;

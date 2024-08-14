@@ -40,7 +40,7 @@ void userns_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-userns_rule::userns_rule(perms_t perms_p, struct cond_entry *conds):
+userns_rule::userns_rule(perm32_t perms_p, struct cond_entry *conds):
 	perms_rule_t(AA_CLASS_NS)
 {
 	if (perms_p) {
@@ -95,9 +95,9 @@ int userns_rule::gen_policy_re(Profile &prof)
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_NS;
 	buf = buffer.str();
 	if (perms & AA_VALID_USERNS_PERMS) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, perms,
-						 audit == AUDIT_FORCE ? perms : 0,
-						 parseopts))
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, perms,
+					audit == AUDIT_FORCE ? perms : 0,
+					parseopts))
 			goto fail;
 	}
 

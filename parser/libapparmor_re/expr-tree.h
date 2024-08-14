@@ -41,6 +41,7 @@
 
 #include <stdint.h>
 
+#include "../perms.h"
 #include "apparmor_re.h"
 
 using namespace std;
@@ -885,19 +886,19 @@ public:
 
 class MatchFlag: public AcceptNode {
 public:
-	MatchFlag(uint32_t flag, uint32_t audit): flag(flag), audit(audit)
+	MatchFlag(perm32_t perms, perm32_t audit): perms(perms), audit(audit)
 	{
 		type_flags |= NODE_TYPE_MATCHFLAG;
 	}
-	ostream &dump(ostream &os) { return os << "< 0x" << hex << flag << '>'; }
+	ostream &dump(ostream &os) { return os << "< 0x" << hex << perms << '>'; }
 
-	uint32_t flag;
-	uint32_t audit;
+	perm32_t perms;
+	perm32_t audit;
 };
 
 class ExactMatchFlag: public MatchFlag {
 public:
-	ExactMatchFlag(uint32_t flag, uint32_t audit): MatchFlag(flag, audit)
+	ExactMatchFlag(perm32_t perms, perm32_t audit): MatchFlag(perms, audit)
 	{
 		type_flags |= NODE_TYPE_EXACTMATCHFLAG;
 	}
@@ -905,11 +906,17 @@ public:
 
 class DenyMatchFlag: public MatchFlag {
 public:
-	DenyMatchFlag(uint32_t flag, uint32_t quiet): MatchFlag(flag, quiet)
+	DenyMatchFlag(perm32_t perms, perm32_t quiet): MatchFlag(perms, quiet)
 	{
 		type_flags |= NODE_TYPE_DENYMATCHFLAG;
 	}
 };
+
+class PromptMatchFlag: public MatchFlag {
+public:
+	PromptMatchFlag(perm32_t prompt, perm32_t audit): MatchFlag(prompt, audit) {}
+};
+
 
 /* Traverse the syntax tree depth-first in an iterator-like manner. */
 class depth_first_traversal {

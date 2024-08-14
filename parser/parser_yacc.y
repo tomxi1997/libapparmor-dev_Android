@@ -63,10 +63,10 @@
 
 int parser_token = 0;
 
-struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt);
+struct cod_entry *do_file_rule(char *id, perm32_t perms, char *link_id, char *nt);
 mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 		      struct cond_entry *dst_conds, char *dst,
-		      perms_t perms);
+		      perm32_t perms);
 mnt_rule *do_pivot_rule(struct cond_entry *old, char *root,
 			char *transition);
 static void abi_features(char *filename, bool search);
@@ -115,6 +115,7 @@ static void abi_features(char *filename, bool search);
 %token TOK_AUDIT
 %token TOK_DENY
 %token TOK_ALLOW
+%token TOK_PROMPT
 %token TOK_PROFILE
 %token TOK_SET
 %token TOK_ALIAS
@@ -212,7 +213,7 @@ static void abi_features(char *filename, bool search);
 	prefix_rule_t *prefix_entry;
 
 	flagvals flags;
-	perms_t fperms;
+	perm32_t fperms;
 	uint64_t cap;
 	unsigned int allowed_protocol;
 	char *set_var;
@@ -222,6 +223,7 @@ static void abi_features(char *filename, bool search);
 	struct cond_entry *cond_entry;
 	struct cond_entry_list cond_entry_list;
 	int boolean;
+	owner_t owner;
 	struct prefixes prefix;
 	IncludeCache_t *includecache;
 	audit_t audit;
@@ -267,7 +269,7 @@ static void abi_features(char *filename, bool search);
 %type <id>	opt_id_or_var
 %type <boolean> opt_subset_flag
 %type <audit>	opt_audit_flag
-%type <boolean> opt_owner_flag
+%type <owner> opt_owner_flag
 %type <boolean> opt_profile_flag
 %type <boolean> opt_flags
 %type <rule_mode> opt_rule_mode
@@ -627,13 +629,14 @@ opt_subset_flag: { /* nothing */ $$ = false; }
 opt_audit_flag: { /* nothing */ $$ = AUDIT_UNSPECIFIED; }
 	| TOK_AUDIT { $$ = AUDIT_FORCE; };
 
-opt_owner_flag: { /* nothing */ $$ = 0; }
-	| TOK_OWNER { $$ = 1; };
-	| TOK_OTHER { $$ = 2; };
+opt_owner_flag: { /* nothing */ $$ = OWNER_UNSPECIFIED; }
+	| TOK_OWNER { $$ = OWNER_SPECIFIED; };
+	| TOK_OTHER { $$ = OWNER_NOT; };
 
 opt_rule_mode: { /* nothing */ $$ = RULE_UNSPECIFIED; }
 	| TOK_ALLOW { $$ = RULE_ALLOW; }
 	| TOK_DENY { $$ = RULE_DENY; }
+	| TOK_PROMPT { $$ = RULE_PROMPT; }
 
 opt_prefix: opt_audit_flag opt_rule_mode opt_owner_flag
 	{
@@ -676,8 +679,11 @@ rules: rules opt_prefix block
 	{
 		struct cod_entry *entry, *tmp;
 
-		PDEBUG("matched: %s%s%sblock\n", $2.audit == AUDIT_FORCE ? "audit " : "",
-		       $2.rule_mode == RULE_DENY ? "deny " : "", $2.owner ? "owner " : "");
+		PDEBUG("matched: %s%s%sblock\n",
+		       $2.audit == AUDIT_FORCE ? "audit " : "",
+		       $2.rule_mode == RULE_DENY ? "deny " : "",
+		       $2.rule_mode == RULE_PROMPT ? "prompt " : "",
+		       $2.owner == OWNER_SPECIFIED ? "owner " : "");
 		list_for_each_safe($3->entries, entry, tmp) {
 			const char *error;
 			entry->next = NULL;
@@ -743,8 +749,8 @@ rules:	rules opt_prefix change_profile
 		PDEBUG("rules change_profile: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on unix rules"));
+		if ($2.owner != OWNER_UNSPECIFIED)
+			yyerror(_("owner conditional not allowed on unix rules"));
 		if (($2.rule_mode == RULE_DENY) && $2.audit == AUDIT_FORCE) {
 			$3->rule_mode = RULE_DENY;
 		} else if ($2.rule_mode == RULE_DENY) {
@@ -759,8 +765,8 @@ rules:	rules opt_prefix change_profile
 
 rules:  rules opt_prefix capability
 	{
-		if ($2.owner)
-			yyerror(_("owner prefix not allowed on capability rules"));
+		if ($2.owner != OWNER_UNSPECIFIED)
+			yyerror(_("owner conditional not allowed on capability rules"));
 
 		if ($2.rule_mode == RULE_DENY && $2.audit == AUDIT_FORCE) {
 			$1->caps.deny |= $3;
@@ -1553,7 +1559,7 @@ file_perms: TOK_MODE
 change_profile: TOK_CHANGE_PROFILE opt_exec_mode opt_id opt_named_transition TOK_END_OF_RULE
 	{
 		struct cod_entry *entry;
-		perms_t perms = AA_CHANGE_PROFILE;
+		perm32_t perms = AA_CHANGE_PROFILE;
 		int exec_mode = $2;
 		char *exec = $3;
 		char *target = $4;
@@ -1661,7 +1667,7 @@ void yyerror(const char *msg, ...)
 	exit(1);
 }
 
-struct cod_entry *do_file_rule(char *id, perms_t perms, char *link_id, char *nt)
+struct cod_entry *do_file_rule(char *id, perm32_t perms, char *link_id, char *nt)
 {
 		struct cod_entry *entry;
 		PDEBUG("Matched: tok_id (%s) tok_perms (0x%x)\n", id, perms);
@@ -1702,7 +1708,7 @@ int verify_mnt_conds(struct cond_entry *conds, int src)
 
 mnt_rule *do_mnt_rule(struct cond_entry *src_conds, char *src,
 		      struct cond_entry *dst_conds, char *dst,
-		      perms_t perms)
+		      perm32_t perms)
 {
 	if (verify_mnt_conds(src_conds, MNT_SRC_OPT) != 0)
 		yyerror(_("bad mount rule"));
@@ -1800,4 +1806,3 @@ static void abi_features(char *filename, bool search)
 	}
 
 };
-

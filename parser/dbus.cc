@@ -30,7 +30,7 @@
 #include "dbus.h"
 
 
-int parse_dbus_perms(const char *str_perms, perms_t *perms, int fail)
+int parse_dbus_perms(const char *str_perms, perm32_t *perms, int fail)
 {
 	return parse_X_perms("DBus", AA_VALID_DBUS_PERMS, str_perms, perms, fail);
 }
@@ -66,7 +66,7 @@ void dbus_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-dbus_rule::dbus_rule(perms_t perms_p, struct cond_entry *conds,
+dbus_rule::dbus_rule(perm32_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds):
 	perms_rule_t(AA_CLASS_DBUS), bus(NULL), name(NULL), peer_label(NULL), path(NULL), interface(NULL), member(NULL)
 {
@@ -274,20 +274,20 @@ int dbus_rule::gen_policy_re(Profile &prof)
 	}
 
 	if (perms & AA_DBUS_BIND) {
-		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY, perms & AA_DBUS_BIND,
+		if (!prof.policy.rules->add_rule_vec(rule_mode, perms & AA_DBUS_BIND,
 						     audit == AUDIT_FORCE ? perms & AA_DBUS_BIND : 0,
 						    2, vec, parseopts, false))
 			goto fail;
 	}
 	if (perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE)) {
-		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY,
+		if (!prof.policy.rules->add_rule_vec(rule_mode,
 				       perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE),
 						     audit == AUDIT_FORCE ? perms & (AA_DBUS_SEND | AA_DBUS_RECEIVE) : 0,
 				       6, vec, parseopts, false))
 			goto fail;
 	}
 	if (perms & AA_DBUS_EAVESDROP) {
-		if (!prof.policy.rules->add_rule_vec(rule_mode == RULE_DENY,
+		if (!prof.policy.rules->add_rule_vec(rule_mode,
 						    perms & AA_DBUS_EAVESDROP,
 						     audit == AUDIT_FORCE ? perms & AA_DBUS_EAVESDROP : 0,
 						    1, vec, parseopts, false))

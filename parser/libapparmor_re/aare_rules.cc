@@ -44,10 +44,10 @@ aare_rules::~aare_rules(void)
 	expr_map.clear();
 }
 
-bool aare_rules::add_rule(const char *rule, int deny, uint32_t perms,
-			  uint32_t audit, optflags const &opts)
+bool aare_rules::add_rule(const char *rule, rule_mode_t mode, perm32_t perms,
+			  perm32_t audit, optflags const &opts)
 {
-	return add_rule_vec(deny, perms, audit, 1, &rule, opts, false);
+	return add_rule_vec(mode, perms, audit, 1, &rule, opts, false);
 }
 
 void aare_rules::add_to_rules(Node *tree, Node *perms)
@@ -71,7 +71,7 @@ static Node *cat_with_oob_separator(Node *l, Node *r)
 	return new CatNode(new CatNode(l, new CharNode(transchar(-1, true))), r);
 }
 
-bool aare_rules::add_rule_vec(int deny, uint32_t perms, uint32_t audit,
+bool aare_rules::add_rule_vec(rule_mode_t mode, perm32_t perms, perm32_t audit,
 			      int count, const char **rulev, optflags const &opts,
 			      bool oob)
 {
@@ -107,7 +107,7 @@ bool aare_rules::add_rule_vec(int deny, uint32_t perms, uint32_t audit,
 	if (reverse)
 		flip_tree(tree);
 
-	accept = unique_perms.insert(deny, perms, audit, exact_match);
+	accept = unique_perms.insert(mode, perms, audit, exact_match);
 
 	if (opts.dump & DUMP_DFA_RULE_EXPR) {
 		const char *separator;
@@ -123,8 +123,11 @@ bool aare_rules::add_rule_vec(int deny, uint32_t perms, uint32_t audit,
 		}
 		cerr << "  ->  ";
 		tree->dump(cerr);
-		if (deny)
+		// TODO: split out from prefixes class
+		if (mode == RULE_DENY)
 			cerr << " deny";
+		else if (mode == RULE_PROMPT)
+			cerr << " prompt";
 		cerr << " (0x" << hex << perms <<"/" << audit << dec << ")";
 		accept->dump(cerr);
  		cerr << "\n\n";
@@ -189,16 +192,16 @@ bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
 	return true;
 }
 
-/* create a dfa from the ruleset
+/* create a chfa from the ruleset
  * returns: buffer contain dfa tables, @size set to the size of the tables
  *          else NULL on failure, @min_match_len set to the shortest string
  *          that can match the dfa for determining xmatch priority.
  */
-void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &opts,
-			     bool filedfa)
+CHFA *aare_rules::create_chfa(int *min_match_len,
+			      vector <aa_perms> &perms_table,
+			      optflags const &opts, bool filedfa,
+			      bool extended_perms, bool prompt)
 {
-	char *buffer = NULL;
-
 	/* finish constructing the expr tree from the different permission
 	 * set nodes */
 	PermExprMap::iterator i = expr_map.begin();
@@ -247,7 +250,7 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 		}
 	}
 
-	stringstream stream;
+	CHFA *chfa = NULL;
 	try {
 		DFA dfa(root, opts, filedfa);
 		if (opts.dump & DUMP_DFA_UNIQ_PERMS)
@@ -304,10 +307,45 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 				dfa.dump_diff_encode(cerr);
 		}
 
-		CHFA chfa(dfa, eq, opts);
+		//cerr << "Checking extended perms " << extended_perms << "\n";
+		if (extended_perms) {
+			//cerr << "creating permstable\n";
+		  dfa.compute_perms_table(perms_table, prompt);
+		}
+		chfa = new CHFA(dfa, eq, opts, extended_perms, prompt);
 		if (opts.dump & DUMP_DFA_TRANS_TABLE)
-			chfa.dump(cerr);
-		chfa.flex_table(stream);
+			chfa->dump(cerr);
+	}
+	catch(int error) {
+		return NULL;
+	}
+
+	return chfa;
+}
+
+/* create a dfa from the ruleset
+ * returns: buffer contain dfa tables, @size set to the size of the tables
+ *          else NULL on failure, @min_match_len set to the shortest string
+ *          that can match the dfa for determining xmatch priority.
+ */
+void *aare_rules::create_dfablob(size_t *size, int *min_match_len,
+				 vector <aa_perms> &perms_table,
+				 optflags const &opts, bool filedfa,
+				 bool extended_perms, bool prompt)
+{
+	char *buffer = NULL;
+	stringstream stream;
+
+	try {
+		CHFA *chfa = create_chfa(min_match_len, perms_table,
+					 opts, filedfa, extended_perms,
+					 prompt);
+		if (!chfa) {
+			*size = 0;
+			return NULL;
+		}
+		chfa->flex_table(stream);
+		delete (chfa);
 	}
 	catch(int error) {
 		*size = 0;
@@ -323,5 +361,85 @@ void *aare_rules::create_dfa(size_t *size, int *min_match_len, optflags const &o
 	if (!buffer)
 		return NULL;
 	buf->sgetn(buffer, *size);
+
+	return buffer;
+}
+
+
+/* create a dfa from the ruleset
+ * returns: buffer contain dfa tables, @size set to the size of the tables
+ *          else NULL on failure, @min_match_len set to the shortest string
+ *          that can match the dfa for determining xmatch priority.
+ */
+void *aare_rules::create_welded_dfablob(aare_rules *file_rules,
+					size_t *size, int *min_match_len,
+					size_t *new_start,
+					vector <aa_perms> &perms_table,
+					optflags const &opts,
+					bool extended_perms, bool prompt)
+{
+	int file_min_len;
+	vector <aa_perms> file_perms;
+	CHFA *file_chfa;
+	try {
+		file_chfa = file_rules->create_chfa(&file_min_len,
+						    file_perms, opts,
+						    true, extended_perms, prompt);
+		if (!file_chfa) {
+			*size = 0;
+			return NULL;
+		}
+	}
+	catch(int error) {
+		*size = 0;
+		return NULL;
+	}
+
+	CHFA *policy_chfa;
+	try {
+		policy_chfa = create_chfa(min_match_len,
+					  perms_table, opts,
+					  false, extended_perms, prompt);
+		if (!policy_chfa) {
+			delete file_chfa;
+			*size = 0;
+			return NULL;
+		}
+	}
+	catch(int error) {
+		delete file_chfa;
+		*size = 0;
+		return NULL;
+	}
+
+	stringstream stream;
+	try {
+		policy_chfa->weld_file_to_policy(*file_chfa, *new_start,
+						 extended_perms, prompt,
+						 perms_table, file_perms);
+		policy_chfa->flex_table(stream);
+	}
+	catch(int error) {
+		delete (file_chfa);
+		delete (policy_chfa);
+		*size = 0;
+		return NULL;
+	}
+	delete file_chfa;
+	delete policy_chfa;
+
+	/* write blob to buffer */
+	stringbuf *buf = stream.rdbuf();
+
+	buf->pubseekpos(0);
+	*size = buf->in_avail();
+	if (file_min_len < *min_match_len)
+		*min_match_len = file_min_len;
+
+	char *buffer = (char *)malloc(*size);
+	if (!buffer)
+		return NULL;
+	buf->sgetn(buffer, *size);
+
 	return buffer;
 }

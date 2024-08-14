@@ -15,6 +15,7 @@
 #define __AA_PROFILE_H
 
 #include <set>
+#include <vector>
 #include <string>
 #include <iostream>
 
@@ -24,6 +25,8 @@
 #include "libapparmor_re/aare_rules.h"
 #include "network.h"
 #include "signal.h"
+#include "immunix.h"
+#include "perms.h"
 
 class Profile;
 
@@ -146,6 +149,7 @@ static const char *find_error_name_mapping(int code)
 #define FLAG_DEBUG1 2
 #define FLAG_DEBUG2 4
 #define FLAG_INTERRUPTIBLE 8
+#define FLAG_PROMPT_COMPAT 0x10
 
 /* sigh, used in parse union so needs trivial constructors. */
 class flagvals {
@@ -233,6 +237,10 @@ public:
 			os << ", kill.signal=" << signal;
 		if (error)
 			os << ", error=" << find_error_name_mapping(error);
+
+		if (flags & FLAG_PROMPT_COMPAT)
+			os << ", prompt_dev";
+
 		os << "\n";
 
 		return os;
@@ -336,12 +344,14 @@ struct dfa_stuff {
 	aare_rules *rules;
 	void *dfa;
 	size_t size;
-
+	size_t file_start;		/* special start in welded dfa */
+	vector <aa_perms> perms_table;
 	dfa_stuff(void): rules(NULL), dfa(NULL), size(0) { }
 };
 
 class Profile {
 public:
+	bool uses_prompt_rules;
 	char *ns;
 	char *name;
 	char *attachment;
@@ -349,7 +359,7 @@ public:
 	void *xmatch;
 	size_t xmatch_size;
 	int xmatch_len;
-
+	vector <aa_perms> xmatch_perms_table;
 	struct cond_entry_list xattrs;
 
 	/* char *sub_name; */			/* subdomain name or NULL */
@@ -375,6 +385,7 @@ public:
 
 	Profile(void)
 	{
+		uses_prompt_rules = false;
 		ns = name = attachment = NULL;
 		altnames = NULL;
 		xmatch = NULL;

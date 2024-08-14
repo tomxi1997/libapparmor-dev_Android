@@ -24,7 +24,7 @@
 #include "profile.h"
 #include "af_rule.h"
 
-int parse_unix_perms(const char *str_mode, perms_t *perms, int fail);
+int parse_unix_perms(const char *str_mode, perm32_t *perms, int fail);
 
 class unix_rule: public af_rule {
 	void write_to_prot(std::ostringstream &buffer);
@@ -39,7 +39,7 @@ public:
 	bool downgrade = true;
 
 	unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode_p);
-	unix_rule(perms_t perms, struct cond_entry *conds,
+	unix_rule(perm32_t perms, struct cond_entry *conds,
 		  struct cond_entry *peer_conds);
 	virtual ~unix_rule()
 	{

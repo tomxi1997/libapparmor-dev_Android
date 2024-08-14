@@ -24,7 +24,7 @@
 #include <string>
 #include <sstream>
 
-int parse_ptrace_perms(const char *str_perms, perms_t *perms, int fail)
+int parse_ptrace_perms(const char *str_perms, perm32_t *perms, int fail)
 {
 	return parse_X_perms("ptrace", AA_VALID_PTRACE_PERMS, str_perms, perms, fail);
 }
@@ -47,7 +47,7 @@ void ptrace_rule::move_conditionals(struct cond_entry *conds)
 	}
 }
 
-ptrace_rule::ptrace_rule(perms_t perms_p, struct cond_entry *conds):
+ptrace_rule::ptrace_rule(perm32_t perms_p, struct cond_entry *conds):
 	perms_rule_t(AA_CLASS_PTRACE), peer_label(NULL)
 {
 	if (perms_p) {
@@ -133,8 +133,9 @@ int ptrace_rule::gen_policy_re(Profile &prof)
 
 	buf = buffer.str();
 	if (perms & AA_VALID_PTRACE_PERMS) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, perms, audit == AUDIT_FORCE ? perms : 0,
-						 parseopts))
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, perms,
+					 audit == AUDIT_FORCE ? perms : 0,
+					 parseopts))
 			goto fail;
 	}
 

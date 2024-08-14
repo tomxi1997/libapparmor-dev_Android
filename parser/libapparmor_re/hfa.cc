@@ -31,11 +31,12 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
-
+#include <stdint.h>
 #include "expr-tree.h"
 #include "hfa.h"
+#include "policy_compat.h"
 #include "../immunix.h"
-
+#include "../perms.h"
 
 ostream &operator<<(ostream &os, const CacheStats &cache)
 {
@@ -537,6 +538,7 @@ void DFA::dump_uniq_perms(const char *s)
 		     << i->deny << " audit:" << i->audit
 		     << " quiet:" << i->quiet << dec << "\n";
 	}
+	//TODO: add prompt
 }
 
 /* Remove dead or unreachable states */
@@ -644,10 +646,13 @@ int DFA::apply_and_clear_deny(void)
 	return c;
 }
 
+
+typedef pair<uint64_t,uint64_t> uint128_t;
+
 /* minimize the number of dfa states */
 void DFA::minimize(optflags const &opts)
 {
-	map<pair<uint64_t, size_t>, Partition *> perm_map;
+	map<pair<uint128_t, size_t>, Partition *> perm_map;
 	list<Partition *> partitions;
 
 	/* Set up the initial partitions
@@ -664,16 +669,18 @@ void DFA::minimize(optflags const &opts)
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
 		size_t hash = 0;
-		uint64_t permtype = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32) | (uint64_t) (*i)->perms.allow;
-		pair<uint64_t, size_t> group = make_pair(permtype, hash);
-		map<pair<uint64_t, size_t>, Partition *>::iterator p = perm_map.find(group);
+		uint128_t permtype;
+		permtype.first = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32);
+		permtype.second = (uint64_t) (*i)->perms.allow | ((uint64_t) (*i)->perms.prompt << 32);
+		pair<uint128_t, size_t> group = make_pair(permtype, hash);
+		map<pair<uint128_t, size_t>, Partition *>::iterator p = perm_map.find(group);
 		if (p == perm_map.end()) {
 			Partition *part = new Partition();
 			part->push_back(*i);
 			perm_map.insert(make_pair(group, part));
 			partitions.push_back(part);
 			(*i)->partition = part;
-			if (permtype)
+			if (permtype.first || permtype.second)
 				accept_count++;
 		} else {
 			(*i)->partition = p->second;
@@ -1075,8 +1082,10 @@ void DFA::dump(ostream & os)
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
 		if (*i == start || (*i)->perms.is_accept()) {
 			os << **i;
-			if (*i == start)
-				os << " <== (allow/deny/audit/quiet)";
+			if (*i == start) {
+				os << " <== ";
+				(*i)->perms.dump_header(os);
+			}
 			if ((*i)->perms.is_accept())
 				(*i)->perms.dump(os);
 			os << "\n";
@@ -1300,6 +1309,46 @@ void DFA::apply_equivalence_classes(map<transchar, transchar> &eq)
 	}
 }
 
+void DFA::compute_perms_table_ent(State *state, size_t pos,
+				  vector <aa_perms> &perms_table,
+				  bool prompt)
+{
+	uint32_t accept1, accept2, accept3;
+
+	// until front end doesn't map the way it does
+	state->map_perms_to_accept(accept1, accept2, accept3, prompt);
+	if (filedfa) {
+		state->idx = pos * 2;
+		perms_table[pos*2] = compute_fperms_user(accept1, accept2, accept3);
+		perms_table[pos*2 + 1] = compute_fperms_other(accept1, accept2, accept3);
+	} else {
+		state->idx = pos;
+		perms_table[pos] = compute_perms_entry(accept1, accept2, accept3);
+	}
+}
+
+void DFA::compute_perms_table(vector <aa_perms> &perms_table, bool prompt)
+{
+	size_t mult = filedfa ? 2 : 1;
+	size_t pos = 2;
+
+	assert(states.size() >= 2);
+	perms_table.resize(states.size() * mult);
+
+	// nonmatching and start need to be 0 and 1 so handle outside of loop
+	if (filedfa)
+	  compute_perms_table_ent(nonmatching, 0, perms_table, prompt);
+	compute_perms_table_ent(start, 1, perms_table, prompt);
+
+	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+		if (*i == nonmatching || *i == start)
+			continue;
+		compute_perms_table_ent(*i, pos, perms_table, prompt);
+		pos++;
+	}
+}
+
+
 #if 0
 typedef set <ImportantNode *>AcceptNodes;
 map<ImportantNode *, AcceptNodes> dominance(DFA & dfa)
@@ -1329,7 +1378,7 @@ map<ImportantNode *, AcceptNodes> dominance(DFA & dfa)
 }
 #endif
 
-static inline int diff_qualifiers(uint32_t perm1, uint32_t perm2)
+static inline int diff_qualifiers(perm32_t perm1, perm32_t perm2)
 {
 	return ((perm1 & AA_EXEC_TYPE) && (perm2 & AA_EXEC_TYPE) &&
 		(perm1 & AA_EXEC_TYPE) != (perm2 & AA_EXEC_TYPE));
@@ -1343,8 +1392,9 @@ static inline int diff_qualifiers(uint32_t perm1, uint32_t perm2)
 int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 {
 	int error = 0;
-	uint32_t exact_match_allow = 0;
-	uint32_t exact_audit = 0;
+	perm32_t exact_match_allow = 0;
+	perm32_t exact_match_prompt = 0;
+	perm32_t exact_audit = 0;
 
 	perms.clear();
 
@@ -1359,26 +1409,31 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 		if (match->is_type(NODE_TYPE_EXACTMATCHFLAG)) {
 			/* exact match only ever happens with x */
 			if (filedfa && !is_merged_x_consistent(exact_match_allow,
-						    match->flag))
+						    match->perms))
 				error = 1;;
-			exact_match_allow |= match->flag;
+			exact_match_allow |= match->perms;
 			exact_audit |= match->audit;
 		} else if (match->is_type(NODE_TYPE_DENYMATCHFLAG)) {
-			perms.deny |= match->flag;
+			perms.deny |= match->perms;
 			perms.quiet |= match->audit;
+		} else if (dynamic_cast<PromptMatchFlag *>(match)) {
+			perms.prompt |= match->perms;
+			perms.audit |= match->audit;
 		} else {
-			if (filedfa && !is_merged_x_consistent(perms.allow, match->flag))
+			if (filedfa && !is_merged_x_consistent(perms.allow, match->perms))
 				error = 1;
-			perms.allow |= match->flag;
+			perms.allow |= match->perms;
 			perms.audit |= match->audit;
 		}
 	}
 
 	if (filedfa) {
 		perms.allow |= exact_match_allow & ~(ALL_AA_EXEC_TYPE);
+		perms.prompt |= exact_match_prompt & ~(ALL_AA_EXEC_TYPE);
 		perms.audit |= exact_audit & ~(ALL_AA_EXEC_TYPE);
 	} else {
 		perms.allow |= exact_match_allow;
+		perms.prompt |= exact_match_prompt;
 		perms.audit |= exact_audit;
 	}
 	if (exact_match_allow & AA_USER_EXEC) {
@@ -1399,6 +1454,8 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 
 	perms.allow &= ~perms.deny;
 	perms.quiet &= perms.deny;
+	perms.prompt &= ~perms.deny;
+	perms.prompt &= ~perms.allow;
 
 	if (error)
 		fprintf(stderr, "profile has merged rule with conflicting x modifiers\n");

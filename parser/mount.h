@@ -152,7 +152,7 @@ public:
 
 	mnt_rule(struct cond_entry *src_conds, char *device_p,
 		   struct cond_entry *dst_conds unused, char *mnt_point_p,
-		   perms_t perms_p);
+		   perm32_t perms_p);
 	virtual ~mnt_rule()
 	{
 		free_value_list(opts);
@@ -163,7 +163,7 @@ public:
 	}
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) {
-		if (p.owner) {
+		if (p.owner != OWNER_UNSPECIFIED) {
 			error = "owner prefix not allowed on mount rules";
 			return false;
 		}

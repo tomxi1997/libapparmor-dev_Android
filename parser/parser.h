@@ -122,7 +122,7 @@ struct cod_entry {
 	char *nt_name;
 	Profile *prof;		 	/* Special profile defined
 					 * just for this executable */
-	perms_t perms;			/* perms is 'or' of AA_* bits */
+	perm32_t perms;			/* perms is 'or' of AA_* bits */
 	audit_t audit;
 	rule_mode_t rule_mode;
 
@@ -324,6 +324,7 @@ do {								\
 /* The parser fills this variable in automatically */
 #define PROFILE_NAME_VARIABLE "profile_name"
 
+
 /* from parser_common.c */
 extern uint32_t policy_version;
 extern uint32_t parser_abi_version;
@@ -359,6 +360,10 @@ extern int features_supports_flag_interruptible;
 extern int features_supports_flag_signal;
 extern int features_supports_flag_error;
 extern int kernel_supports_oob;
+extern int kernel_supports_promptdev;
+extern int kernel_supports_permstable32;
+extern int kernel_supports_permstable32_v1;
+extern int prompt_compat_mode;
 extern int conf_verbose;
 extern int conf_quiet;
 extern int names_only;
@@ -374,6 +379,10 @@ extern IncludeCache_t *g_includecache;
 
 extern void pwarnf(bool werr, const char *fmt, ...) __attribute__((__format__(__printf__, 2, 3)));
 extern void common_warn_once(const char *name, const char *msg, const char **warned_name);
+bool prompt_compat_mode_supported(int mode);
+int default_prompt_compat_mode();
+void print_prompt_compat_mode(FILE *f);
+
 
 #define pwarn(F, args...) do { if (parseopts.warn & (F)) pwarnf((parseopts.Werror & (F)), ## args); } while (0)
 
@@ -449,12 +458,12 @@ extern char *processunquoted(const char *string, int len);
 extern int get_keyword_token(const char *keyword);
 extern int get_rlimit(const char *name);
 extern char *process_var(const char *var);
-extern perms_t parse_perms(const char *permstr);
-extern int parse_X_perms(const char *X, int valid, const char *str_perms, perms_t *perms, int fail);
+extern perm32_t parse_perms(const char *permstr);
+extern int parse_X_perms(const char *X, int valid, const char *str_perms, perm32_t *perms, int fail);
 bool label_contains_ns(const char *label);
 bool parse_label(bool *_stack, char **_ns, char **_name,
 		 const char *label, bool yyerr);
-extern struct cod_entry *new_entry(char *id, perms_t perms, char *link_id);
+extern struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id);
 
 /* returns -1 if value != true or false, otherwise 0 == false, 1 == true */
 extern int str_to_boolean(const char* str);

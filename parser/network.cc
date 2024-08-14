@@ -29,7 +29,7 @@
 
 #define ALL_TYPES 0x43e
 
-int parse_net_perms(const char *str_mode, perms_t *mode, int fail)
+int parse_net_perms(const char *str_mode, perm32_t *mode, int fail)
 {
 	return parse_X_perms("net", AA_VALID_NET_PERMS, str_mode, mode, fail);
 }
@@ -401,7 +401,7 @@ void network_rule::set_netperm(unsigned int family, unsigned int type, unsigned 
 	network_perms[family].second |= protocol;
 }
 
-network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
+network_rule::network_rule(perm32_t perms_p, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
 	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
@@ -441,7 +441,7 @@ network_rule::network_rule(perms_t perms_p, struct cond_entry *conds,
 	}
 }
 
-network_rule::network_rule(perms_t perms_p, const char *family, const char *type,
+network_rule::network_rule(perm32_t perms_p, const char *family, const char *type,
 			   const char *protocol, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
 	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
@@ -494,7 +494,7 @@ network_rule::network_rule(perms_t perms_p, const char *family, const char *type
 	}
 }
 
-network_rule::network_rule(perms_t perms_p, unsigned int family, unsigned int type):
+network_rule::network_rule(perm32_t perms_p, unsigned int family, unsigned int type):
 	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
@@ -653,7 +653,7 @@ std::list<std::ostringstream> copy_streams_list(std::list<std::ostringstream> &s
 bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd)
 {
 	std::string buf;
-	perms_t cond_perms;
+	perm32_t cond_perms;
 	std::list<std::ostringstream> ip_streams;
 
 	for (auto &oss : streams) {
@@ -697,7 +697,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 
 		buf = oss.str();
 		/* AA_CONT_MATCH mapping (cond_perms) only applies to perms, not audit */
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, cond_perms,
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, cond_perms,
 						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 						 parseopts))
 			return false;
@@ -710,7 +710,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 			oss << "\\x00"; /* null transition */
 
 			buf = oss.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, cond_perms,
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, cond_perms,
 							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 							 parseopts))
 				return false;
@@ -735,7 +735,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 
 	if (!features_supports_inet || (family != AF_INET && family != AF_INET6)) {
 		buf = buffer.str();
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, map_perms(perms),
 						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 						 parseopts))
 			return false;
@@ -745,7 +745,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 	buf = buffer.str();
 	/* create perms need to be generated excluding the rest of the perms */
 	if (perms & AA_NET_CREATE) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms & AA_NET_CREATE) | (AA_CONT_MATCH << 1),
+		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, map_perms(perms & AA_NET_CREATE) | (AA_CONT_MATCH << 1),
 						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms & AA_NET_CREATE) : 0,
 						 parseopts))
 			return false;
@@ -797,7 +797,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 			/* length of queue allowed - not used for now */
 			listen_buffer << "..";
 			buf = listen_buffer.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, map_perms(perms),
 							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 							 parseopts))
 				return false;
@@ -816,7 +816,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 			/* socket mapping - not used for now */
 			opt_buffer << "..";
 			buf = opt_buffer.str();
-			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode == RULE_DENY, map_perms(perms),
+			if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, map_perms(perms),
 							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 							 parseopts))
 				return false;

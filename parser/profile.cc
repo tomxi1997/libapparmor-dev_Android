@@ -161,6 +161,8 @@ void add_entry_to_policy(Profile *prof, struct cod_entry *entry)
 {
 	entry->next = prof->entries;
 	prof->entries = entry;
+	if (entry->rule_mode == RULE_PROMPT)
+		prof->uses_prompt_rules = true;
 }
 
 static int add_named_transition(Profile *prof, struct cod_entry *entry)
@@ -269,11 +271,11 @@ static bool add_proc_access(Profile *prof, const char *rule)
 void post_process_file_entries(Profile *prof)
 {
 	struct cod_entry *entry;
-	perms_t cp_perms = 0;
+	perm32_t cp_perms = 0;
 
 	list_for_each(prof->entries, entry) {
 		if (entry->nt_name) {
-			perms_t perms = 0;
+			perm32_t perms = 0;
 			int n = add_named_transition(prof, entry);
 			if (!n) {
 				PERROR("Profile %s has too many specified profile transitions.\n", prof->name);

@@ -107,8 +107,9 @@ static inline uint32_t map_perms(uint32_t mask)
 		((mask & (AA_NET_SETOPT | AA_NET_GETOPT)) >> 5); /* 5 + (AA_OTHER_SHIFT - 24) */
 };
 
-int parse_net_perms(const char *str_mode, perms_t *perms, int fail);
+
 size_t get_af_max();
+int parse_net_perms(const char *str_mode, perm32_t *perms, int fail);
 int net_find_type_val(const char *type);
 const char *net_find_type_name(int type);
 const char *net_find_af_name(unsigned int af);
@@ -158,12 +159,12 @@ public:
 	 * static elements to maintain compatibility with
 	 * AA_CLASS_NET */
 	network_rule(): dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL) { }
-	network_rule(perms_t perms_p, struct cond_entry *conds,
+	network_rule(perm32_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds);
-	network_rule(perms_t perms_p, const char *family, const char *type,
+	network_rule(perm32_t perms_p, const char *family, const char *type,
 		     const char *protocol, struct cond_entry *conds,
 		     struct cond_entry *peer_conds);
-	network_rule(perms_t perms_p, unsigned int family, unsigned int type);
+	network_rule(perm32_t perms_p, unsigned int family, unsigned int type);
 	virtual ~network_rule()
 	{
 		peer.free_conds();
