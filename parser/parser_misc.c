@@ -131,7 +131,7 @@ static struct keyword_table keyword_table[] = {
 	{"override_creds",	TOK_OVERRIDE_CREDS},
 	{"sqpoll",		TOK_SQPOLL},
 	{"all",			TOK_ALL},
-
+	{"priority",		TOK_PRIORITY},
 	/* terminate */
 	{NULL, 0}
 };
@@ -984,6 +984,7 @@ struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id)
 	if (!entry)
 		return NULL;
 
+	entry->priority = 0;
 	entry->name = id;
 	entry->link_name = link_id;
 	entry->perms = perms;
@@ -1010,6 +1011,7 @@ struct cod_entry *copy_cod_entry(struct cod_entry *orig)
 	DUP_STRING(orig, entry, name, err);
 	DUP_STRING(orig, entry, link_name, err);
 	DUP_STRING(orig, entry, nt_name, err);
+	entry->priority = orig->priority;
 	entry->perms = orig->perms;
 	entry->audit = orig->audit;
 	entry->rule_mode = orig->rule_mode;

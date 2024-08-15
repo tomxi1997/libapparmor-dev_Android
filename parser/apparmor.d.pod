@@ -139,9 +139,11 @@ B<HATNAME> = (must start with alphanumeric character. See aa_change_hat(2) for a
 
 B<QUALIFIER BLOCK> = I<QUALIFIERS> I<BLOCK>
 
+B<INTEGER> = (+ | -)? [[:digit:]]+
+
 B<ACCESS TYPE> = ( 'allow' | 'deny' )
 
-B<QUALIFIERS> = [ 'audit' ] [ I<ACCESS TYPE> ]
+B<QUALIFIERS> = [ 'priority' '=' <INTEGER> ] [ 'audit' ] [ I<ACCESS TYPE> ]
 
 B<CAPABILITY RULE> = [ I<QUALIFIERS> ] 'capability' [ I<CAPABILITY LIST> ]
 
@@ -1877,6 +1879,17 @@ There are several rule qualifiers that can be applied to permission rules.
 Rule qualifiers can modify the rule and/or permissions within the rule.
 
 =over 4
+
+=item B<priority>
+
+Specifies the priority of the rule. Currently the allowed range is
+-1000 to 1000 with the default priority of rule is 0.  Rules with
+higher priority are given preferences and will completely override
+permissions of lower priority rules where they overlap. When rules
+partially overlap the permissions of the higher priority rule will
+completely override lower priority rules within in overlap. Within a
+given priority level rules that overlap will accumulate permissions in
+the standard apparmor fashion.
 
 =item B<allow>
 

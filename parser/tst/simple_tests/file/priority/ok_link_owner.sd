@@ -1,0 +1,10 @@
+#
+#=DESCRIPTION simple link access test with owner restriction
+#=EXRESULT PASS
+#
+
+profile test {
+  priority=-1 owner link subset /alpha/beta -> /tmp/**,
+  /tmp/** r,
+}
+

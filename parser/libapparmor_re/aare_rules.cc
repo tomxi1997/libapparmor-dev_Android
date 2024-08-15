@@ -44,10 +44,11 @@ aare_rules::~aare_rules(void)
 	expr_map.clear();
 }
 
-bool aare_rules::add_rule(const char *rule, rule_mode_t mode, perm32_t perms,
-			  perm32_t audit, optflags const &opts)
+bool aare_rules::add_rule(const char *rule, int priority, rule_mode_t mode,
+			  perm32_t perms, perm32_t audit, optflags const &opts)
 {
-	return add_rule_vec(mode, perms, audit, 1, &rule, opts, false);
+	return add_rule_vec(priority, mode, perms, audit, 1, &rule, opts,
+			    false);
 }
 
 void aare_rules::add_to_rules(Node *tree, Node *perms)
@@ -71,9 +72,9 @@ static Node *cat_with_oob_separator(Node *l, Node *r)
 	return new CatNode(new CatNode(l, new CharNode(transchar(-1, true))), r);
 }
 
-bool aare_rules::add_rule_vec(rule_mode_t mode, perm32_t perms, perm32_t audit,
-			      int count, const char **rulev, optflags const &opts,
-			      bool oob)
+bool aare_rules::add_rule_vec(int priority, rule_mode_t mode, perm32_t perms,
+			      perm32_t audit, int count, const char **rulev,
+			      optflags const &opts, bool oob)
 {
 	Node *tree = NULL, *accept;
 	int exact_match;
@@ -107,7 +108,7 @@ bool aare_rules::add_rule_vec(rule_mode_t mode, perm32_t perms, perm32_t audit,
 	if (reverse)
 		flip_tree(tree);
 
-	accept = unique_perms.insert(mode, perms, audit, exact_match);
+	accept = unique_perms.insert(priority, mode, perms, audit, exact_match);
 
 	if (opts.dump & DUMP_DFA_RULE_EXPR) {
 		const char *separator;
@@ -124,6 +125,7 @@ bool aare_rules::add_rule_vec(rule_mode_t mode, perm32_t perms, perm32_t audit,
 		cerr << "  ->  ";
 		tree->dump(cerr);
 		// TODO: split out from prefixes class
+		cerr << " priority=" << priority;
 		if (mode == RULE_DENY)
 			cerr << " deny";
 		else if (mode == RULE_PROMPT)
@@ -256,23 +258,21 @@ CHFA *aare_rules::create_chfa(int *min_match_len,
 		if (opts.dump & DUMP_DFA_UNIQ_PERMS)
 			dfa.dump_uniq_perms("dfa");
 
+		/* since we are building a chfa, use the info about
+		 * whether the chfa supports extended perms to help
+		 * determine whether we clear the deny info.
+		 * This will let us build the minimal dfa for the
+		 * information supported by the backed
+		 */
+		if (!extended_perms ||
+		    // TODO: we should drop DFA_MINIMIZE check here but doing
+		    // so changes behavior. Do as a separate patch and fixup
+		    // tests, etc.
+		    ((opts.control & CONTROL_DFA_FILTER_DENY) &&
+		     (opts.control & CONTROL_DFA_MINIMIZE)))
+			dfa.apply_and_clear_deny();
+
 		if (opts.control & CONTROL_DFA_MINIMIZE) {
-			dfa.minimize(opts);
-
-			if (opts.dump & DUMP_DFA_MIN_UNIQ_PERMS)
-				dfa.dump_uniq_perms("minimized dfa");
-		}
-
-		if (opts.control & CONTROL_DFA_FILTER_DENY &&
-		    opts.control & CONTROL_DFA_MINIMIZE &&
-		    dfa.apply_and_clear_deny()) {
-			/* Do a second minimization pass as removal of deny
-			 * information has moved some states from accepting
-			 * to none accepting partitions
-			 *
-			 * TODO: add this as a tail pass to minimization
-			 *       so we don't need to do a full second pass
-			 */
 			dfa.minimize(opts);
 
 			if (opts.dump & DUMP_DFA_MIN_UNIQ_PERMS)

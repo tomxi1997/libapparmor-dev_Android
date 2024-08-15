@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION unnecessary slash quotes are okay (should emit warning)
+#=EXRESULT PASS
+#
+
+profile blart {
+  priority=-1 /bingo/bang\o/bongo rw,
+}

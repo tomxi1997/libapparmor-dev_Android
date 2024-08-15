@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION simple quoted tab expansion
+#=EXRESULT PASS
+#
+
+profile test {
+  priority=-1 "/bin/alpha\tbeta" rix,
+}
+

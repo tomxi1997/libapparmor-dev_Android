@@ -1,0 +1,10 @@
+#
+#=DESCRIPTION an overlapping deny rule
+#=EXRESULT PASS
+# vim:syntax=apparmor
+#
+/usr/bin/foo {
+  priority=-1 /usr/bin/** r,
+  priority=5 deny /usr/bin/foo r,
+}
+

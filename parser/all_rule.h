@@ -32,6 +32,10 @@ public:
 	all_rule(void): prefix_rule_t(RULE_TYPE_ALL) { }
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) {
+		if (p.priority != 0) {
+			error = _("priority prefix not allowed on all rules");
+			return false;
+		}
 		if (p.owner) {
 			error = _("owner prefix not allowed on all rules");
 			return false;

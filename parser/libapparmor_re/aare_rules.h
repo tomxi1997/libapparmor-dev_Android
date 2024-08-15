@@ -35,6 +35,7 @@
 
 class UniquePerm {
 public:
+	int priority;
 	rule_mode_t mode;
 	bool exact_match;
 	uint32_t perms;
@@ -42,6 +43,8 @@ public:
 
 	bool operator<(UniquePerm const &rhs)const
 	{
+		if (priority < rhs.priority)
+			return priority < rhs.priority;
 		if (mode >= rhs.mode) {
 			if (exact_match == rhs.exact_match) {
 				if (perms == rhs.perms)
@@ -71,21 +74,21 @@ public:
 		nodes.clear();
 	}
 
-	Node *insert(rule_mode_t mode, uint32_t perms, uint32_t audit,
-		     bool exact_match)
+	Node *insert(int priority, rule_mode_t mode, uint32_t perms,
+		     uint32_t audit, bool exact_match)
 	{
-		UniquePerm tmp = { mode, exact_match, perms, audit };
+		UniquePerm tmp = { priority, mode, exact_match, perms, audit };
 		iterator res = nodes.find(tmp);
 		if (res == nodes.end()) {
 			Node *node;
 			if (mode == RULE_DENY)
-				node = new DenyMatchFlag(perms, audit);
+				node = new DenyMatchFlag(priority, perms, audit);
 			else if (mode == RULE_PROMPT)
-				node = new PromptMatchFlag(perms, audit);
+				node = new PromptMatchFlag(priority, perms, audit);
 			else if (exact_match)
-				node = new ExactMatchFlag(perms, audit);
+				node = new ExactMatchFlag(priority, perms, audit);
 			else
-				node = new MatchFlag(perms, audit);
+				node = new MatchFlag(priority, perms, audit);
 			pair<iterator, bool> val = nodes.insert(make_pair(tmp, node));
 			if (val.second == false)
 				return val.first->second;
@@ -109,11 +112,11 @@ class aare_rules {
 	aare_rules(int reverse): root(NULL), unique_perms(), expr_map(), reverse(reverse), rule_count(0) { };
 	~aare_rules();
 
-	bool add_rule(const char *rule, rule_mode_t mode, perm32_t perms,
-		      perm32_t audit, optflags const &opts);
-	bool add_rule_vec(rule_mode_t mode, perm32_t perms, perm32_t audit,
-			  int count, const char **rulev, optflags const &opts,
-			  bool oob);
+	bool add_rule(const char *rule, int priority, rule_mode_t mode,
+		      perm32_t perms, perm32_t audit, optflags const &opts);
+	bool add_rule_vec(int priority, rule_mode_t mode, perm32_t perms,
+			  perm32_t audit, int count, const char **rulev,
+			  optflags const &opts, bool oob);
 	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);
 	CHFA *create_chfa(int *min_match_len,
 			  vector <aa_perms> &perms_table,

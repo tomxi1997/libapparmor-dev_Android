@@ -89,15 +89,13 @@ void all_rule::add_implied_rules(Profile &prof)
 	
 	/* rules that have not been converted to use rule.h */
 
-	//file
+	//file no x
 	{
 		const char *error;
 		struct cod_entry *entry;
 		char *path = strdup("/{**,}");
-		int perms = ((AA_BASE_PERMS & ~AA_EXEC_TYPE) |
-			     (AA_MAY_EXEC));
+		int perms = (AA_BASE_PERMS & ~(AA_EXEC_TYPE | AA_MAY_EXEC));
 		if (rule_mode != RULE_DENY)
-			perms |= AA_EXEC_INHERIT;
 		/* duplicate to other permission set */
 		perms |= perms << AA_OTHER_SHIFT;
 		if (!path)
@@ -108,7 +106,35 @@ void all_rule::add_implied_rules(Profile &prof)
 		}
 		add_entry_to_policy(&prof, entry);
 	}
+	// lower priority ix
+	{
+		const char *error;
+		struct cod_entry *entry;
+		char *path = strdup("/{**,}");
+		int perms = AA_MAY_EXEC;
+		prefixes ix_prefix;
 
+		// TODO:
+		// need a better way to make sure the prefix is intialized
+		// without a constructor or copy constructor
+		ix_prefix.priority = prefix->priority -1;
+		ix_prefix.audit = prefix->audit;
+		ix_prefix.rule_mode = prefix->rule_mode;
+		ix_prefix.owner = prefix->owner;
+
+		ix_prefix.priority -= 1;
+		if (rule_mode != RULE_DENY)
+			perms |= AA_EXEC_INHERIT;
+		/* duplicate to other permission set */
+		perms |= perms << AA_OTHER_SHIFT;
+		if (!path)
+			yyerror(_("Memory allocation error."));
+		entry = new_entry(path, perms, NULL);
+		if (!entry_add_prefix(entry, ix_prefix, error)) {
+			yyerror(_("%s"), error);
+		}
+		add_entry_to_policy(&prof, entry);
+	}
 	// caps
 	{
 		if (prefix->owner)

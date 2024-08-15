@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION A simple deny rule
+#=EXRESULT PASS
+# vim:syntax=apparmor
+#
+/usr/bin/foo {
+  priority=-1 deny /usr/bin/foo r,
+}
+

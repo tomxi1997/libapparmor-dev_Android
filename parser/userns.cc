@@ -95,7 +95,8 @@ int userns_rule::gen_policy_re(Profile &prof)
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_NS;
 	buf = buffer.str();
 	if (perms & AA_VALID_USERNS_PERMS) {
-		if (!prof.policy.rules->add_rule(buf.c_str(), rule_mode, perms,
+		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
+					rule_mode, perms,
 					audit == AUDIT_FORCE ? perms : 0,
 					parseopts))
 			goto fail;

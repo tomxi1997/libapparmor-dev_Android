@@ -507,7 +507,7 @@ static int process_profile_name_xmatch(Profile *prof)
 		aare_rules *rules = new aare_rules();
 		if (!rules)
 			return FALSE;
-		if (!rules->add_rule(tbuf.c_str(), RULE_ALLOW,
+		if (!rules->add_rule(tbuf.c_str(), 0, RULE_ALLOW,
 				     AA_MAY_EXEC, 0, parseopts)) {
 			delete rules;
 			return FALSE;
@@ -521,7 +521,7 @@ static int process_profile_name_xmatch(Profile *prof)
 				ptype = convert_aaregex_to_pcre(alt->name, 0,
 								glob_default,
 								tbuf, &len);
-				if (!rules->add_rule(tbuf.c_str(),
+				if (!rules->add_rule(tbuf.c_str(), 0,
 						RULE_ALLOW, AA_MAY_EXEC,
 						0, parseopts)) {
 					delete rules;
@@ -644,13 +644,14 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 	if (entry->rule_mode == RULE_DENY) {
 		if ((entry->perms & ~AA_LINK_BITS) &&
 		    !is_change_profile_perms(entry->perms) &&
-		    !dfarules->add_rule(tbuf.c_str(), entry->rule_mode,
+		    !dfarules->add_rule(tbuf.c_str(), entry->priority,
+					entry->rule_mode,
 					entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE),
 					entry->audit == AUDIT_FORCE ? entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE) : 0,
 					parseopts))
 			return FALSE;
 	} else if (!is_change_profile_perms(entry->perms)) {
-		if (!dfarules->add_rule(tbuf.c_str(),
+		if (!dfarules->add_rule(tbuf.c_str(), entry->priority,
 				entry->rule_mode, entry->perms,
 				entry->audit == AUDIT_FORCE ? entry->perms : 0,
 				parseopts))
@@ -676,7 +677,10 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 			perms |= LINK_TO_LINK_SUBSET(perms);
 			vec[1] = "/[^/].*";
 		}
-		if (!dfarules->add_rule_vec(entry->rule_mode, perms, entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0, 2, vec, parseopts, false))
+		if (!dfarules->add_rule_vec(entry->priority,
+				entry->rule_mode, perms,
+				entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0,
+				2, vec, parseopts, false))
 			return FALSE;
 	}
 	if (is_change_profile_perms(entry->perms)) {
@@ -727,13 +731,14 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		}
 
 		/* regular change_profile rule */
-		if (!dfarules->add_rule_vec(entry->rule_mode,
+		if (!dfarules->add_rule_vec(entry->priority, entry->rule_mode,
 					    AA_CHANGE_PROFILE | onexec_perms,
 					    0, index - 1, &vec[1], parseopts, false))
 			return FALSE;
 
 		/* onexec rules - both rules are needed for onexec */
-		if (!dfarules->add_rule_vec(entry->rule_mode, onexec_perms,
+		if (!dfarules->add_rule_vec(entry->priority, entry->rule_mode,
+					    onexec_perms,
 					    0, 1, vec, parseopts, false))
 			return FALSE;
 
@@ -742,8 +747,9 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		 * unsafe exec transitions
 		 */
 		onexec_perms |= (entry->perms & (AA_EXEC_BITS | ALL_AA_EXEC_UNSAFE));
-		if (!dfarules->add_rule_vec(entry->rule_mode, onexec_perms,
-					    0, index, vec, parseopts, false))
+		if (!dfarules->add_rule_vec(entry->priority, entry->rule_mode,
+					    onexec_perms, 0, index, vec,
+					    parseopts, false))
 			return FALSE;
 	}
 	return TRUE;
@@ -785,7 +791,7 @@ int process_profile_regex(Profile *prof)
 		prof->dfa.dfa = prof->dfa.rules->create_dfablob(&prof->dfa.size,
 					&xmatch_len, prof->dfa.perms_table,
 					parseopts, true,
-					prof->uses_prompt_rules && (prompt_compat_mode == PROMPT_COMPAT_PERMSV2),
+					kernel_supports_permstable32,
 					prof->uses_prompt_rules);
 		delete prof->dfa.rules;
 		prof->dfa.rules = NULL;
@@ -999,7 +1005,8 @@ static bool gen_net_rule(Profile *prof, u16 family, unsigned int type_mask,
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
 	}
 	buf = buffer.str();
-	if (!prof->policy.rules->add_rule(buf.c_str(), rmode, map_perms(AA_VALID_NET_PERMS),
+	if (!prof->policy.rules->add_rule(buf.c_str(), 0, rmode,
+					  map_perms(AA_VALID_NET_PERMS),
 					  audit ? map_perms(AA_VALID_NET_PERMS) : 0,
 					  parseopts))
 		return false;
@@ -1076,6 +1083,20 @@ static const char *mediates_sysv_mqueue = CLASS_STR(AA_CLASS_SYSV_MQUEUE);
 static const char *mediates_io_uring = CLASS_STR(AA_CLASS_IO_URING);
 static const char *deny_file = ".*";
 
+/* Set the mediates priority to the maximum possible. This is to help
+ * ensure that the mediates information is not wiped out by a rule
+ * of higher priority. Which for allow rules isn't really a problem
+ * in that these are only used as a place holder to ensure we have
+ * a valid state at the mediates check, and an allow rule that wipes
+ * these out would guarantee it. But a deny rule wiping these out
+ * could result in the dfa allowing stuff as unmediated when it shouldn't
+ *
+ * Note: it turns out the above bug does exist for dbus rules in parsers
+ * that do not support priority, and we don't have a way to fix it.
+ * We fix it here by capping user specified priority to be < INT_MAX.
+ */
+static int mediates_priority = INT_MAX;
+
 int process_profile_policydb(Profile *prof)
 {
 	int error = -1;
@@ -1091,7 +1112,7 @@ int process_profile_policydb(Profile *prof)
 	 * to be supported
 	 */
 	if (features_supports_userns &&
-	    !prof->policy.rules->add_rule(mediates_ns, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+	    !prof->policy.rules->add_rule(mediates_ns, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 		goto out;
 
 	/* don't add mediated classes to unconfined profiles */
@@ -1099,35 +1120,35 @@ int process_profile_policydb(Profile *prof)
 	    prof->flags.mode != MODE_DEFAULT_ALLOW) {
 		/* note: this activates fs based unix domain sockets mediation on connect */
 		if (kernel_abi_version > 5 &&
-		    !prof->policy.rules->add_rule(mediates_file, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_file, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_mount &&
-		    !prof->policy.rules->add_rule(mediates_mount, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_mount, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_dbus &&
-		    !prof->policy.rules->add_rule(mediates_dbus, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_dbus, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_signal &&
-		    !prof->policy.rules->add_rule(mediates_signal, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_signal, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_ptrace &&
-		    !prof->policy.rules->add_rule(mediates_ptrace, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_ptrace, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_networkv8 &&
-		    !prof->policy.rules->add_rule(mediates_netv8, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_netv8, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_unix &&
-		    (!prof->policy.rules->add_rule(mediates_extended_net, RULE_ALLOW, AA_MAY_READ, 0, parseopts) ||
-		     !prof->policy.rules->add_rule(mediates_net_unix, RULE_ALLOW, AA_MAY_READ, 0, parseopts)))
+		    (!prof->policy.rules->add_rule(mediates_extended_net, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts) ||
+		     !prof->policy.rules->add_rule(mediates_net_unix, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts)))
 			goto out;
 		if (features_supports_posix_mqueue &&
-		    !prof->policy.rules->add_rule(mediates_posix_mqueue, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_posix_mqueue, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_sysv_mqueue &&
-		    !prof->policy.rules->add_rule(mediates_sysv_mqueue, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_sysv_mqueue, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_io_uring &&
-		    !prof->policy.rules->add_rule(mediates_io_uring, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_io_uring, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 	}
 
@@ -1136,11 +1157,11 @@ int process_profile_policydb(Profile *prof)
 		// This requires file rule processing happen first
 		if (!prof->dfa.rules->rule_count) {
 			// add null dfa
-			if (!prof->dfa.rules->add_rule(deny_file, RULE_DENY, AA_MAY_READ, 0, parseopts))
+			if (!prof->dfa.rules->add_rule(deny_file, 0, RULE_DENY, AA_MAY_READ, 0, parseopts))
 				goto out;
 		}
 		if (!prof->policy.rules->rule_count) {
-			if (!prof->policy.rules->add_rule(mediates_file, RULE_DENY, AA_MAY_READ, 0, parseopts))
+			if (!prof->policy.rules->add_rule(mediates_file, 0, RULE_DENY, AA_MAY_READ, 0, parseopts))
 				goto out;
 		}
 		int xmatch_len = 0;
@@ -1167,7 +1188,7 @@ int process_profile_policydb(Profile *prof)
 						&xmatch_len,
 						prof->policy.perms_table,
 						parseopts, false,
-						prof->uses_prompt_rules && (prompt_compat_mode == PROMPT_COMPAT_PERMSV2),
+						kernel_supports_permstable32,
 						prof->uses_prompt_rules);
 		delete prof->policy.rules;
 

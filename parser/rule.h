@@ -173,6 +173,7 @@ typedef enum { OWNER_UNSPECIFIED, OWNER_SPECIFIED, OWNER_NOT } owner_t;
  */
 class prefixes {
 public:
+	int priority;
 	audit_t audit;
 	rule_mode_t rule_mode;
 	owner_t owner;
@@ -242,14 +243,15 @@ public:
 	}
 
 	int cmp(prefixes const &rhs) const {
-		if ((uint) audit < (uint) rhs.audit)
-			return -1;
-		if ((uint) audit > (uint) rhs.audit)
-			return 1;
-		if ((uint) rule_mode < (uint) rhs.rule_mode)
-			return -1;
-		if ((uint) rule_mode > (uint) rhs.rule_mode)
-			return 1;
+		int tmp = priority - rhs.priority;
+		if (tmp != 0)
+			return tmp;
+		tmp = (int) audit - (int) rhs.audit;
+		if (tmp != 0)
+			return tmp;
+		tmp = (int) rule_mode - (int) rhs.rule_mode;
+		if (tmp != 0)
+			return tmp;
 		if ((uint) owner < (uint) rhs.owner)
 			return -1;
 		if ((uint) owner > (uint) rhs.owner)
@@ -258,11 +260,7 @@ public:
 	}
 
 	bool operator<(prefixes const &rhs) const {
-		if ((uint) audit < (uint) rhs.audit)
-			return true;
-		if ((uint) rule_mode < (uint) rhs.rule_mode)
-			return true;
-		if ((uint) owner < (uint) rhs.owner)
+		if (cmp(rhs) < 0)
 			return true;
 		return false;
 	}
@@ -273,6 +271,7 @@ public:
 	prefix_rule_t(int t = RULE_TYPE_PREFIX) : rule_t(t)
 	{
 		/* Must construct prefix here see note on prefixes */
+		priority = 0;
 		audit = AUDIT_UNSPECIFIED;
 		rule_mode = RULE_UNSPECIFIED;
 		owner = OWNER_UNSPECIFIED;
@@ -283,6 +282,19 @@ public:
 	virtual bool add_prefix(const prefixes &p, const char *&error) {
 		if (!valid_prefix(p, error))
 			return false;
+
+		// priority does NOT conflict but allowed at the block
+		// level yet. priority at the block level applies to
+		// the entire block, but only for the level of rules
+		// it is at.
+		// priority within the block arranges order of rules
+		// within the block.
+		if (priority != 0) {
+			error = "priority levels not supported";
+			return false;
+		}
+		priority = p.priority;
+
 		/* audit conflicts */
 		if (p.audit != AUDIT_UNSPECIFIED) {
 			if (audit != AUDIT_UNSPECIFIED &&

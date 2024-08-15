@@ -53,6 +53,12 @@ using namespace std;
  */
 extern int parser_token;
 
+/* Arbitrary max and minimum priority that userspace can specify, internally
+ * we handle up to INT_MAX and INT_MIN. Do not ever allow INT_MAX, see
+ * note on mediates_priority
+ */
+#define MAX_PRIORITY 1000
+#define MIN_PRIORITY -1000
 
 #define WARN_RULE_NOT_ENFORCED	0x1
 #define WARN_RULE_DOWNGRADED	0x2
@@ -114,6 +120,7 @@ struct cond_entry_list {
 };
 
 struct cod_entry {
+	int priority;
 	char *name;
 	union {
 		char *link_name;

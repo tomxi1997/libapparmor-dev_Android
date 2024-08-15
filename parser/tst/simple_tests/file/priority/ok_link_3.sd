@@ -1,0 +1,10 @@
+#
+#=DESCRIPTION simple link access test
+#=EXRESULT PASS
+#
+
+profile test {
+  priority=-1 link subset /alpha/beta -> /tmp/**,
+  /tmp/** r,
+}
+

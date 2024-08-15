@@ -493,6 +493,11 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 	 */
 	nnodes_cache.clear();
 	node_map.clear();
+	/* once created the priority information is no longer needed and
+	 * can prevent sets with the same perms and different priorities
+	 * from being merged during minimization
+	 */
+	clear_priorities();
 }
 
 DFA::~DFA()
@@ -646,41 +651,34 @@ int DFA::apply_and_clear_deny(void)
 	return c;
 }
 
+void DFA::clear_priorities(void)
+{
+	for (Partition::iterator i = states.begin(); i != states.end(); i++)
+		(*i)->perms.priority = 0;
+}
 
-typedef pair<uint64_t,uint64_t> uint128_t;
+
 
 /* minimize the number of dfa states */
 void DFA::minimize(optflags const &opts)
 {
-	map<pair<uint128_t, size_t>, Partition *> perm_map;
+	map<perms_t, Partition *> perm_map;
 	list<Partition *> partitions;
 
 	/* Set up the initial partitions
 	 * minimum of - 1 non accepting, and 1 accepting
-	 * if trans hashing is used the accepting and non-accepting partitions
-	 * can be further split based on the number and type of transitions
-	 * a state makes.
-	 * If permission hashing is enabled the accepting partitions can
-	 * be further divided by permissions.  This can result in not
-	 * obtaining a truly minimized dfa but comes close, and can speedup
-	 * minimization.
 	 */
 	int accept_count = 0;
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
-		size_t hash = 0;
-		uint128_t permtype;
-		permtype.first = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32);
-		permtype.second = (uint64_t) (*i)->perms.allow | ((uint64_t) (*i)->perms.prompt << 32);
-		pair<uint128_t, size_t> group = make_pair(permtype, hash);
-		map<pair<uint128_t, size_t>, Partition *>::iterator p = perm_map.find(group);
+		map<perms_t, Partition *>::iterator p = perm_map.find((*i)->perms);
 		if (p == perm_map.end()) {
 			Partition *part = new Partition();
 			part->push_back(*i);
-			perm_map.insert(make_pair(group, part));
+			perm_map.insert(make_pair((*i)->perms, part));
 			partitions.push_back(part);
 			(*i)->partition = part;
-			if (permtype.first || permtype.second)
+			if ((*i)->perms.is_accept())
 				accept_count++;
 		} else {
 			(*i)->partition = p->second;
@@ -1392,9 +1390,7 @@ static inline int diff_qualifiers(perm32_t perm1, perm32_t perm2)
 int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 {
 	int error = 0;
-	perm32_t exact_match_allow = 0;
-	perm32_t exact_match_prompt = 0;
-	perm32_t exact_audit = 0;
+	perms_t exact;
 
 	perms.clear();
 
@@ -1406,13 +1402,20 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 			continue;
 
 		MatchFlag *match = static_cast<MatchFlag *>(*i);
+		if (perms.priority > match->priority)
+			continue;
+
+		if (perms.priority < match->priority) {
+			perms.clear(match->priority);
+			exact.clear(match->priority);
+		}
 		if (match->is_type(NODE_TYPE_EXACTMATCHFLAG)) {
 			/* exact match only ever happens with x */
-			if (filedfa && !is_merged_x_consistent(exact_match_allow,
-						    match->perms))
-				error = 1;;
-			exact_match_allow |= match->perms;
-			exact_audit |= match->audit;
+			if (filedfa &&
+			    !is_merged_x_consistent(exact.allow, match->perms))
+				error = 1;
+			exact.allow |= match->perms;
+			exact.audit |= match->audit;
 		} else if (match->is_type(NODE_TYPE_DENYMATCHFLAG)) {
 			perms.deny |= match->perms;
 			perms.quiet |= match->audit;
@@ -1420,7 +1423,8 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 			perms.prompt |= match->perms;
 			perms.audit |= match->audit;
 		} else {
-			if (filedfa && !is_merged_x_consistent(perms.allow, match->perms))
+			if (filedfa &&
+			    !is_merged_x_consistent(perms.allow, match->perms))
 				error = 1;
 			perms.allow |= match->perms;
 			perms.audit |= match->audit;
@@ -1428,21 +1432,21 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 	}
 
 	if (filedfa) {
-		perms.allow |= exact_match_allow & ~(ALL_AA_EXEC_TYPE);
-		perms.prompt |= exact_match_prompt & ~(ALL_AA_EXEC_TYPE);
-		perms.audit |= exact_audit & ~(ALL_AA_EXEC_TYPE);
+		perms.allow |= exact.allow & ~(ALL_AA_EXEC_TYPE);
+		perms.prompt |= exact.prompt & ~(ALL_AA_EXEC_TYPE);
+		perms.audit |= exact.audit & ~(ALL_AA_EXEC_TYPE);
 	} else {
-		perms.allow |= exact_match_allow;
-		perms.prompt |= exact_match_prompt;
-		perms.audit |= exact_audit;
+		perms.allow |= exact.allow;
+		perms.prompt |= exact.prompt;
+		perms.audit |= exact.audit;
 	}
-	if (exact_match_allow & AA_USER_EXEC) {
-		perms.allow = (exact_match_allow & AA_USER_EXEC_TYPE) |
+	if (exact.allow & AA_USER_EXEC) {
+		perms.allow = (exact.allow & AA_USER_EXEC_TYPE) |
 			(perms.allow & ~AA_USER_EXEC_TYPE);
 		perms.exact = AA_USER_EXEC_TYPE;
 	}
-	if (exact_match_allow & AA_OTHER_EXEC) {
-		perms.allow = (exact_match_allow & AA_OTHER_EXEC_TYPE) |
+	if (exact.allow & AA_OTHER_EXEC) {
+		perms.allow = (exact.allow & AA_OTHER_EXEC_TYPE) |
 			(perms.allow & ~AA_OTHER_EXEC_TYPE);
 		perms.exact |= AA_OTHER_EXEC_TYPE;
 	}
@@ -1456,7 +1460,6 @@ int accept_perms(NodeVec *state, perms_t &perms, bool filedfa)
 	perms.quiet &= perms.deny;
 	perms.prompt &= ~perms.deny;
 	perms.prompt &= ~perms.allow;
-
 	if (error)
 		fprintf(stderr, "profile has merged rule with conflicting x modifiers\n");
 

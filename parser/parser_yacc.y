@@ -19,6 +19,7 @@
  */
 
 #define YYERROR_VERBOSE 1
+#include <limits.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -149,6 +150,7 @@ static void abi_features(char *filename, bool search);
 %token TOK_OVERRIDE_CREDS
 %token TOK_SQPOLL
 %token TOK_ALL
+%token TOK_PRIORITY
 
  /* rlimits */
 %token TOK_RLIMIT
@@ -222,7 +224,8 @@ static void abi_features(char *filename, bool search);
 	struct value_list *val_list;
 	struct cond_entry *cond_entry;
 	struct cond_entry_list cond_entry_list;
-	int boolean;
+	bool boolean;
+	int integer;
 	owner_t owner;
 	struct prefixes prefix;
 	IncludeCache_t *includecache;
@@ -268,9 +271,10 @@ static void abi_features(char *filename, bool search);
 %type <id>	id_or_var
 %type <id>	opt_id_or_var
 %type <boolean> opt_subset_flag
+%type <integer>	opt_priority
 %type <audit>	opt_audit_flag
 %type <owner> opt_owner_flag
-%type <boolean> opt_profile_flag
+%type <integer> opt_profile_flag
 %type <boolean> opt_flags
 %type <rule_mode> opt_rule_mode
 %type <id>	opt_id
@@ -294,7 +298,7 @@ static void abi_features(char *filename, bool search);
 %type <unix_entry>	unix_rule
 %type <id>	opt_target
 %type <id>	opt_named_transition
-%type <boolean> opt_exec_mode
+%type <integer> opt_exec_mode
 %type <boolean> opt_file
 %type <fperms>  userns_perm
 %type <fperms>  userns_perms
@@ -588,13 +592,13 @@ flags:	{ /* nothing */
 		$$ = fv;
 	};
 
-opt_flags: { /* nothing */ $$ = 0; }
+opt_flags: { /* nothing */ $$ = false; }
 	| TOK_CONDID TOK_EQUALS
 	{
 		if (strcmp($1, "flags") != 0)
 			yyerror("expected flags= got %s=", $1);
 		free($1);
-		$$ = 1;
+		$$ = true;
 	}
 
 flags:	opt_flags TOK_OPENPAREN flagvals TOK_CLOSEPAREN
@@ -626,6 +630,23 @@ opt_subset_flag: { /* nothing */ $$ = false; }
 	| TOK_SUBSET { $$ = true; }
 	| TOK_LE { $$ = true; }
 
+
+opt_priority: { $$ = 0; }
+	| TOK_PRIORITY TOK_EQUALS TOK_VALUE
+	{
+		char *end;
+		long tmp = strtol($3, &end, 10);
+		if (end == $3 || *end != '\0')
+			yyerror("invalid priority %s", $3);
+		free($3);
+		/* see note on mediates_priority */
+		if (tmp > MAX_PRIORITY)
+			yyerror("invalid priority %l > %d", tmp, MAX_PRIORITY);
+		if (tmp < MIN_PRIORITY)
+			yyerror("invalid priority %l > %d", tmp, MIN_PRIORITY);
+		$$ = tmp;
+	}
+
 opt_audit_flag: { /* nothing */ $$ = AUDIT_UNSPECIFIED; }
 	| TOK_AUDIT { $$ = AUDIT_FORCE; };
 
@@ -638,11 +659,12 @@ opt_rule_mode: { /* nothing */ $$ = RULE_UNSPECIFIED; }
 	| TOK_DENY { $$ = RULE_DENY; }
 	| TOK_PROMPT { $$ = RULE_PROMPT; }
 
-opt_prefix: opt_audit_flag opt_rule_mode opt_owner_flag
+opt_prefix: opt_priority opt_audit_flag opt_rule_mode opt_owner_flag
 	{
-		$$.audit = $1;
-		$$.rule_mode = $2;
-		$$.owner = $3;
+		$$.priority = $1;
+		$$.audit = $2;
+		$$.rule_mode = $3;
+		$$.owner = $4;
 	}
 
 rules:	{ /* nothing */ 
@@ -679,6 +701,9 @@ rules: rules opt_prefix block
 	{
 		struct cod_entry *entry, *tmp;
 
+		if (($2).priority != 0) {
+			yyerror(_("priority is not allowed on rule blocks"));
+		}
 		PDEBUG("matched: %s%s%sblock\n",
 		       $2.audit == AUDIT_FORCE ? "audit " : "",
 		       $2.rule_mode == RULE_DENY ? "deny " : "",
@@ -1011,8 +1036,8 @@ opt_exec_mode: { /* nothing */ $$ = EXEC_MODE_EMPTY; }
 	| TOK_UNSAFE { $$ = EXEC_MODE_UNSAFE; };
 	| TOK_SAFE { $$ = EXEC_MODE_SAFE; };
 
-opt_file: { /* nothing */ $$ = 0; }
-	| TOK_FILE { $$ = 1; }
+opt_file: { /* nothing */ $$ = false; }
+	| TOK_FILE { $$ = true; }
 
 frule:	id_or_var file_perms opt_named_transition TOK_END_OF_RULE
 	{

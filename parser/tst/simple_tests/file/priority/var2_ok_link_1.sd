@@ -1,0 +1,11 @@
+#
+#=DESCRIPTION simple link access test
+#=EXRESULT PASS
+#
+
+@{var}=/test
+profile test {
+  priority=11 /foo@{var} rl,
+  /gamma/* rwl,
+}
+
