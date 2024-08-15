@@ -71,6 +71,10 @@ optflag_table_t dumpflag_table[] = {
 	{ 1, "diff-progress", "Dump progress of differential encoding",
 	  DUMP_DFA_DIFF_PROGRESS | DUMP_DFA_DIFF_STATS },
 	{ 1, "rule-merge", "dump information about rule merging", DUMP_RULE_MERGE},
+	{ 1, "state32", "Dump encoding 32 bit states",
+	  DUMP_DFA_STATE32 },
+	{ 1, "flags_table", "Dump encoding flags table",
+	  DUMP_DFA_FLAGS_TABLE },
 	{ 0, NULL, NULL, 0 },
 };
 
@@ -78,7 +82,8 @@ optflag_table_t dfaoptflag_table[] = {
 	{ 2, "0", "no optimizations",
 	  CONTROL_DFA_TREE_NORMAL | CONTROL_DFA_TREE_SIMPLE |
 	  CONTROL_DFA_MINIMIZE | CONTROL_DFA_REMOVE_UNREACHABLE |
-	  CONTROL_DFA_DIFF_ENCODE
+	  CONTROL_DFA_DIFF_ENCODE | CONTROL_DFA_STATE32 |
+	  CONTROL_DFA_FLAGS_TABLE
 	},
 	{ 1, "equiv", "use equivalent classes", CONTROL_DFA_EQUIV },
 	{ 1, "expr-normalize", "expression tree normalization",
@@ -102,6 +107,10 @@ optflag_table_t dfaoptflag_table[] = {
 	{ 1, "diff-encode", "Differentially encode transitions",
 	  CONTROL_DFA_DIFF_ENCODE },
 	{ 1, "rule-merge", "turn on rule merging", CONTROL_RULE_MERGE},
+	{ 1, "state32", "use 32 bit state transitions",
+	  CONTROL_DFA_STATE32 },
+	{ 1, "flags-table", "use independent flags table",
+	  CONTROL_DFA_FLAGS_TABLE },
 	{ 0, NULL, NULL, 0 },
 };
 

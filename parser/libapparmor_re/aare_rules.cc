@@ -344,7 +344,7 @@ void *aare_rules::create_dfablob(size_t *size, int *min_match_len,
 			*size = 0;
 			return NULL;
 		}
-		chfa->flex_table(stream);
+		chfa->flex_table(stream, opts);
 		delete (chfa);
 	}
 	catch(int error) {
@@ -417,7 +417,7 @@ void *aare_rules::create_welded_dfablob(aare_rules *file_rules,
 		policy_chfa->weld_file_to_policy(*file_chfa, *new_start,
 						 extended_perms, prompt,
 						 perms_table, file_perms);
-		policy_chfa->flex_table(stream);
+		policy_chfa->flex_table(stream, opts);
 	}
 	catch(int error) {
 		delete (file_chfa);

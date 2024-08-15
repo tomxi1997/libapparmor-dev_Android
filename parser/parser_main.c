@@ -1564,6 +1564,10 @@ static bool get_kernel_features(struct aa_features **features)
 						       "policy/set_load");
 	kernel_supports_diff_encode = aa_features_supports(*features,
 							   "policy/diff_encode");
+	kernel_supports_state32 = aa_features_supports(*features,
+						       "policy/state32");
+	kernel_supports_flags_table = aa_features_supports(*features,
+						     "policy/flags_table");
 	kernel_supports_oob = aa_features_supports(*features,
 						   "policy/outofband");
 
@@ -1589,6 +1593,14 @@ static bool get_kernel_features(struct aa_features **features)
 	if (!kernel_supports_diff_encode)
 		/* clear diff_encode because it is not supported */
 		parseopts.control &= ~CONTROL_DFA_DIFF_ENCODE;
+
+	if (!kernel_supports_state32)
+		parseopts.control &= ~CONTROL_DFA_STATE32;
+	if (!kernel_supports_flags_table || !kernel_supports_state32)
+		/* if only encoding 16 bit states, don't waste space on
+		 * a flags table
+		 */
+		parseopts.control &= ~CONTROL_DFA_FLAGS_TABLE;
 
 	return true;
 }

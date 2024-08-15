@@ -31,6 +31,8 @@
 #define CONTROL_DFA_TRANS_HIGH		(1 << 8)
 #define CONTROL_DFA_DIFF_ENCODE		(1 << 9)
 #define CONTROL_RULE_MERGE		(1 << 10)
+#define CONTROL_DFA_STATE32		(1 << 11)
+#define CONTROL_DFA_FLAGS_TABLE		(1 << 12)
 
 
 #define DUMP_DFA_DIFF_PROGRESS		(1 << 0)
@@ -56,5 +58,7 @@
 #define DUMP_DFA_RULE_EXPR 		(1 << 20)
 #define DUMP_DFA_NODE_TO_DFA 		(1 << 21)
 #define DUMP_RULE_MERGE			(1 << 22)
+#define DUMP_DFA_STATE32		(1 << 23)
+#define DUMP_DFA_FLAGS_TABLE		(1 << 24)
 
 #endif /* APPARMOR_RE_H */
