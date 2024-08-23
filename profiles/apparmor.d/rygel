@@ -13,6 +13,7 @@
 abi <abi/4.0>,
 
 include <tunables/global>
+include <tunables/rygel>
 
 profile rygel /usr/bin/rygel {
   include <abstractions/base>
@@ -45,11 +46,8 @@ profile rygel /usr/bin/rygel {
   # thumbnails
   owner file r @{HOME}/.cache/thumbnails/{,**},
 
-  # default media files
-  # TODO - how to handle additional user configured paths?
-  owner file r   @{HOME}/@{XDG_MUSIC_DIR}/{,**},
-  owner file r   @{HOME}/@{XDG_PICTURES_DIR}/{,**},
-  owner file r   @{HOME}/@{XDG_VIDEOS_DIR}/{,**},
+  # media files - see tunables/rygel
+  owner file r @{rygel_media_dirs}/{,**},
 
   # dconf access
   owner rw @{run}/user/*/dconf/user,
@@ -106,11 +104,8 @@ profile rygel /usr/bin/rygel {
     owner file r  @{HOME}/.cache/gstreamer-1.0/*,
     owner file rw @{HOME}/.cache/media-art/{,*},
 
-    # default media files
-    # TODO - how to handle additional user configured paths?
-    owner file r  @{HOME}/@{XDG_MUSIC_DIR}/{,**},
-    owner file r  @{HOME}/@{XDG_PICTURES_DIR}/{,**},
-    owner file r  @{HOME}/@{XDG_VIDEOS_DIR}/{,**},
+    # media files - see tunables/rygel
+    owner file r  @{rygel_media_dirs}/{,**},
   }
 
   # Site-specific additions and overrides. See local/README for details.
