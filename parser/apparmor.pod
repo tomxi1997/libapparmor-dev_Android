@@ -206,8 +206,8 @@ which can help debugging profiles.
 =head2 Enable debug mode
 
 When debug mode is enabled, AppArmor will log a few extra messages to
-dmesg (not via the audit subsystem). For example, the logs will tell
-whether environment scrubbing has been applied.
+dmesg (not via the audit subsystem). For example, the logs will state when
+ld.so(8) secure-execution mode has been applied in a profile transition.
 
 To enable debug mode, run:
 
