@@ -388,7 +388,7 @@ aa_change_hat(2) can take advantage of subprofiles to run under different
 confinements, dependent on program logic. Several aa_change_hat(2)-aware
 applications exist, including an Apache module, mod_apparmor(5); a PAM
 module, pam_apparmor; and a Tomcat valve, tomcat_apparmor. Applications
-written or modified to use change_profile(2) transition permanently to the
+written or modified to use aa_change_profile(2) transition permanently to the
 specified profile. libvirt is one such application.
 
 =head2 Profile Head
@@ -2157,7 +2157,7 @@ negative values match when specifying one or the other. Eg, 'rw' matches when
 =head1 SEE ALSO
 
 apparmor(7), apparmor_parser(8), apparmor_xattrs(7), aa-complain(1),
-aa-enforce(1), aa_change_hat(2), mod_apparmor(5), and
+aa-enforce(1), aa_change_hat(2), aa_change_profile(2), mod_apparmor(5), and
 L<https://wiki.apparmor.net>.
 
 =cut
