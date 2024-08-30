@@ -871,20 +871,22 @@ def ask_exec(hashlog):
                         elif ans in ('CMD_px', 'CMD_cx', 'CMD_pix', 'CMD_cix'):
                             exec_mode = ans.replace('CMD_', '')
                             px_msg = _(
-                                "Should AppArmor sanitise the environment when\n"
-                                "switching profiles?\n"
+                                "Should AppArmor enable secure-execution mode\n"
+                                "when switching profiles?\n"
                                 "\n"
-                                "Sanitising environment is more secure,\n"
-                                "but some applications depend on the presence\n"
-                                "of LD_PRELOAD or LD_LIBRARY_PATH.")
+                                "Doing so is more secure, but some applications\n"
+                                "depend on the presence of LD_PRELOAD or\n"
+                                "LD_LIBRARY_PATH, which would be sanitized by\n"
+                                "enabling secure-execution mode.")
                             if parent_uses_ld_xxx:
                                 px_msg = _(
-                                    "Should AppArmor sanitise the environment when\n"
-                                    "switching profiles?\n"
+                                    "Should AppArmor enable secure-execution mode\n"
+                                    "when switching profiles?\n"
                                     "\n"
-                                    "Sanitising environment is more secure,\n"
+                                    "Doing so is more secure,\n"
                                     "but this application appears to be using LD_PRELOAD\n"
-                                    "or LD_LIBRARY_PATH and sanitising the environment\n"
+                                    "or LD_LIBRARY_PATH, and sanitising those environment\n"
+                                    "variables by enabling secure-execution mode\n"
                                     "could cause functionality problems.")
 
                             ynans = aaui.UI_YesNo(px_msg, 'y')

@@ -604,7 +604,7 @@ modes:
 
 =item B<Ux>
 
-- unconfined execute -- scrub the environment
+- unconfined execute -- use ld.so(8) secure-execution mode
 
 =item B<px>
 
@@ -612,7 +612,7 @@ modes:
 
 =item B<Px>
 
-- discrete profile execute -- scrub the environment
+- discrete profile execute -- use ld.so(8) secure-execution mode
 
 =item B<cx>
 
@@ -620,7 +620,7 @@ modes:
 
 =item B<Cx>
 
-- transition to subprofile on execute -- scrub the environment
+- transition to subprofile on execute -- use ld.so(8) secure-execution mode
 
 =item B<ix>
 
@@ -632,7 +632,7 @@ modes:
 
 =item B<Pix>
 
-- discrete profile execute with inherit fallback -- scrub the environment
+- discrete profile execute with inherit fallback -- use ld.so(8) secure-execution mode
 
 =item B<cix>
 
@@ -640,7 +640,7 @@ modes:
 
 =item B<Cix>
 
-- transition to subprofile on execute with inherit fallback -- scrub the environment
+- transition to subprofile on execute with inherit fallback -- use ld.so(8) secure-execution mode
 
 =item B<pux>
 
@@ -648,7 +648,7 @@ modes:
 
 =item B<PUx>
 
-- discrete profile execute with fallback to unconfined -- scrub the environment
+- discrete profile execute with fallback to unconfined -- use ld.so(8) secure-execution mode
 
 =item B<cux>
 
@@ -656,7 +656,7 @@ modes:
 
 =item B<CUx>
 
-- transition to subprofile on execute with fallback to unconfined -- scrub the environment
+- transition to subprofile on execute with fallback to unconfined -- use ld.so(8) secure-execution mode
 
 =item B<deny x>
 
@@ -715,20 +715,20 @@ constrained, see the apparmor(7) man page.
 
 B<WARNING> 'ux' should only be used in very special cases. It enables the
 designated child processes to be run without any AppArmor protection.
-'ux' does not scrub the environment of variables such as LD_PRELOAD;
-as a result, the calling domain may have an undue amount of influence
-over the callee.  Use this mode only if the child absolutely must be
+'ux' does not use ld.so(8) secure-execution mode to clear variables such as 
+LD_PRELOAD; as a result, the calling domain may have an undue amount of 
+influence over the callee. Use this mode only if the child absolutely must be
 run unconfined and LD_PRELOAD must be used. Any profile using this mode
 provides negligible security. Use at your own risk.
 
 Incompatible with other exec transition modes and the deny qualifier.
 
-=item B<Ux - unconfined execute -- scrub the environment>
+=item B<Ux - unconfined execute -- use ld.so(8) secure-execution mode>
 
 'Ux' allows the named program to run in 'ux' mode, but AppArmor
-will invoke the Linux Kernel's B<unsafe_exec> routines to scrub
-the environment, similar to setuid programs. (See ld.so(8) for some
-information on setuid/setgid environment scrubbing.)
+will invoke the Linux Kernel's B<unsafe_exec> routines to set ld.so(8)
+secure-execution mode and clear environment variables such as LD_PRELOAD, 
+similar to setuid programs. (See ld.so(8) for more information.)
 
 B<WARNING> 'Ux' should only be used in very special cases. It enables the
 designated child processes to be run without any AppArmor protection.
@@ -743,18 +743,18 @@ This mode requires that a discrete security profile is defined for a
 program executed and forces an AppArmor domain transition. If there is
 no profile defined then the access will be denied.
 
-B<WARNING> 'px' does not scrub the environment of variables such as
-LD_PRELOAD; as a result, the calling domain may have an undue amount of
+B<WARNING> 'px' does not use ld.so(8) secure-execution mode to clear variables 
+such as LD_PRELOAD; as a result, the calling domain may have an undue amount of 
 influence over the callee.
 
 Incompatible with other exec transition modes and the deny qualifier.
 
-=item B<Px - Discrete Profile execute mode -- scrub the environment>
+=item B<Px - Discrete Profile execute mode -- use ld.so(8) secure-execution mode>
 
 'Px' allows the named program to run in 'px' mode, but AppArmor
-will invoke the Linux Kernel's B<unsafe_exec> routines to scrub
-the environment, similar to setuid programs. (See ld.so(8) for some
-information on setuid/setgid environment scrubbing.)
+will invoke the Linux Kernel's B<unsafe_exec> routines to set ld.so(8)
+secure-execution mode and clear environment variables such as LD_PRELOAD, 
+similar to setuid programs. (See ld.so(8) for more information.)
 
 Incompatible with other exec transition modes and the deny qualifier.
 
@@ -764,18 +764,18 @@ This mode requires that a local security profile is defined and forces an
 AppArmor domain transition to the named profile. If there is no profile
 defined then the access will be denied.
 
-B<WARNING> 'cx' does not scrub the environment of variables such as
-LD_PRELOAD; as a result, the calling domain may have an undue amount of
+B<WARNING> 'cx' does not use ld.so(8) secure-execution mode to clear variables 
+such as LD_PRELOAD; as a result, the calling domain may have an undue amount of 
 influence over the callee.
 
 Incompatible with other exec transition modes and the deny qualifier.
 
-=item B<Cx - Transition to Subprofile execute mode -- scrub the environment>
+=item B<Cx - Transition to Subprofile execute mode -- use ld.so(8) secure-execution mode>
 
 'Cx' allows the named program to run in 'cx' mode, but AppArmor
-will invoke the Linux Kernel's B<unsafe_exec> routines to scrub
-the environment, similar to setuid programs. (See ld.so(8) for some
-information on setuid/setgid environment scrubbing.)
+will invoke the Linux Kernel's B<unsafe_exec> routines to set ld.so(8)
+secure-execution mode and clear environment variables such as LD_PRELOAD, 
+similar to setuid programs. (See ld.so(8) for more information.)
 
 Incompatible with other exec transition modes and the deny qualifier.
 
@@ -788,7 +788,7 @@ will inherit the current profile.
 This mode is useful when a confined program needs to call another
 confined program without gaining the permissions of the target's
 profile, or losing the permissions of the current profile. There is no
-version to scrub the environment because 'ix' executions don't change
+version to set secure-execution mode because 'ix' executions don't change
 privileges.
 
 Incompatible with other exec transition modes and the deny qualifier.
@@ -1688,11 +1688,11 @@ rule set.  Eg.
   change_profile /bin/bash -> {new_profile1,new_profile2,new_profile3},
 
 The exec mode dictates whether or not the Linux Kernel's B<unsafe_exec>
-routines should be used to scrub the environment, similar to setuid programs.
-(See ld.so(8) for some information on setuid/setgid environment scrubbing.) The
-B<safe> mode sets up environment scrubbing to occur when the new application is
-executed and B<unsafe> mode disables AppArmor's requirement for environment
-scrubbing (the kernel and/or libc may still require environment scrubbing). An
+routines should be used to set ld.so(8) secure-execution mode and clear 
+environment variables such as LD_PRELOAD, similar to setuid programs. 
+(See ld.so(8) for more information.) The B<safe> mode sets up secure-execution 
+mode for the new application, and B<unsafe> mode disables AppArmor's 
+requirement for it (the kernel and/or libc may still turn it on). An
 exec mode can only be specified when an exec condition is present.
 
   change_profile safe /bin/bash -> new_profile,
