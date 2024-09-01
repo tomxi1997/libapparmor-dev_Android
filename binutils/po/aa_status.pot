@@ -1,0 +1,165 @@
+# Translations for aa_status
+# Copyright (C) 2024 Canonical Ltd
+# This file is distributed under the same license as the AppArmor package.
+# John Johansen <john.johansen@canonical.com>, 2024.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: apparmor@lists.ubuntu.com\n"
+"POT-Creation-Date: 2024-08-31 17:49-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../aa_status.c:161
+msgid "apparmor not present.\n"
+msgstr ""
+
+#: ../aa_status.c:164
+msgid "apparmor module is loaded.\n"
+msgstr ""
+
+#: ../aa_status.c:168
+msgid "apparmor filesystem is not mounted.\n"
+msgstr ""
+
+#: ../aa_status.c:181
+msgid "You do not have enough privilege to read the profile set.\n"
+msgstr ""
+
+#: ../aa_status.c:183
+#, c-format
+msgid "Could not open %s: %s"
+msgstr ""
+
+#: ../aa_status.c:356 ../aa_status.c:379
+msgid "ERROR: Failed to allocate memory\n"
+msgstr ""
+
+#: ../aa_status.c:587 ../aa_status.c:653
+#, c-format
+msgid "Error: failed to compile sub filter '%s'\n"
+msgstr ""
+
+#: ../aa_status.c:715
+#, c-format
+msgid ""
+"Usage: %s [OPTIONS]\n"
+"Legacy options and their equivalent command\n"
+"  --profiled             --count --profiles\n"
+"  --enforced             --count --profiles --mode=enforced\n"
+"  --complaining          --count --profiles --mode=complain\n"
+"  --kill                 --count --profiles --mode=kill\n"
+"  --prompt               --count --profiles --mode=prompt\n"
+"  --special-unconfined   --count --profiles --mode=unconfined\n"
+"  --process-mixed        --count --ps --mode=mixed\n"
+msgstr ""
+
+#: ../aa_status.c:734
+#, c-format
+msgid ""
+"Usage of filters\n"
+"Filters are used to reduce the output of information to only\n"
+"those entries that will match the filter. Filters use posix\n"
+"regular expression syntax. The possible values for exes that\n"
+"support filters are below\n"
+"\n"
+"  --filter.mode: regular expression to match the profile "
+"mode                 modes: enforce, complain, kill, unconfined, mixed\n"
+"  --filter.profiles: regular expression to match displayed profile names\n"
+"  --filter.pid:  regular expression to match displayed processes pids\n"
+"  --filter.exe:  regular expression to match executable\n"
+msgstr ""
+
+#: ../aa_status.c:762
+#, c-format
+msgid ""
+"Usage: %s [OPTIONS]\n"
+"Displays various information about the currently loaded AppArmor policy.\n"
+"Default if no options given\n"
+"  --show=all\n"
+"\n"
+"OPTIONS (one only):\n"
+"  --enabled       returns error code if AppArmor not enabled\n"
+"  --show=X        What information to show. {profiles,processes,all}\n"
+"  --count         print the number of entries. Implies --quiet\n"
+"  --filter.mode=filter      see filters\n"
+"  --filter.profiles=filter  see filters\n"
+"  --filter.pid=filter       see filters\n"
+"  --filter.exe=filter       see filters\n"
+"  --json          displays multiple data points in machine-readable JSON "
+"format\n"
+"  --pretty-json   same data as --json, formatted for human consumption as "
+"well\n"
+"  --verbose       (default) displays data points about loaded policy set\n"
+"  --quiet         don't output error messages\n"
+"  -h[(legacy|filters)]      this message, or info on the specified option\n"
+"  --help[=(legacy|filters)] this message, or info on the specified option\n"
+msgstr ""
+
+#: ../aa_status.c:856
+#, c-format
+msgid "Error: Invalid --help option '%s'.\n"
+msgstr ""
+
+#: ../aa_status.c:924
+#, c-format
+msgid "Error: Invalid --show option '%s'.\n"
+msgstr ""
+
+#: ../aa_status.c:946
+msgid "Error: Invalid command.\n"
+msgstr ""
+
+#: ../aa_status.c:971
+msgid "Error: Unknown options.\n"
+msgstr ""
+
+#: ../aa_status.c:983
+#, c-format
+msgid "Error: failed to compile mode filter '%s'\n"
+msgstr ""
+
+#: ../aa_status.c:988
+#, c-format
+msgid "Error: failed to compile profiles filter '%s'\n"
+msgstr ""
+
+#: ../aa_status.c:994
+#, c-format
+msgid "Error: failed to compile ps filter '%s'\n"
+msgstr ""
+
+#: ../aa_status.c:1000
+#, c-format
+msgid "Error: failed to compile exe filter '%s'\n"
+msgstr ""
+
+#: ../aa_status.c:1015
+#, c-format
+msgid "Failed to open memstream: %m\n"
+msgstr ""
+
+#: ../aa_status.c:1026
+#, c-format
+msgid "Failed to get profiles: %d....\n"
+msgstr ""
+
+#: ../aa_status.c:1050
+#, c-format
+msgid "Failed to get processes: %d....\n"
+msgstr ""
+
+#: ../aa_status.c:1076
+msgid "Failed to parse json output"
+msgstr ""
+
+#: ../aa_status.c:1083
+msgid "Failed to print pretty json"
+msgstr ""
