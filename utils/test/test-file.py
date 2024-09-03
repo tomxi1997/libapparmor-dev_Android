@@ -866,6 +866,16 @@ class FileLogprofHeaderTest(AATest):
         obj.original_perms = {'allow': {'all': set(), 'owner': set()}}
         self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('New Mode'), _('rw')])
 
+    def test_implicit_original_perms(self):
+        obj = FileRule.create_instance('/foo rw,')
+        obj.original_perms = {'allow': {'all': FileRule.ALL, 'owner': set()}}
+        self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('Old Mode'), _('mrwlkix'), _('New Mode'), _('rw')])
+
+    def test_owner_implicit_original_perms(self):
+        obj = FileRule.create_instance('/foo rw,')
+        obj.original_perms = {'allow': {'all': set(), 'owner': FileRule.ALL}}
+        self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('Old Mode'), _('owner mrwlkix'), _('New Mode'), _('rw')])
+
 
 class FileEditHeaderTest(AATest):
     def _run_test(self, params, expected):
