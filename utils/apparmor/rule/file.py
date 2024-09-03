@@ -229,7 +229,7 @@ class FileRule(BaseRule):
         if self.all_paths and self.all_perms and not path and not perms and not target:
             return ('%s%s%sfile,%s' % (space, self.modifiers_str(), owner, self.comment))  # plain 'file,' rule
         elif not self.all_paths and not self.all_perms and path and perms:
-            return ('%s%s%s%s%s%s,%s' % (space, self.modifiers_str(), file_keyword, owner, path_and_perms, target, self.comment))
+            return ('%s%s%s%s%s%s,%s' % (space, self.modifiers_str(), owner, file_keyword, path_and_perms, target, self.comment))
         else:
             raise AppArmorBug('Invalid combination of path and perms in file rule - either specify path and perms, or none of them')
 
