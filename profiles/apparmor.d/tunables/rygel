@@ -8,3 +8,5 @@
 # ------------------------------------------------------------------
 # allow standard XDG media paths by default
 @{rygel_media_dirs}=@{HOME}/@{XDG_MUSIC_DIR} @{HOME}/@{XDG_VIDEOS_DIR} @{HOME}/@{XDG_PICTURES_DIR}
+
+include if exists <tunables/rygel.d>
