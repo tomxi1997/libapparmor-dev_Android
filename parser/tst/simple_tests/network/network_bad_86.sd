@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION network port range conditional test - missing end of range
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  network port=22-,
+
+}
