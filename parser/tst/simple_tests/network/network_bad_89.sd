@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION network port range conditional test - spaces in range not allowed
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  network peer=(port=22 - 443),
+
+}
