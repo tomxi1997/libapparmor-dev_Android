@@ -853,10 +853,10 @@ class FileLogprofHeaderTest(AATest):
         (('audit deny /foo wk,',               set(),    set()),     [_('Qualifier'), 'audit deny', _('Path'), '/foo',                                  _('New Mode'), 'wk']),
         (('owner file /foo ix,',               set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'owner ix']),  # noqa: E201
         (('audit deny file /foo rlx -> /baz,', set(),    set()),     [_('Qualifier'), 'audit deny', _('Path'), '/foo',                                  _('New Mode'), 'rlx -> /baz']),
-        (('/foo rw,',                          set('r'), set()),     [                              _('Path'), '/foo', _('Old Mode'), _('r'),           _('New Mode'), _('rw')]),  # noqa: E201
-        (('/foo rw,',                          set(),    set('rw')), [                              _('Path'), '/foo', _('Old Mode'), _('owner rw'),    _('New Mode'), _('rw')]),  # noqa: E201
-        (('/foo mrw,',                         set('r'), set('k')),  [                              _('Path'), '/foo', _('Old Mode'), _('r + owner k'), _('New Mode'), _('mrw')]),  # noqa: E201
-        (('/foo mrw,',                         set('r'), set('rk')), [                              _('Path'), '/foo', _('Old Mode'), _('r + owner k'), _('New Mode'), _('mrw')]),  # noqa: E201
+        (('/foo rw,',                          set('r'), set()),     [                              _('Path'), '/foo', _('Old Mode'), _('r'),           _('New Mode'), 'rw']),  # noqa: E201
+        (('/foo rw,',                          set(),    set('rw')), [                              _('Path'), '/foo', _('Old Mode'), _('owner rw'),    _('New Mode'), 'rw']),  # noqa: E201
+        (('/foo mrw,',                         set('r'), set('k')),  [                              _('Path'), '/foo', _('Old Mode'), _('r + owner k'), _('New Mode'), 'mrw']),  # noqa: E201
+        (('/foo mrw,',                         set('r'), set('rk')), [                              _('Path'), '/foo', _('Old Mode'), _('r + owner k'), _('New Mode'), 'mrw']),  # noqa: E201
         (('link /foo -> /bar,',                set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'link -> /bar']),  # noqa: E201
         (('link subset /foo -> /bar,',         set(),    set()),     [                              _('Path'), '/foo',                                  _('New Mode'), 'link subset -> /bar']),  # noqa: E201
     )
@@ -870,17 +870,17 @@ class FileLogprofHeaderTest(AATest):
     def test_empty_original_perms(self):
         obj = FileRule.create_instance('/foo rw,')
         obj.original_perms = {'allow': {'all': set(), 'owner': set()}}
-        self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('New Mode'), _('rw')])
+        self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('New Mode'), 'rw'])
 
     def test_implicit_original_perms(self):
         obj = FileRule.create_instance('/foo rw,')
         obj.original_perms = {'allow': {'all': FileRule.ALL, 'owner': set()}}
-        self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('Old Mode'), _('mrwlkix'), _('New Mode'), _('rw')])
+        self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('Old Mode'), _('mrwlkix'), _('New Mode'), 'rw'])
 
     def test_owner_implicit_original_perms(self):
         obj = FileRule.create_instance('/foo rw,')
         obj.original_perms = {'allow': {'all': set(), 'owner': FileRule.ALL}}
-        self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('Old Mode'), _('owner mrwlkix'), _('New Mode'), _('rw')])
+        self.assertEqual(obj.logprof_header(), [_('Path'), '/foo', _('Old Mode'), _('owner mrwlkix'), _('New Mode'), 'rw'])
 
 
 class FileEditHeaderTest(AATest):
