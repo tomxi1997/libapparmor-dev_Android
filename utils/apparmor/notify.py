@@ -14,53 +14,34 @@
 # ----------------------------------------------------------------------
 
 import os
-import re
 import struct
+import sqlite3
 
-from datetime import datetime
-
-from apparmor.common import AppArmorBug, AppArmorException, DebugLogger, cmd
+from apparmor.common import AppArmorBug, DebugLogger
 
 debug_logger = DebugLogger('apparmor.notify')
 
 
-def get_last_login_timestamp(username, filename='/var/log/wtmp', lastlog2='/usr/bin/lastlog2'):
+def get_last_login_timestamp(username, filename='/var/log/wtmp', lastlog2_db='/var/lib/lastlog/lastlog2.db'):
     """Get last login for user as epoch timestamp"""
 
-    if os.access(lastlog2, os.X_OK):
-        return get_last_login_timestamp_lastlog2(username, lastlog2)
+    if os.access(lastlog2_db, os.R_OK):
+        return get_last_login_timestamp_lastlog2(username, lastlog2_db)
     else:
         return get_last_login_timestamp_wtmp(username, filename)
 
 
-def get_last_login_timestamp_lastlog2(username, lastlog2='/usr/bin/lastlog2'):
+def get_last_login_timestamp_lastlog2(username, lastlog2_db='/var/lib/lastlog/lastlog2.db'):
     """Execute lastlog2 and get last login for user as epoch timestamp"""
 
-    retval, out = cmd([lastlog2, '-u', username])
+    db = sqlite3.connect('file:%s?mode=ro' % lastlog2_db, uri=True)
+    cur = db.cursor()
+    timestamp = cur.execute('SELECT Time FROM Lastlog2 WHERE Name == ?;', [username]).fetchone()
 
-    if retval == 1 and ' does not exist.' in out:
-        raise AppArmorException(out)
-
-    if retval != 0:
-        raise AppArmorBug('Executing lastlog2 failed:\n' + out)
-
-    if '**Never logged in**' in out:
+    if timestamp:
+        return timestamp[0]
+    else:
         return 0
-
-    lines = out.rstrip().split('\n')
-
-    if len(lines) != 2:
-        raise AppArmorBug('Unexpected lastlog2 output:\n' + out)
-
-    # in lastlog2 output, timestamp starts at column 70, with at least one space in column 69
-    # if this ever changes, we'll need a different/better regex...
-    RE_LASTLOG2 = re.compile('^.{68} +' + '(?P<timestamp>.+)')
-    match = RE_LASTLOG2.search(lines[1])
-
-    timestamp = match.group('timestamp')
-    unixtime = int(datetime.strptime(timestamp, '%a %b %d %H:%M:%S %z %Y').strftime('%s'))
-
-    return unixtime
 
 
 def sane_timestamp(timestamp):
