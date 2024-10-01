@@ -86,8 +86,6 @@ typedef struct
 	char *net_foreign_addr;
 	unsigned long net_foreign_port;
 
-	char *execpath;
-
 	char *dbus_bus;
 	char *dbus_path;
 	char *dbus_interface;
@@ -104,6 +102,7 @@ typedef struct
 
 	char *net_addr;
 	char *peer_addr;
+	char *execpath;
 } aa_log_record;
 
 /**
