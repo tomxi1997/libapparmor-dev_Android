@@ -79,7 +79,7 @@ user_globs = {}
 transitions = {}
 
 aa = {}  # Profiles originally in sd, replace by aa
-original_aa = hasher()
+original_aa = {}
 
 changed = dict()
 created = []
@@ -97,7 +97,7 @@ def reset_aa():
     aa = {}
     include = dict()
     active_profiles = ProfileList()
-    original_aa = hasher()
+    original_aa = {}
 
 
 def on_exit():
@@ -1625,7 +1625,7 @@ def read_profiles(ui_msg=False, skip_profiles=()):
 
     global aa, original_aa
     aa = {}
-    original_aa = hasher()
+    original_aa = {}
 
     if ui_msg:
         aaui.UI_Info(_('Updating AppArmor profiles in %s.') % profile_dir)
@@ -2055,7 +2055,7 @@ def serialize_profile(profile_data, name, options):
     # Here should be all the profiles from the files added write after global/common stuff
     for prof in sorted(active_profiles.profiles_in_file(prof_filename)):
         if prof != name:
-            if original_aa[prof][prof].get('initial_comment', False):
+            if original_aa.get(prof, {}).get(prof, {}).get('initial_comment', False):
                 comment = original_aa[prof][prof]['initial_comment']
                 comment.replace('\\n', '\n')
                 data.append(comment + '\n')
