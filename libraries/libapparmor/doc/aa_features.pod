@@ -54,7 +54,7 @@ B<typedef struct aa_features aa_features;>
 
 B<int aa_features_new(aa_features **features, int dirfd, const char *path);>
 
-B<int aa_features_new_from_file(aa_features **features, int fd);>
+B<int aa_features_new_from_file(aa_features **features, int file);>
 
 B<int aa_features_new_from_string(aa_features **features, const char *string, size_t size);>
 
