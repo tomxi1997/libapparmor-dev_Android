@@ -13,30 +13,29 @@ abi <abi/3.0>,
 
 include <tunables/global>
 
-/usr/bin/remmina flags=(enforce) {
+profile remmina /usr/bin/remmina {
   include <abstractions/base>
   include <abstractions/fonts>
   include <abstractions/freedesktop.org>
   include <abstractions/gnome>
   include <abstractions/dbus>
   include <abstractions/dbus-session>
-
-  network inet stream,
-  network inet6 stream,
-  network netlink raw,
+  include <abstractions/dbus-session-strict>
+  include <abstractions/nameservice>
+  include <abstractions/openssl>
+  include <abstractions/ssl_certs>
 
   dbus (send) bus=system path="/org/freedesktop/NetworkManager" interface="org.freedesktop.DBus.Properties" member=GetAll peer=(label=unconfined),
 
   /etc/dconf/** r,
-  /etc/{passwd,nsswitch.conf,timezone} r,
-  /etc/ssl/certs/{,**} r,
-  /etc/ssl/openssl.cnf r,
   /usr/bin/remmina mr,
-  /usr/share/remmina/{,**} rw,
+  /usr/bin/dash r,
+  /usr/share/remmina/{,**} r,
   /var/lib/snapd/desktop/icons/{,**} r,
 
   owner @{HOME}/.cache/org.remmina.Remmina/{,**} rw,
   owner @{HOME}/.cache/remmina/{,**} rw,
+  owner @{HOME}/.cache/thumbnails/{,**} r,
   owner @{HOME}/.config/autostart/remmina-applet.desktop r,
   owner @{HOME}/.config/dconf/user r,
   owner @{HOME}/.config/freerdp/known_hosts2 rwk,
@@ -45,6 +44,7 @@ include <tunables/global>
   owner @{HOME}/.ssh/{config,known_hosts} r,
   owner @{HOME}/.local/share/remmina/{,**} rw,
 
+  owner @{run}/user/@{uid}/gvfsd/socket-* rw,
   owner @{run}/user/@{uid}/dconf/{,user} rw,
   owner @{PROC}/@{pid}/task/@{tid}/comm rw,
 
