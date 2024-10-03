@@ -58,6 +58,9 @@ appropriately.
 
 =head1 ERRORS
 
+# podchecker warns about duplicate link targets for EACCES, EBUSY, ENOENT,
+# and ENOMEM, but this is a warning that is safe to ignore.
+
 B<aa_is_enabled>
 
 =over 4
