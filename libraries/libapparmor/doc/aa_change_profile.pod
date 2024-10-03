@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-aa_change_profile, aa_change_onexec - change a tasks profile
+aa_change_profile, aa_change_onexec - change a task's profile
 
 =head1 SYNOPSIS
 
@@ -58,8 +58,8 @@ The aa_change_onexec() function is like the aa_change_profile() function
 except it specifies that the profile transition should take place on the
 next exec instead of immediately.  The delayed profile change takes
 precedence over any exec transition rules within the confining profile.
-Delaying the profile boundary has a couple of advantages, it removes the
-need for stub transition profiles and the exec boundary is a natural security
+Delaying the profile boundary has a couple of advantages: it removes the
+need for stub transition profiles, and the exec boundary is a natural security
 layer where potentially sensitive memory is unmapped.
 
 =head1 RETURN VALUE

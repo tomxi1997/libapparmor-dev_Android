@@ -22,7 +22,7 @@
 
 =head1 NAME
 
-aa_change_hat  - change to or from a "hat" within a AppArmor profile
+aa_change_hat - change to or from a "hat" within a AppArmor profile
 
 =head1 SYNOPSIS
 
