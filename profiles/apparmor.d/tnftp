@@ -34,6 +34,10 @@ profile tnftp /usr/bin/tnftp {
   # required for the pager (less, more) to work
   file Cx /usr/bin/dash,
 
+  # allow read on anything on @{HOME} not explicitly denied
+  owner file r @{HOME},
+  owner file r @{HOME}/**,
+
   # Sub-profile for the pager to work
   profile dash /usr/bin/dash {
     include <abstractions/base>
