@@ -2007,7 +2007,8 @@ def write_piece(profile_data, depth, name, nhat):
 
 
 def serialize_profile(profile_data, name, options):
-    string = ''
+    ''' combine the preamble and profiles in a file to a string (to be written to the profile file) '''
+
     data = []
 
     if not isinstance(options, dict):
@@ -2016,12 +2017,11 @@ def serialize_profile(profile_data, name, options):
     include_metadata = options.get('METADATA', False)
 
     if include_metadata:
-        string = '# Last Modified: %s\n' % time.asctime()
+        data.extend(['# Last Modified: %s' % time.asctime()])
 
 #     if profile_data[name].get('initial_comment', False):
 #         comment = profile_data[name]['initial_comment']
-#         comment.replace('\\n', '\n')
-#         string += comment + '\n'
+#         data.append(comment)
 
     if options.get('is_attachment'):
         prof_filename = get_profile_filename_from_attachment(name, True)
@@ -2035,23 +2035,22 @@ def serialize_profile(profile_data, name, options):
         if active_profiles.profiles[prof]['parent']:
             continue  # child profile or hat, already part of its parent profile
 
+        # aa-logprof asks to save each file separately. Therefore only update the given profile, and keep the original version of other profiles in the file
         if prof != name:
             if original_aa.get(prof, {}).get(prof, {}).get('initial_comment', False):
                 comment = original_aa[prof][prof]['initial_comment']
-                comment.replace('\\n', '\n')
-                data.append(comment + '\n')
+                data.extend([comment, ''])
+
             data.extend(write_piece(split_to_merged(original_aa), 0, prof, prof))
+
         else:
             if profile_data[name].get('initial_comment', False):
                 comment = profile_data[name]['initial_comment']
-                comment.replace('\\n', '\n')
-                data.append(comment + '\n')
+                data.extend([comment, ''])
 
             data.extend(write_piece(profile_data, 0, name, name))
 
-    string += '\n'.join(data)
-
-    return string + '\n'
+    return '\n'.join(data) + '\n'
 
 
 def write_profile_ui_feedback(profile, is_attachment=False, out_dir=None):
