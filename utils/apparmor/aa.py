@@ -417,6 +417,7 @@ def create_new_profile(localfile, is_stub=False):
                 full_hat = combine_profname((localfile, hat))
                 if not local_profile.get(full_hat, False):
                     local_profile[full_hat] = ProfileStorage('NEW', hat, 'create_new_profile() required_hats')
+                    local_profile[full_hat]['parent'] = localfile
                     local_profile[full_hat]['is_hat'] = True
                 local_profile[full_hat]['flags'] = 'complain'
 
@@ -561,6 +562,8 @@ def change_profile_flags(prof_filename, program, flag, set_flag):
             for lineno, line in enumerate(f_in):
                 if RE_PROFILE_START.search(line):
                     depth += 1
+                    # TODO: hand over profile and hat (= parent profile)
+                    #       (and find out why it breaks test-aa.py with several "a child profile inside another child profile is not allowed" errors when doing so)
                     (profile, hat, prof_storage) = ProfileStorage.parse(line, prof_filename, lineno, '', '')
                     old_flags = prof_storage['flags']
                     newflags = ', '.join(add_or_remove_flag(old_flags, flag, set_flag))
@@ -581,6 +584,7 @@ def change_profile_flags(prof_filename, program, flag, set_flag):
                         line = '%s\n' % line[0]
                 elif RE_PROFILE_HAT_DEF.search(line):
                     depth += 1
+                    # TODO: hand over profile and hat (= parent profile)
                     (profile, hat, prof_storage) = ProfileStorage.parse(line, prof_filename, lineno, '', '')
                     old_flags = prof_storage['flags']
                     newflags = ', '.join(add_or_remove_flag(old_flags, flag, set_flag))
@@ -590,6 +594,7 @@ def change_profile_flags(prof_filename, program, flag, set_flag):
                     line = '%s\n' % line[0]
                 elif RE_PROFILE_END.search(line):
                     depth -= 1
+                    # TODO: restore 'profile' and 'hat' to previous values (not really needed/used for aa-complain etc., but can't hurt)
 
                 f_out.write(line)
     os.rename(temp_file.name, prof_filename)
@@ -694,6 +699,7 @@ def ask_addhat(hashlog):
 
                 if ans == 'CMD_ADDHAT':
                     aa[profile][hat] = ProfileStorage(profile, hat, 'ask_addhat addhat')
+                    aa[profile][hat]['parent'] = profile
                     aa[profile][hat]['flags'] = aa[profile][profile]['flags']
                     hashlog[aamode][full_hat]['final_name'] = '%s//%s' % (profile, hat)
                     changed[profile] = True
@@ -703,6 +709,7 @@ def ask_addhat(hashlog):
                     if not aa[profile].get(hat, False):
                         # create default hat if it doesn't exist yet
                         aa[profile][hat] = ProfileStorage(profile, hat, 'ask_addhat default hat')
+                        aa[profile][hat]['parent'] = profile
                         aa[profile][hat]['flags'] = aa[profile][profile]['flags']
                         changed[profile] = True
                 elif ans == 'CMD_DENY':
@@ -1059,9 +1066,11 @@ def ask_the_questions(log_dict):
 
                     if log_dict[aamode][full_profile]['is_hat']:
                         aa[profile][hat] = ProfileStorage(profile, hat, 'mergeprof ask_the_questions() - missing hat')
+                        aa[profile][hat]['parent'] = profile
                         aa[profile][hat]['is_hat'] = True
                     else:
                         aa[profile][hat] = ProfileStorage(profile, hat, 'mergeprof ask_the_questions() - missing subprofile')
+                        aa[profile][hat]['parent'] = profile
                         aa[profile][hat]['is_hat'] = False
 
                 # check for and ask about conflicting exec modes
@@ -1862,6 +1871,7 @@ def parse_profile_data(data, file, do_include, in_preamble):
                         profname = combine_profname((parsed_prof, hat))
                         if not profile_data.get(profname, False):
                             profile_data[profname] = ProfileStorage(parsed_prof, hat, 'parse_profile_data() required_hats')
+                            profile_data[profname]['parent'] = parsed_prof
                             profile_data[profname]['is_hat'] = True
 
     # End of file reached but we're stuck in a profile

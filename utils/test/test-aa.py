@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # ------------------------------------------------------------------
 #
-#    Copyright (C) 2014-2021 Christian Boltz
+#    Copyright (C) 2014-2024 Christian Boltz
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -514,6 +514,21 @@ class AaTest_parse_profile_data(AATest):
         self.assertEqual(prof['/foo']['name'], '/foo')
         self.assertEqual(prof['/foo']['filename'], 'somefile')
         self.assertEqual(prof['/foo']['flags'], None)
+
+    def test_parse_parent_and_child(self):
+        prof = parse_profile_data('profile /foo {\nprofile /bar {\n}\n}\n'.split(), 'somefile', False, False)
+
+        self.assertEqual(list(prof.keys()), ['/foo', '/foo///bar'])
+
+        self.assertEqual(prof['/foo']['parent'], '')
+        self.assertEqual(prof['/foo']['name'], '/foo')
+        self.assertEqual(prof['/foo']['filename'], 'somefile')
+        self.assertEqual(prof['/foo']['flags'], None)
+
+        self.assertEqual(prof['/foo///bar']['parent'], '/foo')
+        self.assertEqual(prof['/foo///bar']['name'], '/bar')
+        self.assertEqual(prof['/foo///bar']['filename'], 'somefile')
+        self.assertEqual(prof['/foo///bar']['flags'], None)
 
     def test_parse_duplicate_profile(self):
         with self.assertRaises(AppArmorException):
