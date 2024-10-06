@@ -63,7 +63,7 @@ class ProfileList:
         for rule in preamble_ruletypes:
             self.files[filename][rule] = preamble_ruletypes[rule]['ruleset']()
 
-    def add_profile(self, filename, profile_name, attachment, prof_storage=None):
+    def add_profile(self, filename, profile_name, attachment, prof_storage):
         """Add the given profile and attachment to the list"""
 
         if not filename:
@@ -72,7 +72,7 @@ class ProfileList:
         if not profile_name and not attachment:
             raise AppArmorBug('Neither profile name or attachment given')
 
-        if type(prof_storage) is not ProfileStorage and prof_storage is not None:
+        if type(prof_storage) is not ProfileStorage:
             raise AppArmorBug('Invalid profile type: %s' % type(prof_storage))
 
         if profile_name in self.profile_names:

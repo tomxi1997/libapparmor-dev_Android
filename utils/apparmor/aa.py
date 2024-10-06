@@ -511,7 +511,7 @@ def autodep(bin_name, pname=''):
     if not attachment and pname.startswith('/'):
         attachment = pname  # use name as name and attachment
 
-    active_profiles.add_profile(file, pname, attachment)
+    active_profiles.add_profile(file, pname, attachment, profile_data[pname])
 
     if os.path.isfile(profile_dir + '/abi/4.0'):
         active_profiles.add_abi(file, AbiRule('abi/4.0', False, True))
@@ -1675,7 +1675,7 @@ def read_profile(file, active_profile, read_error_fatal=False):
             if not attachment and profile.startswith('/'):
                 attachment = profile  # use profile as name and attachment
 
-            active_profiles.add_profile(filename, profile, attachment)
+            active_profiles.add_profile(filename, profile, attachment, profile_data[profile])
 
     else:
         for profile in profile_data:
