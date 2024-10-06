@@ -1685,23 +1685,16 @@ def read_profile(file, active_profile, read_error_fatal=False):
         attach_profile_data(aa, profile_data)
         attach_profile_data(original_aa, profile_data)
 
-        for profile in profile_data:
-            attachment = profile_data[profile]['attachment']
-            filename = profile_data[profile]['filename']
+    for profile in profile_data:
+        attachment = profile_data[profile]['attachment']
+        filename = profile_data[profile]['filename']
 
-            if not attachment and profile.startswith('/'):
-                attachment = profile  # use profile as name and attachment
+        if not attachment and profile.startswith('/'):
+            attachment = profile  # use profile as name and attachment
 
+        if active_profile:
             active_profiles.add_profile(filename, profile, attachment, profile_data[profile])
-
-    else:
-        for profile in profile_data:
-            attachment = profile_data[profile]['attachment']
-            filename = profile_data[profile]['filename']
-
-            if not attachment and profile.startswith('/'):
-                attachment = profile  # use profile as name and attachment
-
+        else:
             extra_profiles.add_profile(filename, profile, attachment, profile_data[profile])
 
 
