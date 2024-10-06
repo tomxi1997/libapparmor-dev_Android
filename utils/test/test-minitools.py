@@ -199,26 +199,44 @@ class MinitoolsTest(AATest):
 
         self.assertIsNot(output_force, '', 'Failed to run aa-unconfined in paranoid mode')
 
-    def test_cleanprof(self):
+    def _test_with_cleanprof_profile(self, command, output_file, errormsg, delete_first_line):
         input_file = 'cleanprof_test.in'
-        output_file = 'cleanprof_test.out'
+        profile = '/usr/bin/a/simple/cleanprof/test/profile'
         # We position the local testfile
         shutil.copy('./' + input_file, self.profile_dir)
-        # Our silly test program whose profile we wish to clean
-        cleanprof_test = '/usr/bin/a/simple/cleanprof/test/profile'
 
         subprocess.check_output(
-            '{} ./../aa-cleanprof  --no-reload -d {} -s {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, cleanprof_test),
+            '{} ./../{}  --no-reload -d {} {} --configdir ./'.format(
+                python_interpreter, command, self.profile_dir, profile),
             shell=True)
 
         # Strip off the first line (#modified line)
-        subprocess.check_output('sed -i 1d {}/{}'.format(self.profile_dir, input_file), shell=True)
+        if delete_first_line:
+            subprocess.check_output('sed -i 1d {}/{}'.format(self.profile_dir, input_file), shell=True)
 
         exp_content = read_file('./' + output_file)
         real_content = read_file('{}/{}'.format(self.profile_dir, input_file))
         self.maxDiff = None
-        self.assertEqual(exp_content, real_content, 'Failed to cleanup profile properly')
+        self.assertEqual(exp_content, real_content, errormsg)
+
+    def test_cleanprof(self):
+        ''' run aa-cleanprof on cleanprof.in and check if it matches cleanprof.out '''
+
+        command = 'aa-cleanprof -s'
+        output_file = 'cleanprof_test.out'
+        errormsg = 'Failed to cleanup profile properly'
+
+        self._test_with_cleanprof_profile(command, output_file, errormsg, True)
+
+    def test_complain_cleanprof(self):
+        ''' test if all child profiles in cleanprof_test.in get the complain flag added when switching the profile to complain mode '''
+        # TODO: works for hats, but not for child profiles
+
+        command = 'aa-complain'
+        output_file = 'cleanprof_test.complain'
+        errormsg = 'Failed to switch profile to complain mode'
+
+        self._test_with_cleanprof_profile(command, output_file, errormsg, False)
 
 
 setup_aa(apparmor)
