@@ -697,20 +697,26 @@ def ask_addhat(hashlog):
 
                 transitions[context] = ans
 
+                filename = active_profiles.filename_from_profile_name(profile)  # filename of parent profile, will be used for new hats
+
                 if ans == 'CMD_ADDHAT':
                     aa[profile][hat] = ProfileStorage(profile, hat, 'ask_addhat addhat')
                     aa[profile][hat]['parent'] = profile
                     aa[profile][hat]['flags'] = aa[profile][profile]['flags']
-                    hashlog[aamode][full_hat]['final_name'] = '%s//%s' % (profile, hat)
+                    new_full_hat = combine_profname([profile, hat])
+                    active_profiles.add_profile(filename, new_full_hat, hat, aa[profile][hat])
+                    hashlog[aamode][full_hat]['final_name'] = new_full_hat
                     changed[profile] = True
                 elif ans == 'CMD_USEDEFAULT':
                     hat = default_hat
-                    hashlog[aamode][full_hat]['final_name'] = '%s//%s' % (profile, default_hat)
+                    new_full_hat = combine_profname([profile, hat])
+                    hashlog[aamode][full_hat]['final_name'] = new_full_hat
                     if not aa[profile].get(hat, False):
                         # create default hat if it doesn't exist yet
                         aa[profile][hat] = ProfileStorage(profile, hat, 'ask_addhat default hat')
                         aa[profile][hat]['parent'] = profile
                         aa[profile][hat]['flags'] = aa[profile][profile]['flags']
+                        active_profiles.add_profile(filename, new_full_hat, hat, aa[profile][hat])
                         changed[profile] = True
                 elif ans == 'CMD_DENY':
                     # As unknown hat is denied no entry for it should be made
@@ -966,14 +972,17 @@ def ask_exec(hashlog, default_ans=''):
                         if to_name:
                             exec_target = to_name
 
+                        full_exec_target = combine_profname([profile, exec_target])
                         if not aa[profile].get(exec_target, False):
                             ynans = 'y'
                             if 'i' in exec_mode:
                                 ynans = aaui.UI_YesNo(_('A profile for %s does not exist.\nDo you want to create one?') % exec_target, 'n')
                             if ynans == 'y':
-                                if not aa[profile].get(exec_target, False):
-                                    stub_profile = merged_to_split(create_new_profile(exec_target, True))
-                                    aa[profile][exec_target] = stub_profile[exec_target][exec_target]
+                                if not active_profiles.profile_exists(full_exec_target):
+                                    stub_profile = create_new_profile(exec_target, True)
+                                    aa[profile][exec_target] = merged_to_split(stub_profile[exec_target][exec_target])
+                                    for p in stub_profile:
+                                        active_profiles.add_profile(prof_filename, p, stub_profile[p]['attachment'], stub_profile[p])
 
                                 if profile != exec_target:
                                     aa[profile][exec_target]['flags'] = aa[profile][profile]['flags']
@@ -1068,10 +1077,12 @@ def ask_the_questions(log_dict):
                         aa[profile][hat] = ProfileStorage(profile, hat, 'mergeprof ask_the_questions() - missing hat')
                         aa[profile][hat]['parent'] = profile
                         aa[profile][hat]['is_hat'] = True
+                        active_profiles.add_profile(prof_filename, combine_profname([profile, hat]), hat, aa[profile][hat])
                     else:
                         aa[profile][hat] = ProfileStorage(profile, hat, 'mergeprof ask_the_questions() - missing subprofile')
                         aa[profile][hat]['parent'] = profile
                         aa[profile][hat]['is_hat'] = False
+                        active_profiles.add_profile(prof_filename, combine_profname([profile, hat]), hat, aa[profile][hat])
 
                 # check for and ask about conflicting exec modes
                 ask_conflict_mode(aa[profile][hat], log_dict[aamode][full_profile])
@@ -1675,9 +1686,6 @@ def read_profile(file, active_profile, read_error_fatal=False):
         attach_profile_data(original_aa, profile_data)
 
         for profile in profile_data:
-            if '//' in profile:
-                continue  # TODO: handle hats/child profiles independent of main profiles
-
             attachment = profile_data[profile]['attachment']
             filename = profile_data[profile]['filename']
 
@@ -2031,6 +2039,9 @@ def serialize_profile(profile_data, name, options):
 
     # Here should be all the profiles from the files added write after global/common stuff
     for prof in sorted(active_profiles.profiles_in_file(prof_filename)):
+        if active_profiles.profiles[prof]['parent']:
+            continue  # child profile or hat, already part of its parent profile
+
         if prof != name:
             if original_aa.get(prof, {}).get(prof, {}).get('initial_comment', False):
                 comment = original_aa[prof][prof]['initial_comment']
