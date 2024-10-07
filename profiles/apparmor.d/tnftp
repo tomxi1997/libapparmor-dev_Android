@@ -64,7 +64,7 @@ profile tnftp /usr/bin/tnftp {
   # here we are restricting execution to files in a limited set of
   # directories, for which we also deny write access.
   file Cx @{tnftp_rx}/* -> cmds,
-  deny file w @{tnftp_rx},
+  deny file w @{tnftp_rx}/*,
   
   profile cmds {
     include <abstractions/base>
@@ -78,7 +78,7 @@ profile tnftp /usr/bin/tnftp {
     deny network,
 
     file ixmr @{tnftp_rx}/*,
-    deny file w @{tnftp_rx},
+    deny file w @{tnftp_rx}/*,
 
     # allow read on anything on @{HOME} not explicitly denied
     owner file r @{HOME},
