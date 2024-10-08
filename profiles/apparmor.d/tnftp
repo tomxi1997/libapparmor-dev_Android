@@ -1,3 +1,4 @@
+
 #------------------------------------------------------------------
 #    Copyright (C) 2024 Canonical Ltd.
 #
@@ -22,7 +23,6 @@ profile tnftp /usr/bin/tnftp {
   include <abstractions/nameservice>
   include <abstractions/user-tmp>
   include <abstractions/user-download>
-  include <abstractions/private-files>
   include <abstractions/private-files-strict>
 
   network inet stream,
@@ -71,7 +71,6 @@ profile tnftp /usr/bin/tnftp {
     include <abstractions/consoles>
     include <abstractions/user-tmp>
     include <abstractions/user-download>
-    include <abstractions/private-files>
     include <abstractions/private-files-strict>
 
     # prevent network access
