@@ -35,6 +35,7 @@
 #include <sys/apparmor_private.h>
 
 #include <algorithm>
+#include <unordered_map>
 
 #include "capability.h"
 #include "lib.h"
@@ -61,6 +62,10 @@ void *reallocarray(void *ptr, size_t nmemb, size_t size)
 }
 #endif
 
+#ifndef NULL
+#define NULL nullptr
+#endif
+
 int is_blacklisted(const char *name, const char *path)
 {
 	int retval = _aa_is_blacklisted(name);
@@ -71,12 +76,7 @@ int is_blacklisted(const char *name, const char *path)
 	return !retval ? 0 : 1;
 }
 
-struct keyword_table {
-	const char *keyword;
-	unsigned int token;
-};
-
-static struct keyword_table keyword_table[] = {
+static const unordered_map<string, int> keyword_table = {
 	/* network */
 	{"network",		TOK_NETWORK},
 	{"unix",		TOK_UNIX},
@@ -132,11 +132,9 @@ static struct keyword_table keyword_table[] = {
 	{"sqpoll",		TOK_SQPOLL},
 	{"all",			TOK_ALL},
 	{"priority",		TOK_PRIORITY},
-	/* terminate */
-	{NULL, 0}
 };
 
-static struct keyword_table rlimit_table[] = {
+static const unordered_map<string, int> rlimit_table = {
 	{"cpu",			RLIMIT_CPU},
 	{"fsize",		RLIMIT_FSIZE},
 	{"data",		RLIMIT_DATA},
@@ -162,37 +160,33 @@ static struct keyword_table rlimit_table[] = {
 #ifdef RLIMIT_RTTIME
 	{"rttime",		RLIMIT_RTTIME},
 #endif
-	/* terminate */
-	{NULL, 0}
 };
 
 /* for alpha matches, check for keywords */
-static int get_table_token(const char *name unused, struct keyword_table *table,
-			   const char *keyword)
+static int get_table_token(const char *name unused, const unordered_map<string, int> &table,
+			   const string &keyword)
 {
-	int i;
-
-	for (i = 0; table[i].keyword; i++) {
-		PDEBUG("Checking %s %s\n", name, table[i].keyword);
-		if (strcmp(keyword, table[i].keyword) == 0) {
-			PDEBUG("Found %s %s\n", name, table[i].keyword);
-			return table[i].token;
-		}
+	auto token_entry = table.find(keyword);
+	if (token_entry == table.end()) {
+		PDEBUG("Unable to find %s %s\n", name, keyword);
+		return -1;
+	} else {
+		PDEBUG("Found %s %s\n", name, keyword.c_str());
+		return token_entry->second;
 	}
-
-	PDEBUG("Unable to find %s %s\n", name, keyword);
-	return -1;
 }
 
 /* for alpha matches, check for keywords */
 int get_keyword_token(const char *keyword)
 {
-	return get_table_token("keyword", keyword_table, keyword);
+	// Can't use string_view because that requires C++17
+	return get_table_token("keyword", keyword_table, string(keyword));
 }
 
 int get_rlimit(const char *name)
 {
-	return get_table_token("rlimit", rlimit_table, name);
+	// Can't use string_view because that requires C++17
+	return get_table_token("rlimit", rlimit_table, string(name));
 }
 
 
