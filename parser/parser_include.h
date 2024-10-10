@@ -29,7 +29,7 @@ extern void parse_default_paths(void);
 extern int do_include_preprocessing(char *profilename);
 FILE *search_path(char *filename, char **fullpath, bool *skip);
 
-extern void push_include_stack(char *filename);
+extern void push_include_stack(const char *filename);
 extern void pop_include_stack(void);
 extern void reset_include_stack(const char *filename);
 
