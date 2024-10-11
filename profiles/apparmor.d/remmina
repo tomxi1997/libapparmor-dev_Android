@@ -68,6 +68,7 @@ profile remmina /usr/bin/remmina {
 profile shell_browser {
   include <abstractions/base>
   include <abstractions/consoles>
+  include <abstractions/ubuntu-helpers>
   include <abstractions/ubuntu-browsers>
   network tcp,
 
