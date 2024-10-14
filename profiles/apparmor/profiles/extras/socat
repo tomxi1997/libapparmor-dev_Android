@@ -15,7 +15,7 @@ include <tunables/global>
 
 profile socat /usr/bin/socat {
   include <abstractions/base>
-  include <abstractions/strict-nameservice>
+  include <abstractions/nameservice-strict>
   include <abstractions/ssl_certs>
   include <abstractions/consoles>
 
@@ -37,7 +37,7 @@ profile socat /usr/bin/socat {
   # Allow executable mapping and read for the binary
   file mr /usr/bin/socat,
 
-  # Enale /dev/ptmx access for testsuite
+  # Enable /dev/ptmx access for testsuite
   # file rw /dev/ptmx,
 
   # TUN/TAP device
