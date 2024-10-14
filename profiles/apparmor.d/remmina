@@ -23,7 +23,7 @@ profile remmina /usr/bin/remmina {
   include <abstractions/nameservice>
   include <abstractions/openssl>
   include <abstractions/ssl_certs>
-  include <abstractions/private-files>
+  include <abstractions/private-files-strict>
 
   dbus (bind) bus=session name="org.remmina.Remmina",
   dbus (send) bus=session path="/org/gtk/vfs/mounttracker" interface="org.gtk.vfs.MountTracker" member={ListMountableInfo,LookupMount} peer=(label=unconfined),
@@ -50,7 +50,7 @@ profile remmina /usr/bin/remmina {
   owner @{HOME}/.local/share/remmina/{,**} rw,
 
   ## In order to import and export profiles
-  owner @{HOME}/** rw,
+  owner @{HOME}/{,[^.]**} rw,
 
   owner @{run}/user/@{uid}/gvfsd/socket-* rw,
   owner @{run}/user/@{uid}/dconf/{,user} rw,
