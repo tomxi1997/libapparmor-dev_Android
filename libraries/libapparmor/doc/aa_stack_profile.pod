@@ -41,7 +41,7 @@ result is an intersection of all profiles which are stacked. Stacking profiles
 together is desirable when wanting to ensure that confinement will never become
 more permissive. When changing between two profiles, as performed with
 aa_change_profile(2), there is always the possibility that the new profile is
-more permissive than the old profile but that possibility is eliminated when
+more permissive than the old profile, but that possibility is eliminated when
 using aa_stack_profile().
 
 To stack a profile with the current confinement context, a task can use the
@@ -68,7 +68,7 @@ The aa_stack_onexec() function is like the aa_stack_profile() function
 except it specifies that the stacking should take place on the next exec
 instead of immediately. The delayed profile change takes precedence over any
 exec transition rules within the confining profile. Delaying the stacking
-boundary has a couple of advantages, it removes the need for stub transition
+boundary has a couple of advantages: it removes the need for stub transition
 profiles and the exec boundary is a natural security layer where potentially
 sensitive memory is unmapped.
 

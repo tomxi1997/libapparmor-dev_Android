@@ -22,15 +22,15 @@
 
 =head1 NAME
 
-aa_change_hat  - change to or from a "hat" within a AppArmor profile
+aa_change_hat - change to or from a "hat" within a AppArmor profile
 
 =head1 SYNOPSIS
 
 B<#include E<lt>sys/apparmor.hE<gt>>
 
-B<int aa_change_hat (char *subprofile, unsigned long magic_token);>
+B<int aa_change_hat (const char *subprofile, unsigned long magic_token);>
 
-B<int aa_change_hatv (char *subprofiles[], unsigned long magic_token);>
+B<int aa_change_hatv (const char *subprofiles[], unsigned long magic_token);>
 
 B<int aa_change_hat_vargs (unsigned long magic_token, ...);>
 
