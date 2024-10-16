@@ -1,0 +1,72 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2024 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  abi <abi/4.0>,
+
+  # Common capabilities
+  network,
+  capability net_bind_service,
+  capability chown,
+  capability setgid,
+  capability setuid,
+  capability dac_override,
+  capability dac_read_search,
+
+  # Common files
+  /etc/passwd r,
+  /etc/group r, 
+  /etc/nsswitch.conf r,
+  /etc/gai.conf r,
+
+  /etc/resolv.conf r,
+  @{run}/systemd/resolve/stub-resolv.conf r,
+
+  @{run}/systemd/userdb/ r,
+  @{run}/systemd/userdb/io.systemd.DynamicUser rw,
+
+  @{PROC}/sys/kernel/random/boot_id r, 
+
+  @{run}/frr/ r,
+  @{run}/frr/zserv.api rw,
+  @{run}/frr/@{DAEMON_NAME}.pid rwk,
+  @{run}/frr/@{DAEMON_NAME}.vty rw,
+
+  # YANG modules
+  /usr/share/yang/ r, 
+  /usr/share/yang/modules/ r,
+  /usr/share/yang/modules/libyang/ r,
+  /usr/share/yang/modules/libyang/** r,
+
+  # MGMT Backend Server https://docs.frrouting.org/en/latest/mgmtd.html#mgmtd-backend-interface
+  @{run}/frr/mgmtd_be.sock rw,
+
+  # Daemon config
+  /etc/frr/ r, 
+  /etc/frr/@{DAEMON_NAME}.conf{,.*} rwl,
+
+  # Log file
+  /var/log/frr/ w,
+  /var/log/frr/@{DAEMON_NAME} w,
+
+  # Crash logs https://docs.frrouting.org/en/latest/setup.html#crash-logs
+  /var/tmp/frr/ w,
+  /var/tmp/frr/@{DAEMON_NAME}.@{pid}/ w,
+  /var/tmp/frr/@{DAEMON_NAME}.@{pid}/crashlog w,
+  /var/tmp/frr/@{DAEMON_NAME}.@{pid}/logbuf.@{tid} rw,
+
+  # Program output (working directory)
+  / r,
+  /tmp/ r,
+  /tmp/topotests/ r,
+  /tmp/topotests/** rw,
+
+  # Tests for staticd, bgpd, ospfd
+  /tmp/*.log w,
