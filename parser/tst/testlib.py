@@ -98,12 +98,11 @@ class AATestTemplate(unittest.TestCase, metaclass=AANoCleanupMetaClass):
         except OSError as e:
             return 127, str(e), ''
 
-        timeout_communicate = TimeoutFunction(sp.communicate, timeout)
         out, outerr = (None, None)
         try:
-            out, outerr = timeout_communicate(input)
+            out, outerr = sp.communicate(input, timeout)
             rc = sp.returncode
-        except TimeoutFunctionException:
+        except subprocess.TimeoutExpired:
             sp.terminate()
             outerr = 'test timed out, killed'
             rc = TIMEOUT_ERROR_CODE
@@ -116,31 +115,6 @@ class AATestTemplate(unittest.TestCase, metaclass=AANoCleanupMetaClass):
             outerr = ''
 
         return rc, out, outerr
-
-
-# Timeout handler using alarm() from John P. Speno's Pythonic Avocado
-class TimeoutFunctionException(Exception):
-    """Exception to raise on a timeout"""
-
-
-class TimeoutFunction:
-    def __init__(self, function, timeout):
-        self.timeout = timeout
-        self.function = function
-
-    def handle_timeout(self, signum, frame):
-        raise TimeoutFunctionException()
-
-    def __call__(self, *args, **kwargs):
-        old = signal.signal(signal.SIGALRM, self.handle_timeout)
-        signal.alarm(self.timeout)
-        try:
-            result = self.function(*args, **kwargs)
-        finally:
-            signal.signal(signal.SIGALRM, old)
-        signal.alarm(0)
-        return result
-
 
 def filesystem_time_resolution():
     """detect whether the filesystem stores subsecond timestamps"""
