@@ -704,7 +704,7 @@ rules: rules opt_prefix block
 		if (($2).priority != 0) {
 			yyerror(_("priority is not allowed on rule blocks"));
 		}
-		PDEBUG("matched: %s%s%sblock\n",
+		PDEBUG("matched: %s%s%s%sblock\n",
 		       $2.audit == AUDIT_FORCE ? "audit " : "",
 		       $2.rule_mode == RULE_DENY ? "deny " : "",
 		       $2.rule_mode == RULE_PROMPT ? "prompt " : "",
