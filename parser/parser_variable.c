@@ -79,7 +79,7 @@ struct var_string *split_out_var(const char *string)
 {
 	struct var_string *n = NULL;
 	const char *sptr;
-	BOOL bEscape = 0;	/* flag to indicate escape */
+	bool bEscape = false;	/* flag to indicate escape */
 
 	if (!string) 		/* shouldn't happen */
 		return NULL;
@@ -89,15 +89,11 @@ struct var_string *split_out_var(const char *string)
 	while (!n && *sptr) {
 		switch (*sptr) {
 		case '\\':
-			if (bEscape) {
-				bEscape = FALSE;
-			} else {
-				bEscape = TRUE;
-			}
+			bEscape = !bEscape;
 			break;
 		case '@':
 			if (bEscape) {
-				bEscape = FALSE;
+				bEscape = false;
 			} else if (*(sptr + 1) == '{') {
 				const char *eptr = get_var_end(sptr + 2);
 				if (!eptr)
@@ -111,8 +107,7 @@ struct var_string *split_out_var(const char *string)
 			}
 			break;
 		default:
-			if (bEscape)
-				bEscape = FALSE;
+			bEscape = false;
 		}
 		sptr++;
 	}

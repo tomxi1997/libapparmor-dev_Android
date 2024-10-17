@@ -677,7 +677,7 @@ int mnt_rule::cmp(rule_t const &rhs) const {
 		return cmp_vec_int(opt_flagsv, rhs_mnt.opt_flagsv);
 	}
 
-static int build_mnt_flags(char *buffer, int size, unsigned int flags,
+static bool build_mnt_flags(char *buffer, int size, unsigned int flags,
 			   unsigned int opt_flags)
 {
 	char *p = buffer;
@@ -687,8 +687,8 @@ static int build_mnt_flags(char *buffer, int size, unsigned int flags,
 		/* all flags are optional */
 		len = snprintf(p, size, "%s", default_match_pattern);
 		if (len < 0 || len >= size)
-			return FALSE;
-		return TRUE;
+			return false;
+		return true;
 	}
 	for (i = 0; i <= 31; ++i) {
 		if ((opt_flags) & (1 << i))
@@ -699,7 +699,7 @@ static int build_mnt_flags(char *buffer, int size, unsigned int flags,
 			continue;
 
 		if (len < 0 || len >= size)
-			return FALSE;
+			return false;
 		p += len;
 		size -= len;
 	}
@@ -710,15 +710,15 @@ static int build_mnt_flags(char *buffer, int size, unsigned int flags,
 		 * like the empty string
 		 */
 		if (size < 9)
-			return FALSE;
+			return false;
 
 		strcpy(p, "(\\xfe|)");
 	}
 
-	return TRUE;
+	return true;
 }
 
-static int build_mnt_opts(std::string& buffer, struct value_list *opts)
+static bool build_mnt_opts(std::string& buffer, struct value_list *opts)
 {
 	struct value_list *ent;
 	pattern_t ptype;
@@ -726,19 +726,19 @@ static int build_mnt_opts(std::string& buffer, struct value_list *opts)
 
 	if (!opts) {
 		buffer.append(default_match_pattern);
-		return TRUE;
+		return true;
 	}
 
 	list_for_each(opts, ent) {
 		ptype = convert_aaregex_to_pcre(ent->value, 0, glob_default, buffer, &pos);
 		if (ptype == ePatternInvalid)
-			return FALSE;
+			return false;
 
 		if (ent->next)
 			buffer.append(",");
 	}
 
-	return TRUE;
+	return true;
 }
 
 void mnt_rule::warn_once(const char *name)

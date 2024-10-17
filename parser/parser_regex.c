@@ -50,7 +50,7 @@ enum error_type {
 void filter_slashes(char *path)
 {
 	char *sptr, *dptr;
-	BOOL seen_slash = 0;
+	bool seen_slash = false;
 
 	if (!path || (strlen(path) < 2))
 		return;
@@ -69,7 +69,7 @@ void filter_slashes(char *path)
 				++sptr;
 			} else {
 				*dptr++ = *sptr++;
-				seen_slash = TRUE;
+				seen_slash = true;
 			}
 		} else {
 			seen_slash = 0;
@@ -111,14 +111,14 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 #define MAX_ALT_DEPTH 50
 	*first_re_pos = 0;
 
-	int ret = TRUE;
+	int ret = 1;
 	/* flag to indicate input error */
 	enum error_type error;
 
 	const char *sptr;
 	pattern_t ptype;
 
-	BOOL bEscape = 0;	/* flag to indicate escape */
+	bool bEscape = false;	/* flag to indicate escape */
 	int ingrouping = 0;	/* flag to indicate {} context */
 	int incharclass = 0;	/* flag to indicate [ ] context */
 	int grouping_count[MAX_ALT_DEPTH] = {0};
@@ -150,7 +150,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 			if (bEscape) {
 				pcre.append("\\\\");
 			} else {
-				bEscape = TRUE;
+				bEscape = true;
 				++sptr;
 				continue;	/*skip turning bEscape off */
 			}	/* bEscape */
@@ -393,7 +393,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 			break;
 		}	/* switch (*sptr) */
 
-		bEscape = FALSE;
+		bEscape = false;
 		++sptr;
 	}		/* while error == e_no_error && *sptr) */
 
@@ -419,12 +419,12 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 		PERROR(_("%s: Unable to parse input line '%s'\n"),
 		       progname, aare);
 
-		ret = FALSE;
+		ret = 0;
 		goto out;
 	}
 
 out:
-	if (ret == FALSE)
+	if (ret == 0)
 		ptype = ePatternInvalid;
 
 	if (parseopts.dump & DUMP_DFA_RULE_EXPR)
@@ -464,7 +464,7 @@ static void warn_once_xattr(const char *name)
     common_warn_once(name, "xattr attachment conditional ignored", &warned_name);
 }
 
-static int process_profile_name_xmatch(Profile *prof)
+static bool process_profile_name_xmatch(Profile *prof)
 {
 	std::string tbuf;
 	pattern_t ptype;
@@ -479,7 +479,7 @@ static int process_profile_name_xmatch(Profile *prof)
 		/* don't filter_slashes for profile names, do on attachment */
 		name = strdup(local_name(prof->name));
 		if (!name)
-			return FALSE;
+			return false;
 	}
 	filter_slashes(name);
 	ptype = convert_aaregex_to_pcre(name, 0, glob_default, tbuf,
@@ -491,7 +491,7 @@ static int process_profile_name_xmatch(Profile *prof)
 		PERROR(_("%s: Invalid profile name '%s' - bad regular expression\n"), progname, name);
 		if (!prof->attachment)
 			free(name);
-		return FALSE;
+		return false;
 	}
 
 	if (!prof->attachment)
@@ -506,11 +506,11 @@ static int process_profile_name_xmatch(Profile *prof)
 		/* build a dfa */
 		aare_rules *rules = new aare_rules();
 		if (!rules)
-			return FALSE;
+			return false;
 		if (!rules->add_rule(tbuf.c_str(), 0, RULE_ALLOW,
 				     AA_MAY_EXEC, 0, parseopts)) {
 			delete rules;
-			return FALSE;
+			return false;
 		}
 		if (prof->altnames) {
 			struct alt_name *alt;
@@ -525,7 +525,7 @@ static int process_profile_name_xmatch(Profile *prof)
 						RULE_ALLOW, AA_MAY_EXEC,
 						0, parseopts)) {
 					delete rules;
-					return FALSE;
+					return false;
 				}
 			}
 		}
@@ -567,7 +567,7 @@ static int process_profile_name_xmatch(Profile *prof)
 							&len);
 				if (!rules->append_rule(tbuf.c_str(), true, true, parseopts)) {
 					delete rules;
-					return FALSE;
+					return false;
 				}
 			}
 		}
@@ -581,10 +581,10 @@ build:
 		prof->xmatch = rules->create_dfablob(&prof->xmatch_size, &prof->xmatch_len, prof->xmatch_perms_table, parseopts, false, false, false);
 		delete rules;
 		if (!prof->xmatch)
-			return FALSE;
+			return false;
 	}
 
-	return TRUE;
+	return true;
 }
 
 static int warn_change_profile = 1;
@@ -606,21 +606,21 @@ static bool is_change_profile_perms(perm32_t perms)
 	return perms & AA_CHANGE_PROFILE;
 }
 
-static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
+static bool process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 {
 	std::string tbuf;
 	pattern_t ptype;
 	int pos;
 
 	if (!entry) 		/* shouldn't happen */
-		return TRUE;
+		return false;
 
 
 	if (!is_change_profile_perms(entry->perms))
 		filter_slashes(entry->name);
 	ptype = convert_aaregex_to_pcre(entry->name, 0, glob_default, tbuf, &pos);
 	if (ptype == ePatternInvalid)
-		return FALSE;
+		return false;
 
 	entry->pattern_type = ptype;
 
@@ -649,13 +649,13 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 					entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE),
 					entry->audit == AUDIT_FORCE ? entry->perms & ~(AA_LINK_BITS | AA_CHANGE_PROFILE) : 0,
 					parseopts))
-			return FALSE;
+			return false;
 	} else if (!is_change_profile_perms(entry->perms)) {
 		if (!dfarules->add_rule(tbuf.c_str(), entry->priority,
 				entry->rule_mode, entry->perms,
 				entry->audit == AUDIT_FORCE ? entry->perms : 0,
 				parseopts))
-			return FALSE;
+			return false;
 	}
 
 	if (entry->perms & (AA_LINK_BITS)) {
@@ -669,7 +669,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 			filter_slashes(entry->link_name);
 			ptype = convert_aaregex_to_pcre(entry->link_name, 0, glob_default, lbuf, &pos);
 			if (ptype == ePatternInvalid)
-				return FALSE;
+				return false;
 			if (entry->subset)
 				perms |= LINK_TO_LINK_SUBSET(perms);
 			vec[1] = lbuf.c_str();
@@ -681,7 +681,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 				entry->rule_mode, perms,
 				entry->audit == AUDIT_FORCE ? perms & AA_LINK_BITS : 0,
 				2, vec, parseopts, false))
-			return FALSE;
+			return false;
 	}
 	if (is_change_profile_perms(entry->perms)) {
 		const char *vec[3];
@@ -702,7 +702,7 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		if (entry->onexec) {
 			ptype = convert_aaregex_to_pcre(entry->onexec, 0, glob_default, xbuf, &pos);
 			if (ptype == ePatternInvalid)
-				return FALSE;
+				return false;
 			vec[0] = xbuf.c_str();
 		} else
 			/* allow change_profile for all execs */
@@ -713,14 +713,14 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 
 			if (!parse_label(&stack, &ns, &name,
 					 tbuf.c_str(), false)) {
-				return FALSE;
+				return false;
 			}
 
 			if (stack) {
 				fprintf(stderr,
 					_("The current kernel does not support stacking of named transitions: %s\n"),
 					tbuf.c_str());
-				return FALSE;
+				return false;
 			}
 
 			if (ns)
@@ -734,13 +734,13 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		if (!dfarules->add_rule_vec(entry->priority, entry->rule_mode,
 					    AA_CHANGE_PROFILE | onexec_perms,
 					    0, index - 1, &vec[1], parseopts, false))
-			return FALSE;
+			return false;
 
 		/* onexec rules - both rules are needed for onexec */
 		if (!dfarules->add_rule_vec(entry->priority, entry->rule_mode,
 					    onexec_perms,
 					    0, 1, vec, parseopts, false))
-			return FALSE;
+			return false;
 
 		/**
 		 * pick up any exec bits, from the frontend parser, related to
@@ -750,19 +750,19 @@ static int process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		if (!dfarules->add_rule_vec(entry->priority, entry->rule_mode,
 					    onexec_perms, 0, index, vec,
 					    parseopts, false))
-			return FALSE;
+			return false;
 	}
-	return TRUE;
+	return true;
 }
 
-int post_process_entries(Profile *prof)
+bool post_process_entries(Profile *prof)
 {
-	int ret = TRUE;
+	int ret = true;
 	struct cod_entry *entry;
 
 	list_for_each(prof->entries, entry) {
 		if (!process_dfa_entry(prof->dfa.rules, entry))
-			ret = FALSE;
+			ret = false;
 	}
 
 	return ret;
@@ -815,7 +815,7 @@ out:
 	return error;
 }
 
-int build_list_val_expr(std::string& buffer, struct value_list *list)
+bool build_list_val_expr(std::string& buffer, struct value_list *list)
 {
 	struct value_list *ent;
 	pattern_t ptype;
@@ -823,7 +823,7 @@ int build_list_val_expr(std::string& buffer, struct value_list *list)
 
 	if (!list) {
 		buffer.append(default_match_pattern);
-		return TRUE;
+		return true;
 	}
 
 	buffer.append("(");
@@ -840,12 +840,12 @@ int build_list_val_expr(std::string& buffer, struct value_list *list)
 	}
 	buffer.append(")");
 
-	return TRUE;
+	return true;
 fail:
-	return FALSE;
+	return false;
 }
 
-int convert_entry(std::string& buffer, char *entry)
+bool convert_entry(std::string& buffer, char *entry)
 {
 	pattern_t ptype;
 	int pos;
@@ -853,12 +853,12 @@ int convert_entry(std::string& buffer, char *entry)
 	if (entry) {
 		ptype = convert_aaregex_to_pcre(entry, 0, glob_default, buffer, &pos);
 		if (ptype == ePatternInvalid)
-			return FALSE;
+			return false;
 	} else {
 		buffer.append(default_match_pattern);
 	}
 
-	return TRUE;
+	return true;
 }
 
 int clear_and_convert_entry(std::string& buffer, char *entry)
@@ -959,7 +959,7 @@ static std::string generate_regex_range(bignum start, bignum end)
 	return result.str();
 }
 
-int convert_range(std::string& buffer, bignum start, bignum end)
+bool convert_range(std::string& buffer, bignum start, bignum end)
 {
 	pattern_t ptype;
 	int pos;
@@ -969,24 +969,24 @@ int convert_range(std::string& buffer, bignum start, bignum end)
 	if (!regex_range.empty()) {
 		ptype = convert_aaregex_to_pcre(regex_range.c_str(), 0, glob_default, buffer, &pos);
 		if (ptype == ePatternInvalid)
-			return FALSE;
+			return false;
 	} else {
 		buffer.append(default_match_pattern);
 	}
 
-	return TRUE;
+	return true;
 }
 
-int post_process_policydb_ents(Profile *prof)
+bool post_process_policydb_ents(Profile *prof)
 {
 	for (RuleList::iterator i = prof->rule_ents.begin(); i != prof->rule_ents.end(); i++) {
 		if ((*i)->skip())
 			continue;
 		if ((*i)->gen_policy_re(*prof) == RULE_ERROR)
-			return FALSE;
+			return false;
 	}
 
-	return TRUE;
+	return true;
 }
 
 

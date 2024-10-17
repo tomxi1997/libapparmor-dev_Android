@@ -185,8 +185,6 @@ struct var_string {
 #define OPTION_STDOUT	4
 #define OPTION_OFILE	5
 
-#define BOOL int
-
 extern int preprocess_only;
 
 #define PATH_CHROOT_REL 0x1
@@ -218,13 +216,6 @@ do {						\
 	fprintf(stderr, fmt, ## args);		\
 	errno = perror_error;			\
 } while (0)
-
-#ifndef TRUE
-#define TRUE	(1)
-#endif
-#ifndef FALSE
-#define FALSE	(0)
-#endif
 
 #define MIN_PORT 0
 #define MAX_PORT 65535
@@ -429,10 +420,10 @@ extern const char *basedir;
 #define glob_null	1
 extern pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 					 std::string& pcre, int *first_re_pos);
-extern int build_list_val_expr(std::string& buffer, struct value_list *list);
-extern int convert_entry(std::string& buffer, char *entry);
+extern bool build_list_val_expr(std::string& buffer, struct value_list *list);
+extern bool convert_entry(std::string& buffer, char *entry);
 extern int clear_and_convert_entry(std::string& buffer, char *entry);
-extern int convert_range(std::string& buffer, bignum start, bignum end);
+extern bool convert_range(std::string& buffer, bignum start, bignum end);
 extern int process_regex(Profile *prof);
 extern int post_process_entry(struct cod_entry *entry);
 
