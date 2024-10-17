@@ -32,12 +32,13 @@ profile ospfd /usr/lib/frr/ospfd flags=(attach_disconnected) {
   /var/lib/frr/ospfd.json{,.sav} rw,
 
   # For OSPFv3
-  /var/tmp/frr/ospfd-3.*/ w,
-  /var/tmp/frr/ospfd-3.*/crashlog w,
+  /var/tmp/frr/ospfd-3.@{pid}/ w,
+  /var/tmp/frr/ospfd-3.@{pid}/crashlog w,
   /var/tmp/frr/ospfd-3.@{pid}/logbuf.@{tid} rw,
 
   @{run}/frr/ospfd-3.pid rwk,
   @{run}/frr/ospfd-3.vty rw,
+  @{run}/frr/ospfd-3.json{,.sav} rw,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/usr.lib.frr.ospfd>
