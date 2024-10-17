@@ -245,7 +245,7 @@ static inline void sd_write_uint64(std::ostringstream &buf, u64 b)
 
 static inline void sd_write_name(std::ostringstream &buf, const char *name)
 {
-	PDEBUG("Writing name '%s'\n", name);
+	PDEBUG("Writing name '%s'\n", name ? name : "(null)");
 	if (name) {
 		sd_write8(buf, SD_NAME);
 		sd_write16(buf, strlen(name) + 1);
