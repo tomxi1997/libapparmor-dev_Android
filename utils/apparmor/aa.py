@@ -660,7 +660,7 @@ def ask_addhat(hashlog):
             for full_hat in hashlog[aamode][profile]['change_hat']:
                 hat = full_hat.split('//')[-1]
 
-                if aa[profile].get(hat, False):
+                if active_profiles.profile_exists(full_hat):
                     continue  # no need to ask if the hat already exists
 
                 default_hat = None
@@ -712,7 +712,7 @@ def ask_addhat(hashlog):
                     hat = default_hat
                     new_full_hat = combine_profname([profile, hat])
                     hashlog[aamode][full_hat]['final_name'] = new_full_hat
-                    if not aa[profile].get(hat, False):
+                    if not active_profiles.profile_exists(full_hat):
                         # create default hat if it doesn't exist yet
                         hat_obj = ProfileStorage(profile, hat, 'ask_addhat default hat')
                         hat_obj['parent'] = profile
@@ -741,10 +741,10 @@ def ask_exec(hashlog, default_ans=''):
                         raise AppArmorBug(
                             'exec permissions requested for directory %s (profile %s). This should not happen - please open a bugreport!' % (exec_target, full_profile))
 
-                    if not aa.get(profile):
+                    if not active_profiles.profile_exists(profile):
                         continue  # ignore log entries for non-existing profiles
 
-                    if not aa[profile].get(hat):
+                    if not active_profiles.profile_exists(full_profile):
                         continue  # ignore log entries for non-existing hats
 
                     exec_event = FileRule(exec_target, None, FileRule.ANY_EXEC, FileRule.ALL, owner=False, log_event=True)
@@ -975,7 +975,7 @@ def ask_exec(hashlog, default_ans=''):
                             exec_target = to_name
 
                         full_exec_target = combine_profname([profile, exec_target])
-                        if not aa[profile].get(exec_target, False):
+                        if not active_profiles.profile_exists(full_exec_target):
                             ynans = 'y'
                             if 'i' in exec_mode:
                                 ynans = aaui.UI_YesNo(_('A profile for %s does not exist.\nDo you want to create one?') % exec_target, 'n')
@@ -1042,8 +1042,8 @@ def ask_the_questions(log_dict):
             else:
                 sev_db.set_variables({})
 
-            if aa.get(profile):  # only continue/ask if the parent profile exists
-                if not aa[profile].get(hat, {}).get('file'):
+            if active_profiles.profile_exists(profile):  # only continue/ask if the parent profile exists  # XXX check direct parent or top-level? Also, get rid of using "profile" here!
+                if not active_profiles.profile_exists(full_profile):
                     if aamode != 'merge':
                         # Ignore log events for a non-existing profile or child profile. Such events can occur
                         # after deleting a profile or hat manually, or when processing a foreign log.
@@ -1496,7 +1496,7 @@ def do_logprof_pass(logmark='', out_dir=None):
 def save_profiles(is_mergeprof=False, out_dir=None):
     # Ensure the changed profiles are actual active profiles
     for prof_name in changed.keys():
-        if not aa.get(prof_name, False):
+        if not active_profiles.profile_exists(prof_name):
             print("*** save_profiles(): removing %s" % prof_name)
             print('*** This should not happen. Please open a bugreport!')
             changed.pop(prof_name)
@@ -1578,9 +1578,9 @@ def collapse_log(hashlog, ignore_null_profiles=True):
             profile, hat = split_name(final_name)  # XXX limited to two levels to avoid an Exception on nested child profiles or nested null-*
             # TODO: support nested child profiles
 
-            # used to avoid to accidentally initialize aa[profile][hat] or calling is_known_rule() on events for a non-existing profile
+            # used to avoid calling is_known_rule() on events for a non-existing profile
             hat_exists = False
-            if aa.get(profile) and aa[profile].get(hat):
+            if active_profiles.profile_exists(profile) and active_profiles.profile_exists(final_name):  # we need to check for the target profile here
                 hat_exists = True
 
             if not log_dict[aamode].get(final_name):
