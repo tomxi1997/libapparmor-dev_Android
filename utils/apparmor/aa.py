@@ -700,11 +700,12 @@ def ask_addhat(hashlog):
                 filename = active_profiles.filename_from_profile_name(profile)  # filename of parent profile, will be used for new hats
 
                 if ans == 'CMD_ADDHAT':
-                    aa[profile][hat] = ProfileStorage(profile, hat, 'ask_addhat addhat')
-                    aa[profile][hat]['parent'] = profile
-                    aa[profile][hat]['flags'] = aa[profile][profile]['flags']
+                    hat_obj = ProfileStorage(profile, hat, 'ask_addhat addhat')
+                    hat_obj['parent'] = profile
+                    hat_obj['flags'] = aa[profile][profile]['flags']
+                    aa[profile][hat] = hat_obj
                     new_full_hat = combine_profname([profile, hat])
-                    active_profiles.add_profile(filename, new_full_hat, hat, aa[profile][hat])
+                    active_profiles.add_profile(filename, new_full_hat, hat, hat_obj)
                     hashlog[aamode][full_hat]['final_name'] = new_full_hat
                     changed[profile] = True
                 elif ans == 'CMD_USEDEFAULT':
@@ -713,10 +714,11 @@ def ask_addhat(hashlog):
                     hashlog[aamode][full_hat]['final_name'] = new_full_hat
                     if not aa[profile].get(hat, False):
                         # create default hat if it doesn't exist yet
-                        aa[profile][hat] = ProfileStorage(profile, hat, 'ask_addhat default hat')
-                        aa[profile][hat]['parent'] = profile
-                        aa[profile][hat]['flags'] = aa[profile][profile]['flags']
-                        active_profiles.add_profile(filename, new_full_hat, hat, aa[profile][hat])
+                        hat_obj = ProfileStorage(profile, hat, 'ask_addhat default hat')
+                        hat_obj['parent'] = profile
+                        hat_obj['flags'] = aa[profile][profile]['flags']
+                        aa[profile][hat] = hat_obj
+                        active_profiles.add_profile(filename, new_full_hat, hat, hat_obj)
                         changed[profile] = True
                 elif ans == 'CMD_DENY':
                     # As unknown hat is denied no entry for it should be made
@@ -1074,15 +1076,15 @@ def ask_the_questions(log_dict):
                         continue  # don't ask about individual rules if the user doesn't want the additional subprofile/hat
 
                     if log_dict[aamode][full_profile]['is_hat']:
-                        aa[profile][hat] = ProfileStorage(profile, hat, 'mergeprof ask_the_questions() - missing hat')
-                        aa[profile][hat]['parent'] = profile
-                        aa[profile][hat]['is_hat'] = True
-                        active_profiles.add_profile(prof_filename, combine_profname([profile, hat]), hat, aa[profile][hat])
+                        prof_obj = ProfileStorage(profile, hat, 'mergeprof ask_the_questions() - missing hat')
+                        prof_obj['is_hat'] = True
                     else:
-                        aa[profile][hat] = ProfileStorage(profile, hat, 'mergeprof ask_the_questions() - missing subprofile')
-                        aa[profile][hat]['parent'] = profile
-                        aa[profile][hat]['is_hat'] = False
-                        active_profiles.add_profile(prof_filename, combine_profname([profile, hat]), hat, aa[profile][hat])
+                        prof_obj = ProfileStorage(profile, hat, 'mergeprof ask_the_questions() - missing subprofile')
+                        prof_obj['is_hat'] = False
+
+                    prof_obj['parent'] = profile
+                    aa[profile][hat] = prof_obj
+                    active_profiles.add_profile(prof_filename, combine_profname([profile, hat]), hat, prof_obj)
 
                 # check for and ask about conflicting exec modes
                 ask_conflict_mode(aa[profile][hat], log_dict[aamode][full_profile])
