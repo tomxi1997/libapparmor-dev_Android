@@ -14,9 +14,8 @@ import sys
 import unittest
 
 import apparmor.aa
-from apparmor.common import hasher, open_file_read, split_name
+from apparmor.common import open_file_read, split_name
 from apparmor.logparser import ReadLog
-from apparmor.profile_list import ProfileList
 from common_test import AATest, read_file, setup_aa, setup_all_loops
 
 
@@ -221,12 +220,10 @@ def logfile_to_profile(logfile):
         raise Exception('Unexpected aamode {}'.format(parsed_event['aamode']))
 
     # cleanup apparmor.aa storage
-    apparmor.aa.log = dict()
-    apparmor.aa.aa = hasher()
+    apparmor.aa.reset_aa()
 
     profile, hat = split_name(parsed_event['profile'])
 
-    apparmor.aa.active_profiles = ProfileList()
 
     dummy_prof = apparmor.aa.ProfileStorage('TEST DUMMY for active_profiles', profile_dummy_file, 'logprof_to_profile()')
 
