@@ -1463,14 +1463,12 @@ def set_logfile(filename):
 def do_logprof_pass(logmark='', out_dir=None):
     # set up variables for this pass
     global active_profiles
-    global sev_db
 #    aa = hasher()
 #     changed = dict()
 
     aaui.UI_Info(_('Reading log entries from %s.') % logfile)
 
-    if not sev_db:
-        sev_db = apparmor.severity.Severity(CONFDIR + '/severity.db', _('unknown'))
+    load_sev_db()
     # print(pid)
     # print(active_profiles)
 
@@ -2394,3 +2392,10 @@ def init_aa(confdir=None, profiledir=None):
     parser = conf.find_first_file(cfg['settings'].get('parser')) or '/sbin/apparmor_parser'
     if not os.path.isfile(parser) or not os.access(parser, os.EX_OK):
         raise AppArmorException("Can't find apparmor_parser at %s" % (parser))
+
+
+def load_sev_db():
+    global sev_db
+
+    if not sev_db:
+        sev_db = apparmor.severity.Severity(CONFDIR + '/severity.db', _('unknown'))
