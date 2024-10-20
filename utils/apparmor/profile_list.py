@@ -283,6 +283,9 @@ class ProfileList:
 
         return merged_variables
 
+    def profile_exists(self, profile_name):
+        return profile_name in self.profiles
+
     def profiles_in_file(self, filename):
         """Return list of profiles in the given file"""
         if not self.files.get(filename):

@@ -37,29 +37,45 @@ class TestAdd_profile(AATest):
         self.assertEqual(str(self.pl), "\n".join(['', '<ProfileList>', '', '</ProfileList>', '']))
 
     def testAdd_profile_1(self):
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
+        self.assertTrue(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.assertEqual(self.pl.profile_names, {'foo': '/etc/apparmor.d/bin.foo'})
         self.assertEqual(self.pl.attachments, {'/bin/foo': {'f': '/etc/apparmor.d/bin.foo', 'p': 'foo', 're': AARE('/bin/foo', True)}})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profile_2(self):
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.pl.add_profile('/etc/apparmor.d/bin.foo', None, '/bin/foo', self.dummy_profile)
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertTrue(self.pl.profile_exists('/bin/foo'))
         self.assertEqual(self.pl.profile_names, {})
         self.assertEqual(self.pl.attachments, {'/bin/foo': {'f': '/etc/apparmor.d/bin.foo', 'p': '/bin/foo', 're': AARE('/bin/foo', True)}})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['/bin/foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profile_3(self):
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', None, self.dummy_profile)
+        self.assertTrue(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.assertEqual(self.pl.profile_names, {'foo': '/etc/apparmor.d/bin.foo'})
         self.assertEqual(self.pl.attachments, {})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profileError_1(self):
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         with self.assertRaises(AppArmorBug):
             self.pl.add_profile('', 'foo', '/bin/foo', self.dummy_profile)  # no filename
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
 
     def testAdd_profileError_2(self):
         with self.assertRaises(AppArmorBug):
