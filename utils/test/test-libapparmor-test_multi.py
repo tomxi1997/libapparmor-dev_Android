@@ -152,11 +152,6 @@ log_to_skip = [
 
 # tests that do not produce the expected profile (checked with assertNotEqual)
 log_to_profile_known_failures = [
-    # exec events
-    'testcase01',
-    'testcase12',
-    'testcase13',
-
     # 'testcase31',  # works, but including the link source would be nice
 ]
 
