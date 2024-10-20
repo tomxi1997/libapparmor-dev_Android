@@ -157,12 +157,12 @@ log_to_profile_known_failures = [
     'testcase01',
     'testcase12',
     'testcase13',
+
+    # 'testcase31',  # works, but including the link source would be nice
 ]
 
 # tests that cause crashes or need user interaction (will be skipped)
 log_to_profile_skip = [
-    'testcase31',  # XXX AppArmorBug: Log contains unknown mode mrwIxl
-
     'testcase_dmesg_changehat_negative_error',   # fails in write_header -> quote_if_needed because data is None
     'testcase_syslog_changehat_negative_error',  # fails in write_header -> quote_if_needed because data is None
 
