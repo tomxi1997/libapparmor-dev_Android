@@ -428,26 +428,6 @@ def create_new_profile(localfile, is_stub=False):
     return local_profile
 
 
-def delete_profile(local_prof):
-    """Deletes the specified file from the disk and remove it from our list"""
-    profile_file = get_profile_filename_from_profile_name(local_prof, True)
-    if os.path.isfile(profile_file):
-        os.remove(profile_file)
-    if aa.get(local_prof, False):
-        aa.pop(local_prof)
-
-    # prof_unload(local_prof)
-
-
-def confirm_and_abort():
-    ans = aaui.UI_YesNo(_('Are you sure you want to abandon this set of profile changes and exit?'), 'n')
-    if ans == 'y':
-        aaui.UI_Info(_('Abandoning all changes.'))
-        for prof in created:
-            delete_profile(prof)
-        sys.exit(0)
-
-
 def get_profile(prof_name):
     """search for inactive/extra profile, and ask if it should be used"""
 
