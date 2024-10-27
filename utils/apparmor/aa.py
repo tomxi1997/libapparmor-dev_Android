@@ -69,6 +69,7 @@ use_abstractions = True
 include = dict()
 
 active_profiles = ProfileList()
+original_profiles = ProfileList()
 extra_profiles = ProfileList()
 
 # To store the globs entered by users so they can be provided again
@@ -79,7 +80,6 @@ user_globs = {}
 transitions = {}
 
 aa = {}  # Profiles originally in sd, replace by aa
-original_aa = {}
 
 changed = dict()
 created = []
@@ -92,12 +92,12 @@ def reset_aa():
        Used by aa-mergeprof and some tests.
     """
 
-    global aa, include, active_profiles, original_aa
+    global aa, include, active_profiles, original_profiles
 
     aa = {}
     include = dict()
     active_profiles = ProfileList()
-    original_aa = {}
+    original_profiles = ProfileList()
 
 
 def on_exit():
@@ -506,7 +506,9 @@ def autodep(bin_name, pname=''):
     profile_data[pname]['filename'] = file  # change filename from extra_profile_dir to /etc/apparmor.d/
 
     attach_profile_data(aa, profile_data)
-    attach_profile_data(original_aa, profile_data)
+
+    for p in profile_data.keys():
+        original_profiles.add_profile(file, p, profile_data[p]['attachment'], deepcopy(profile_data[p]))
 
     attachment = profile_data[pname]['attachment']
     if not attachment and pname.startswith('/'):
@@ -1544,7 +1546,7 @@ def save_profiles(is_mergeprof=False, out_dir=None):
                 aaui.UI_Changes(oldprofile, newprofile, comments=True)
 
             elif ans == 'CMD_VIEW_CHANGES_CLEAN':
-                oldprofile = serialize_profile(split_to_merged(original_aa), profile_name, {})
+                oldprofile = serialize_profile(original_profiles, profile_name, {})
                 newprofile = serialize_profile(split_to_merged(aa), profile_name, {})
 
                 aaui.UI_Changes(oldprofile, newprofile)
@@ -1609,9 +1611,9 @@ def read_profiles(ui_msg=False, skip_profiles=()):
     #
     # The skip_profiles parameter should only be specified by tests.
 
-    global aa, original_aa
+    global aa, original_profiles
     aa = {}
-    original_aa = {}
+    original_profiles = ProfileList()
 
     if ui_msg:
         aaui.UI_Info(_('Updating AppArmor profiles in %s.') % profile_dir)
@@ -1685,7 +1687,6 @@ def read_profile(file, active_profile, read_error_fatal=False):
 
     if active_profile:
         attach_profile_data(aa, profile_data)
-        attach_profile_data(original_aa, profile_data)
 
     for profile in profile_data:
         attachment = profile_data[profile]['attachment']
@@ -1696,6 +1697,7 @@ def read_profile(file, active_profile, read_error_fatal=False):
 
         if active_profile:
             active_profiles.add_profile(filename, profile, attachment, profile_data[profile])
+            original_profiles.add_profile(filename, profile, attachment, deepcopy(profile_data[profile]))
         else:
             extra_profiles.add_profile(filename, profile, attachment, profile_data[profile])
 
@@ -2039,11 +2041,11 @@ def serialize_profile(profile_data, name, options):
 
         # aa-logprof asks to save each file separately. Therefore only update the given profile, and keep the original version of other profiles in the file
         if prof != name:
-            if original_aa.get(prof, {}).get(prof, {}).get('initial_comment', False):
-                comment = original_aa[prof][prof]['initial_comment']
+            if original_profiles.profile_exists(prof) and original_profiles[prof].get('initial_comment'):
+                comment = original_profiles[prof]['initial_comment']
                 data.extend([comment, ''])
 
-            data.extend(write_piece(split_to_merged(original_aa), 0, prof, prof))
+            data.extend(write_piece(original_profiles.get_profile_and_childs(prof), 0, prof, prof))
 
         else:
             if profile_data[name].get('initial_comment', False):
@@ -2094,7 +2096,14 @@ def write_profile(profile, is_attachment=False, out_dir=None):
     else:
         debug_logger.info("Unchanged profile written: %s (not listed in 'changed' list)", profile)
 
-    original_aa[profile] = deepcopy(aa[profile])
+    for hat in aa[profile]:
+        if profile == hat:
+            full_profile = profile
+        else:
+            full_profile = combine_profname((profile, hat))
+
+        if profile == hat or aa[profile][hat]['parent']:  # copy main profile and childs, but skip external hats
+            original_profiles.replace_profile(full_profile, deepcopy(aa[profile][hat]))
 
 
 def include_list_recursive(profile, in_preamble=False):
