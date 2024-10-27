@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # ------------------------------------------------------------------
 #
-#    Copyright (C) 2018 Christian Boltz <apparmor@cboltz.de>
+#    Copyright (C) 2018-2024 Christian Boltz <apparmor@cboltz.de>
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -12,6 +12,7 @@
 import os
 import shutil
 import unittest
+from copy import deepcopy
 
 import apparmor.aa
 from apparmor.common import AppArmorBug, AppArmorException
@@ -119,6 +120,25 @@ class TestAdd_profile(AATest):
     def testAdd_profileError_wrong_prof_type(self):
         with self.assertRaises(AppArmorBug):
             self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', 'wrong_type')
+
+    def testReplace_profile_1(self):
+        self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
+        # test if replacement works (but without checking if the content of the actual profile really changed)
+        self.pl.replace_profile('foo', self.dummy_profile)
+        with self.assertRaises(AppArmorBug):
+            self.pl.replace_profile('/bin/foo', self.dummy_profile)
+
+    def testReplace_profile_error_1(self):
+        self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
+        dummy2 = deepcopy(self.dummy_profile)
+        dummy2['attachment'] = 'changed'
+        with self.assertRaises(AppArmorBug):
+            self.pl.replace_profile('foo', dummy2)  # changed attachment
+
+    def testReplace_profile_error_2(self):
+        self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
+        with self.assertRaises(AppArmorBug):
+            self.pl.replace_profile('foo', [])  # [] is wrong type
 
 
 class TestFilename_from_profile_name(AATest):

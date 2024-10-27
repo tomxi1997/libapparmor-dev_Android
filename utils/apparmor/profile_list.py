@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------
-#    Copyright (C) 2018-2020 Christian Boltz <apparmor@cboltz.de>
+#    Copyright (C) 2018-2024 Christian Boltz <apparmor@cboltz.de>
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -106,6 +106,21 @@ class ProfileList:
         else:
             self.files[filename]['profiles'].append(attachment)
             self.profiles[attachment] = prof_storage
+
+    def replace_profile(self, profile_name, prof_storage):
+        """Replace the given profile in the profile list"""
+
+        if profile_name not in self.profiles:
+            raise AppArmorBug('Attempt to replace non-existing profile %s' % profile_name)
+
+        if type(prof_storage) is not ProfileStorage:
+            raise AppArmorBug('Invalid profile type: %s' % type(prof_storage))
+
+        # we might lift this restriction later, but for now, forbid changing the attachment instead of updating self.attachments
+        if self.profiles[profile_name]['attachment'] != prof_storage['attachment']:
+            raise AppArmorBug('Attempt to change atttachment while replacing profile %s - original: %s, new: %s' % (profile_name, self.profiles[profile_name]['attachment'], prof_storage['attachment']))
+
+        self.profiles[profile_name] = prof_storage
 
     def add_rule(self, filename, ruletype, rule):
         """Store the given rule for the given profile filename preamble"""
