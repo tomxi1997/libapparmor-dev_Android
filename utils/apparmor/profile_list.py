@@ -52,6 +52,12 @@ class ProfileList:
         name = type(self).__name__
         return '\n<%s>\n%s\n</%s>\n' % (name, '\n'.join(self.files), name)
 
+    def __getitem__(self, key):
+        if key in self.profiles:
+            return self.profiles[key]
+        else:
+            raise AppArmorBug('attempt to read unknown profile %s' % key)
+
     def init_file(self, filename):
         if self.files.get(filename):
             return  # don't re-initialize / overwrite existing data

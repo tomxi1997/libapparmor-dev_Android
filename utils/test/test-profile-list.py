@@ -47,6 +47,11 @@ class TestAdd_profile(AATest):
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
+        # test __getitem__()
+        self.assertEqual(self.pl['foo'], self.dummy_profile)
+        with self.assertRaises(AppArmorBug):
+            self.pl['does_not_exist']
+
     def testAdd_profile_2(self):
         self.assertFalse(self.pl.profile_exists('foo'))
         self.assertFalse(self.pl.profile_exists('/bin/foo'))
