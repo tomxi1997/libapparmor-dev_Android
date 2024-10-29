@@ -108,14 +108,10 @@ def setup_regex_tests(test_class):
 
 def setup_aa(aa):
     confdir = os.getenv('__AA_CONFDIR')
-    try:
-        if confdir:
-            aa.init_aa(confdir=confdir)
-        else:
-            aa.init_aa()
-    except AttributeError:
-        # apparmor.aa module versions <= 2.11 do not have the init_aa() method
-        pass
+    if confdir:
+        aa.init_aa(confdir=confdir)
+    else:
+        aa.init_aa()
 
 
 def write_file(directory, file, contents):
