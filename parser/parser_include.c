@@ -202,7 +202,7 @@ static void start_include_position(const char *filename)
 	current_lineno   = 1;
 }
 
-void push_include_stack(char *filename)
+void push_include_stack(const char *filename)
 {
 	struct include_stack_t *include = NULL;
 

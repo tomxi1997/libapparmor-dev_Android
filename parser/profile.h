@@ -363,7 +363,7 @@ public:
 	struct cond_entry_list xattrs;
 
 	/* char *sub_name; */			/* subdomain name or NULL */
-	/* int default_deny; */			/* TRUE or FALSE */
+	/* bool default_deny; */
 	bool local;
 
 	Profile *parent;

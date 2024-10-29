@@ -226,13 +226,13 @@ static bool add_proc_access(Profile *prof, const char *rule)
 		char *buffer = strdup("/proc/*/attr/apparmor/");
 		if (!buffer) {
 			PERROR("Memory allocation error\n");
-			return FALSE;
+			return false;
 		}
 		new_ent = new_entry(buffer, AA_MAY_READ, NULL);
 		if (!new_ent) {
 			free(buffer);
 			PERROR("Memory allocation error\n");
-			return FALSE;
+			return false;
 		}
 		add_entry_to_policy(prof, new_ent);
 
@@ -240,13 +240,13 @@ static bool add_proc_access(Profile *prof, const char *rule)
 		buffer = strdup("/sys/module/apparmor/parameters/enabled");
 		if (!buffer) {
 			PERROR("Memory allocation error\n");
-			return FALSE;
+			return false;
 		}
 		new_ent = new_entry(buffer, AA_MAY_READ, NULL);
 		if (!new_ent) {
 			free(buffer);
 			PERROR("Memory allocation error\n");
-			return FALSE;
+			return false;
 		}
 		add_entry_to_policy(prof, new_ent);
 
@@ -254,17 +254,17 @@ static bool add_proc_access(Profile *prof, const char *rule)
 		buffer = strdup(rule);
 		if (!buffer) {
 			PERROR("Memory allocation error\n");
-			return FALSE;
+			return false;
 		}
 		new_ent = new_entry(buffer, AA_MAY_WRITE, NULL);
 		if (!new_ent) {
 			free(buffer);
 			PERROR("Memory allocation error\n");
-			return FALSE;
+			return false;
 		}
 		add_entry_to_policy(prof, new_ent);
 
-		return TRUE;
+		return true;
 }
 
 #define CHANGEPROFILE_PATH "/proc/*/attr/{apparmor/,}{current,exec}"
