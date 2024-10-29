@@ -1,4 +1,4 @@
 /bin/ping {
-  /bin/ping ix,
+  /bin/ping mrix,
 
 }

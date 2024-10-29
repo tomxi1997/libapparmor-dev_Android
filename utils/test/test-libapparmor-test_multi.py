@@ -14,9 +14,8 @@ import sys
 import unittest
 
 import apparmor.aa
-from apparmor.common import hasher, open_file_read, split_name
+from apparmor.common import open_file_read, split_name
 from apparmor.logparser import ReadLog
-from apparmor.profile_list import ProfileList
 from common_test import AATest, read_file, setup_aa, setup_all_loops
 
 
@@ -153,16 +152,11 @@ log_to_skip = [
 
 # tests that do not produce the expected profile (checked with assertNotEqual)
 log_to_profile_known_failures = [
-    # exec events
-    'testcase01',
-    'testcase12',
-    'testcase13',
+    # 'testcase31',  # works, but including the link source would be nice
 ]
 
 # tests that cause crashes or need user interaction (will be skipped)
 log_to_profile_skip = [
-    'testcase31',  # XXX AppArmorBug: Log contains unknown mode mrwIxl
-
     'testcase_dmesg_changehat_negative_error',   # fails in write_header -> quote_if_needed because data is None
     'testcase_syslog_changehat_negative_error',  # fails in write_header -> quote_if_needed because data is None
 
@@ -221,12 +215,11 @@ def logfile_to_profile(logfile):
         raise Exception('Unexpected aamode {}'.format(parsed_event['aamode']))
 
     # cleanup apparmor.aa storage
-    apparmor.aa.log = dict()
-    apparmor.aa.aa = hasher()
+    apparmor.aa.reset_aa()
+
+    apparmor.aa.load_sev_db()
 
     profile, hat = split_name(parsed_event['profile'])
-
-    apparmor.aa.active_profiles = ProfileList()
 
     dummy_prof = apparmor.aa.ProfileStorage('TEST DUMMY for active_profiles', profile_dummy_file, 'logprof_to_profile()')
 
@@ -236,13 +229,22 @@ def logfile_to_profile(logfile):
     # else:
     apparmor.aa.active_profiles.add_profile(profile_dummy_file, profile, '', dummy_prof)
 
+    apparmor.aa.aa[profile] = {}
+    apparmor.aa.aa[profile][hat] = dummy_prof
+
     log_reader = ReadLog(logfile, apparmor.aa.active_profiles, '')
     hashlog = log_reader.read_log('')
 
-    apparmor.aa.ask_exec(hashlog)
+    apparmor.aa.ask_exec(hashlog, 'CMD_ix')
     apparmor.aa.ask_addhat(hashlog)
 
     log_dict = apparmor.aa.collapse_log(hashlog, ignore_null_profiles=False)
+
+    # ask_exec modifies 'aa', not log_dict. "transfer" exec rules from 'aa' to log_dict
+    for tmpaamode in hashlog:
+        for tmpprofile in hashlog[tmpaamode]:
+            for rule_obj in apparmor.aa.aa[profile][hat]['file'].rules:
+                log_dict[tmpaamode][tmpprofile]['file'].add(rule_obj)
 
     if list(log_dict[aamode].keys()) != [parsed_event['profile']]:
         raise Exception('log_dict[{}] contains unexpected keys. Logfile: {}, keys {}'.format(aamode, logfile, log_dict.keys()))

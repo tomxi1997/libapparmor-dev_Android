@@ -1,4 +1,4 @@
 /bin/ping {
-  ping2 ix,
+  /bin/ping mrix,
 
 }

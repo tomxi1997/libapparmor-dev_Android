@@ -728,7 +728,7 @@ def ask_addhat(hashlog):
                     continue
 
 
-def ask_exec(hashlog):
+def ask_exec(hashlog, default_ans=''):
     """ask the user about exec events (requests to execute another program) and which exec mode to use"""
 
     for aamode in hashlog:
@@ -816,7 +816,10 @@ def ask_exec(hashlog):
                     # ask user about the exec mode to use
                     ans = ''
                     while ans not in ('CMD_ix', 'CMD_px', 'CMD_cx', 'CMD_nx', 'CMD_pix', 'CMD_cix', 'CMD_nix', 'CMD_ux', 'CMD_DENY'):  # add '(I)gnore'? (hotkey conflict with '(i)x'!)
-                        ans = q.promptUser()[0]
+                        if default_ans:
+                            ans = default_ans
+                        else:
+                            ans = q.promptUser()[0]
 
                         if ans.startswith('CMD_EXEC_IX_'):
                             exec_toggle = not exec_toggle
@@ -1463,14 +1466,12 @@ def set_logfile(filename):
 def do_logprof_pass(logmark='', out_dir=None):
     # set up variables for this pass
     global active_profiles
-    global sev_db
 #    aa = hasher()
 #     changed = dict()
 
     aaui.UI_Info(_('Reading log entries from %s.') % logfile)
 
-    if not sev_db:
-        sev_db = apparmor.severity.Severity(CONFDIR + '/severity.db', _('unknown'))
+    load_sev_db()
     # print(pid)
     # print(active_profiles)
 
@@ -2394,3 +2395,10 @@ def init_aa(confdir=None, profiledir=None):
     parser = conf.find_first_file(cfg['settings'].get('parser')) or '/sbin/apparmor_parser'
     if not os.path.isfile(parser) or not os.access(parser, os.EX_OK):
         raise AppArmorException("Can't find apparmor_parser at %s" % (parser))
+
+
+def load_sev_db():
+    global sev_db
+
+    if not sev_db:
+        sev_db = apparmor.severity.Severity(CONFDIR + '/severity.db', _('unknown'))
