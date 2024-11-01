@@ -508,8 +508,11 @@ class TestGet_profile_and_childs(AATest):
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo//xy',  '/bin/foo//xy',  self.dummy_profile)
 
         expected = ['foo', 'foo//bar', 'foo//xy']
-
         self.assertEqual(list(self.pl.get_profile_and_childs('foo')), expected)
+
+        # while on it, also test get_all_profiles()
+        all_profiles = ['bafoo', 'foo', 'foobar', 'foo//bar', 'foo//xy']
+        self.assertEqual(list(self.pl.get_all_profiles()), all_profiles)
 
 
 setup_aa(apparmor.aa)

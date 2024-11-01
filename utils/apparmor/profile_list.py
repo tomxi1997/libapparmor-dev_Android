@@ -189,6 +189,9 @@ class ProfileList:
 
         return deleted
 
+    def get_all_profiles(self):
+        return self.profiles
+
     def get_profile_and_childs(self, profile_name):
         found = {}
         for prof in self.profiles:
