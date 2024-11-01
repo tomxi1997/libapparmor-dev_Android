@@ -1656,7 +1656,7 @@ def read_inactive_profiles(skip_profiles=()):
                 read_profile(full_file, False)
 
 
-def read_profile(file, active_profile, read_error_fatal=False):
+def read_profile(file, is_active_profile, read_error_fatal=False):
     data = None
     try:
         with open_file_read(file) as f_in:
@@ -1681,7 +1681,7 @@ def read_profile(file, active_profile, read_error_fatal=False):
         if not attachment and profile.startswith('/'):
             attachment = profile  # use profile as name and attachment
 
-        if active_profile:
+        if is_active_profile:
             active_profiles.add_profile(filename, profile, attachment, profile_data[profile])
             original_profiles.add_profile(filename, profile, attachment, deepcopy(profile_data[profile]))
         else:
