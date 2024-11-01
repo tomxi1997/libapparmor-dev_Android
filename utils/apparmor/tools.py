@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 #    Copyright (C) 2013 Kshitij Gupta <kgupta8592@gmail.com>
-#    Copyright (C) 2015-2023 Christian Boltz <apparmor@cboltz.de>
+#    Copyright (C) 2015-2024 Christian Boltz <apparmor@cboltz.de>
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -64,7 +64,7 @@ class aa_tools:
                     prof_filename = apparmor.get_profile_filename_from_attachment(fq_path, True)
             else:
                 which_ = which(p)
-                if self.name == 'cleanprof' and p in apparmor.aa:
+                if self.name == 'cleanprof' and apparmor.active_profiles.profile_exists(p):
                     program = p  # not really correct, but works
                     profile = p
                     prof_filename = apparmor.get_profile_filename_from_profile_name(profile)
@@ -104,14 +104,14 @@ class aa_tools:
             if program is None:
                 program = profile
 
-            if not program or not (os.path.exists(program) or profile in apparmor.aa):
+            if not program or not (os.path.exists(program) or apparmor.active_profiles.profile_exists(profile)):
                 if program and not program.startswith('/'):
                     program = aaui.UI_GetString(_('The given program cannot be found, please try with the fully qualified path name of the program: '), '')
                 else:
                     aaui.UI_Info(_("%s does not exist, please double-check the path.") % program)
                     sys.exit(1)
 
-            if program and profile in apparmor.aa:
+            if program and apparmor.active_profiles.profile_exists(profile):
                 self.clean_profile(program, profile, prof_filename)
 
             else:
@@ -207,8 +207,8 @@ class aa_tools:
                     apparmor.write_profile_ui_feedback(profile)
                     self.reload_profile(prof_filename)
                 elif ans == 'CMD_VIEW_CHANGES':
-                    # oldprofile = apparmor.serialize_profile(apparmor.split_to_merged(apparmor.original_aa), profile, {})
-                    newprofile = apparmor.serialize_profile(apparmor.split_to_merged(apparmor.aa), profile, {})  # , {'is_attachment': True})
+                    # oldprofile = apparmor.serialize_profile(apparmor.original_profiles, profile, {})
+                    newprofile = apparmor.serialize_profile(apparmor.active_profiles, profile, {})  # , {'is_attachment': True})
                     aaui.UI_Changes(prof_filename, newprofile, comments=True)
 
     def unload_profile(self, prof_filename):

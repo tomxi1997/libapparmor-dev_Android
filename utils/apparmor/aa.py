@@ -704,7 +704,7 @@ def ask_addhat(hashlog):
                 if ans == 'CMD_ADDHAT':
                     hat_obj = ProfileStorage(profile, hat, 'ask_addhat addhat')
                     hat_obj['parent'] = profile
-                    hat_obj['flags'] = aa[profile][profile]['flags']
+                    hat_obj['flags'] = active_profiles[profile]['flags']
                     aa[profile][hat] = hat_obj
                     new_full_hat = combine_profname([profile, hat])
                     active_profiles.add_profile(filename, new_full_hat, hat, hat_obj)
@@ -718,7 +718,7 @@ def ask_addhat(hashlog):
                         # create default hat if it doesn't exist yet
                         hat_obj = ProfileStorage(profile, hat, 'ask_addhat default hat')
                         hat_obj['parent'] = profile
-                        hat_obj['flags'] = aa[profile][profile]['flags']
+                        hat_obj['flags'] = active_profiles[profile]['flags']
                         aa[profile][hat] = hat_obj
                         active_profiles.add_profile(filename, new_full_hat, hat, hat_obj)
                         changed[profile] = True
@@ -750,7 +750,7 @@ def ask_exec(hashlog, default_ans=''):
                         continue  # ignore log entries for non-existing hats
 
                     exec_event = FileRule(exec_target, None, FileRule.ANY_EXEC, FileRule.ALL, owner=False, log_event=True)
-                    if is_known_rule(aa[profile][hat], 'file', exec_event):
+                    if is_known_rule(active_profiles[full_profile], 'file', exec_event):
                         continue
 
                     # nx is not used in profiles but in log files.
@@ -903,7 +903,7 @@ def ask_exec(hashlog, default_ans=''):
                         file_perm = 'mr'
                     else:
                         if ans == 'CMD_DENY':
-                            aa[profile][hat]['file'].add(FileRule(exec_target, None, 'x', FileRule.ALL, owner=False, log_event=True, deny=True))
+                            active_profiles[full_profile]['file'].add(FileRule(exec_target, None, 'x', FileRule.ALL, owner=False, log_event=True, deny=True))
                             changed[profile] = True
                             if target_profile and hashlog[aamode].get(target_profile):
                                 hashlog[aamode][target_profile]['final_name'] = ''
@@ -916,7 +916,7 @@ def ask_exec(hashlog, default_ans=''):
                         else:
                             rule_to_name = FileRule.ALL
 
-                        aa[profile][hat]['file'].add(FileRule(exec_target, file_perm, exec_mode, rule_to_name, owner=False, log_event=True))
+                        active_profiles[full_profile]['file'].add(FileRule(exec_target, file_perm, exec_mode, rule_to_name, owner=False, log_event=True))
 
                         changed[profile] = True
 
@@ -927,16 +927,16 @@ def ask_exec(hashlog, default_ans=''):
                                 exec_target_rule = FileRule(exec_target,      'r',  None, FileRule.ALL, owner=False)
                                 interpreter_rule = FileRule(interpreter_path, None, 'ix', FileRule.ALL, owner=False)
 
-                                if not is_known_rule(aa[profile][hat], 'file', exec_target_rule):
-                                    aa[profile][hat]['file'].add(exec_target_rule)
-                                if not is_known_rule(aa[profile][hat], 'file', interpreter_rule):
-                                    aa[profile][hat]['file'].add(interpreter_rule)
+                                if not is_known_rule(active_profiles[full_profile], 'file', exec_target_rule):
+                                    active_profiles[full_profile]['file'].add(exec_target_rule)
+                                if not is_known_rule(active_profiles[full_profile], 'file', interpreter_rule):
+                                    active_profiles[full_profile]['file'].add(interpreter_rule)
 
                                 if abstraction:
                                     abstraction_rule = IncludeRule(abstraction, False, True)
 
-                                    if not aa[profile][hat]['inc_ie'].is_covered(abstraction_rule):
-                                        aa[profile][hat]['inc_ie'].add(abstraction_rule)
+                                    if not active_profiles[full_profile]['inc_ie'].is_covered(abstraction_rule):
+                                        active_profiles[full_profile]['inc_ie'].add(abstraction_rule)
 
                     # Update tracking info based on kind of change
 
@@ -989,9 +989,9 @@ def ask_exec(hashlog, default_ans=''):
                                         active_profiles.add_profile(prof_filename, p, stub_profile[p]['attachment'], stub_profile[p])
 
                                 if profile != exec_target:
-                                    aa[profile][exec_target]['flags'] = aa[profile][profile]['flags']
+                                    active_profiles[full_exec_target]['flags'] = active_profiles[profile]['flags']
 
-                                aa[profile][exec_target]['flags'] = 'complain'
+                                active_profiles[full_exec_target]['flags'] = 'complain'
 
                                 if target_profile and hashlog[aamode].get(target_profile):
                                     hashlog[aamode][target_profile]['final_name'] = '%s//%s' % (profile, exec_target)
@@ -1089,11 +1089,11 @@ def ask_the_questions(log_dict):
                     active_profiles.add_profile(prof_filename, combine_profname([profile, hat]), hat, prof_obj)
 
                 # check for and ask about conflicting exec modes
-                ask_conflict_mode(aa[profile][hat], log_dict[aamode][full_profile])
+                ask_conflict_mode(active_profiles[full_profile], log_dict[aamode][full_profile])
 
                 prof_changed, end_profiling = ask_rule_questions(
                     log_dict[aamode][full_profile], combine_name(profile, hat),
-                    aa[profile][hat], ruletypes)
+                    active_profiles[full_profile], ruletypes)
                 if prof_changed:
                     changed[profile] = True
                 if end_profiling:
@@ -1106,7 +1106,7 @@ def ask_rule_questions(prof_events, profile_name, the_profile, r_types):
        parameter       typical value
        prof_events     log_dict[aamode][full_profile]
        profile_name    profile name (possible profile//hat)
-       the_profile     aa[profile][hat] -- will be modified
+       the_profile     active_profiles[full_profile] -- will be modified
        r_types         ruletypes
 
        returns:
@@ -1535,19 +1535,19 @@ def save_profiles(is_mergeprof=False, out_dir=None):
 
             elif ans == 'CMD_VIEW_CHANGES':
                 oldprofile = None
-                if aa[profile_name][profile_name].get('filename', False):
-                    oldprofile = aa[profile_name][profile_name]['filename']
+                if active_profiles[profile_name].get('filename', False):
+                    oldprofile = active_profiles[profile_name]['filename']
                 else:
                     oldprofile = get_profile_filename_from_attachment(profile_name, True)
 
                 serialize_options = {'METADATA': True}
-                newprofile = serialize_profile(split_to_merged(aa), profile_name, serialize_options)
+                newprofile = serialize_profile(active_profiles, profile_name, serialize_options)
 
                 aaui.UI_Changes(oldprofile, newprofile, comments=True)
 
             elif ans == 'CMD_VIEW_CHANGES_CLEAN':
                 oldprofile = serialize_profile(original_profiles, profile_name, {})
-                newprofile = serialize_profile(split_to_merged(aa), profile_name, {})
+                newprofile = serialize_profile(active_profiles, profile_name, {})
 
                 aaui.UI_Changes(oldprofile, newprofile)
 
@@ -1591,7 +1591,7 @@ def collapse_log(hashlog, ignore_null_profiles=True):
 
             for ev_type, ev_class in ReadLog.ruletypes.items():
                 for rule in ev_class.from_hashlog(hashlog[aamode][full_profile][ev_type]):
-                    if not hat_exists or not is_known_rule(aa[profile][hat], ev_type, rule):
+                    if not hat_exists or not is_known_rule(active_profiles[full_profile], ev_type, rule):
                         log_dict[aamode][final_name][ev_type].add(rule)
 
     return log_dict
@@ -2052,7 +2052,11 @@ def serialize_profile(profile_data, name, options):
                 comment = profile_data[name]['initial_comment']
                 data.extend([comment, ''])
 
-            data.extend(write_piece(profile_data, 0, name, name))
+            # write_piece() expects a dict, not a ProfileList - TODO: change write_piece()?
+            if type(profile_data) is dict:
+                data.extend(write_piece(profile_data, 0, name, name))
+            else:
+                data.extend(write_piece(profile_data.get_profile_and_childs(name), 0, name, name))
 
     return '\n'.join(data) + '\n'
 
@@ -2063,15 +2067,15 @@ def write_profile_ui_feedback(profile, is_attachment=False, out_dir=None):
 
 
 def write_profile(profile, is_attachment=False, out_dir=None):
-    if aa[profile][profile].get('filename', False):
-        prof_filename = aa[profile][profile]['filename']
+    if active_profiles[profile]['filename']:
+        prof_filename = active_profiles[profile]['filename']
     elif is_attachment:
         prof_filename = get_profile_filename_from_attachment(profile, True)
     else:
         prof_filename = get_profile_filename_from_profile_name(profile, True)
 
     serialize_options = {'METADATA': True, 'is_attachment': is_attachment}
-    profile_string = serialize_profile(split_to_merged(aa), profile, serialize_options)
+    profile_string = serialize_profile(active_profiles, profile, serialize_options)
 
     try:
         with NamedTemporaryFile('w', suffix='~', delete=False, dir=out_dir or profile_dir) as newprof:
@@ -2096,14 +2100,9 @@ def write_profile(profile, is_attachment=False, out_dir=None):
     else:
         debug_logger.info("Unchanged profile written: %s (not listed in 'changed' list)", profile)
 
-    for hat in aa[profile]:
-        if profile == hat:
-            full_profile = profile
-        else:
-            full_profile = combine_profname((profile, hat))
-
-        if profile == hat or aa[profile][hat]['parent']:  # copy main profile and childs, but skip external hats
-            original_profiles.replace_profile(full_profile, deepcopy(aa[profile][hat]))
+    for full_profile in active_profiles.get_profile_and_childs(profile):
+        if profile == full_profile or active_profiles[full_profile]['parent']:  # copy main profile and childs, but skip external hats
+            original_profiles.replace_profile(full_profile, deepcopy(active_profiles[full_profile]))
 
 
 def include_list_recursive(profile, in_preamble=False):
