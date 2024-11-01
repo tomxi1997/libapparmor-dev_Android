@@ -16,7 +16,7 @@ import unittest
 import apparmor.aa  # needed to set global vars in some tests
 from apparmor.aa import (
     change_profile_flags, check_for_apparmor, create_new_profile, get_file_perms, get_interpreter_and_abstraction, get_profile_flags,
-    merged_to_split, parse_profile_data, propose_file_rules, set_options_audit_mode, set_options_owner_mode, split_to_merged)
+    merged_to_split, parse_profile_data, propose_file_rules, set_options_audit_mode, set_options_owner_mode)
 from apparmor.aare import AARE
 from apparmor.common import AppArmorBug, AppArmorException, is_skippable_file
 from apparmor.rule.file import FileRule
@@ -759,25 +759,6 @@ class AaTest_merged_to_split(AATest):
         self.assertEqual(list(result.keys()), [profile])
         self.assertEqual(list(result[profile].keys()), [hat])
         self.assertTrue(result[profile][hat])
-
-
-class AaTest_split_to_merged(AATest):
-    tests = (
-        (("foo", "foo"), "foo"),
-        (("foo", "bar"), "foo//bar"),
-    )
-
-    def _run_test(self, params, expected):
-        old = {}
-        profile = params[0]
-        hat = params[1]
-
-        old[profile] = {}
-        old[profile][hat] = True  # simplified, but enough for this test
-        result = split_to_merged(old)
-
-        self.assertEqual(list(result.keys()), [expected])
-        self.assertTrue(result[expected])
 
 
 setup_aa(apparmor.aa)
