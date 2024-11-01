@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 #    Copyright (C) 2013 Kshitij Gupta <kgupta8592@gmail.com>
-#    Copyright (C) 2014-2021 Christian Boltz <apparmor@cboltz.de>
+#    Copyright (C) 2014-2024 Christian Boltz <apparmor@cboltz.de>
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -79,8 +79,6 @@ user_globs = {}
 # let ask_addhat() remember answers for already-seen change_hat events
 transitions = {}
 
-aa = {}  # Profiles originally in sd, replace by aa
-
 changed = dict()
 created = []
 helpers = dict()  # Preserve this between passes # was our
@@ -92,9 +90,8 @@ def reset_aa():
        Used by aa-mergeprof and some tests.
     """
 
-    global aa, include, active_profiles, original_profiles
+    global include, active_profiles, original_profiles
 
-    aa = {}
     include = dict()
     active_profiles = ProfileList()
     original_profiles = ProfileList()
@@ -505,8 +502,6 @@ def autodep(bin_name, pname=''):
     file = get_profile_filename_from_profile_name(pname, True)
     profile_data[pname]['filename'] = file  # change filename from extra_profile_dir to /etc/apparmor.d/
 
-    attach_profile_data(aa, profile_data)
-
     for p in profile_data.keys():
         original_profiles.add_profile(file, p, profile_data[p]['attachment'], deepcopy(profile_data[p]))
 
@@ -705,7 +700,6 @@ def ask_addhat(hashlog):
                     hat_obj = ProfileStorage(profile, hat, 'ask_addhat addhat')
                     hat_obj['parent'] = profile
                     hat_obj['flags'] = active_profiles[profile]['flags']
-                    aa[profile][hat] = hat_obj
                     new_full_hat = combine_profname([profile, hat])
                     active_profiles.add_profile(filename, new_full_hat, hat, hat_obj)
                     hashlog[aamode][full_hat]['final_name'] = new_full_hat
@@ -719,7 +713,6 @@ def ask_addhat(hashlog):
                         hat_obj = ProfileStorage(profile, hat, 'ask_addhat default hat')
                         hat_obj['parent'] = profile
                         hat_obj['flags'] = active_profiles[profile]['flags']
-                        aa[profile][hat] = hat_obj
                         active_profiles.add_profile(filename, new_full_hat, hat, hat_obj)
                         changed[profile] = True
                 elif ans == 'CMD_DENY':
@@ -984,7 +977,6 @@ def ask_exec(hashlog, default_ans=''):
                             if ynans == 'y':
                                 if not active_profiles.profile_exists(full_exec_target):
                                     stub_profile = create_new_profile(exec_target, True)
-                                    aa[profile][exec_target] = merged_to_split(stub_profile[exec_target][exec_target])
                                     for p in stub_profile:
                                         active_profiles.add_profile(prof_filename, p, stub_profile[p]['attachment'], stub_profile[p])
 
@@ -1085,7 +1077,6 @@ def ask_the_questions(log_dict):
                         prof_obj['is_hat'] = False
 
                     prof_obj['parent'] = profile
-                    aa[profile][hat] = prof_obj
                     active_profiles.add_profile(prof_filename, combine_profname([profile, hat]), hat, prof_obj)
 
                 # check for and ask about conflicting exec modes
@@ -1473,7 +1464,6 @@ def set_logfile(filename):
 def do_logprof_pass(logmark='', out_dir=None):
     # set up variables for this pass
     global active_profiles
-#    aa = hasher()
 #     changed = dict()
 
     aaui.UI_Info(_('Reading log entries from %s.') % logfile)
@@ -1611,8 +1601,7 @@ def read_profiles(ui_msg=False, skip_profiles=()):
     #
     # The skip_profiles parameter should only be specified by tests.
 
-    global aa, original_profiles
-    aa = {}
+    global original_profiles
     original_profiles = ProfileList()
 
     if ui_msg:
@@ -1684,9 +1673,6 @@ def read_profile(file, active_profile, read_error_fatal=False):
 
     if not profile_data:
         return
-
-    if active_profile:
-        attach_profile_data(aa, profile_data)
 
     for profile in profile_data:
         attachment = profile_data[profile]['attachment']
