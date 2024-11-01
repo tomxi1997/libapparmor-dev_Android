@@ -1077,13 +1077,13 @@ def ask_the_questions(log_dict):
                         prof_obj['is_hat'] = False
 
                     prof_obj['parent'] = profile
-                    active_profiles.add_profile(prof_filename, combine_profname([profile, hat]), hat, prof_obj)
+                    active_profiles.add_profile(prof_filename, full_profile, hat, prof_obj)
 
                 # check for and ask about conflicting exec modes
                 ask_conflict_mode(active_profiles[full_profile], log_dict[aamode][full_profile])
 
                 prof_changed, end_profiling = ask_rule_questions(
-                    log_dict[aamode][full_profile], combine_name(profile, hat),
+                    log_dict[aamode][full_profile], full_profile,
                     active_profiles[full_profile], ruletypes)
                 if prof_changed:
                     changed[profile] = True
