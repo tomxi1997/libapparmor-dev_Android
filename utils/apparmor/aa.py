@@ -601,23 +601,6 @@ def change_profile_flags(prof_filename, program, flag, set_flag):
             raise AppArmorException("%(file)s doesn't contain a valid profile for %(profile)s (syntax error?)" % {'file': prof_filename, 'profile': program})
 
 
-def profile_exists(program):
-    """Returns True if profile exists, False otherwise"""
-    # Check cache of profiles
-
-    if active_profiles.filename_from_attachment(program):
-        return True
-    # Check the disk for profile
-    prof_path = get_profile_filename_from_attachment(program, True)
-    # print(prof_path)
-    if os.path.isfile(prof_path):
-        # Add to cache of profile
-        raise AppArmorBug('Reached strange condition in profile_exists(), please open a bugreport!')
-        # active_profiles[program] = prof_path
-        # return True
-    return False
-
-
 def build_x_functions(default, options, exec_toggle):
     ret_list = []
     fallback_toggle = False
