@@ -24,6 +24,7 @@ profile remmina /usr/bin/remmina {
   include <abstractions/openssl>
   include <abstractions/ssl_certs>
   include <abstractions/private-files-strict>
+  include <abstractions/dconf>
 
   dbus (bind) bus=session name="org.remmina.Remmina",
   dbus (send) bus=session path="/org/gtk/vfs/mounttracker" interface="org.gtk.vfs.MountTracker" member={ListMountableInfo,LookupMount} peer=(label=unconfined),
@@ -32,8 +33,7 @@ profile remmina /usr/bin/remmina {
   dbus (send) bus=session path="/org/freedesktop/secrets/collection/login" interface="org.freedesktop.DBus.Properties" member=GetAll peer=(label=unconfined),
   dbus (send) bus=system path="/org/freedesktop/NetworkManager" interface="org.freedesktop.DBus.Properties" member=GetAll peer=(label=unconfined),
 
-  /etc/dconf/** r,
-  /etc/fstab r,
+  @{etc_ro}/fstab r,
   /usr/bin/remmina mr,
   /usr/share/remmina/{,**} r,
   /var/lib/snapd/desktop/icons/{,**} r,
@@ -42,7 +42,6 @@ profile remmina /usr/bin/remmina {
   owner @{HOME}/.cache/remmina/{,**} rw,
   owner @{HOME}/.cache/thumbnails/{,**} r,
   owner @{HOME}/.config/autostart/remmina-applet.desktop r,
-  owner @{HOME}/.config/dconf/user r,
   owner @{HOME}/.config/freerdp/known_hosts2 rwk,
   owner @{HOME}/.config/glib-2.0/settings/keyfile rw,
   owner @{HOME}/.config/remmina/{,**} rw,
@@ -53,9 +52,11 @@ profile remmina /usr/bin/remmina {
   owner @{HOME}/{,[^.]**} rw,
 
   owner @{run}/user/@{uid}/gvfsd/socket-* rw,
-  owner @{run}/user/@{uid}/dconf/{,user} rw,
   owner @{PROC}/@{pid}/task/@{tid}/comm rw,
   owner @{PROC}/@{pid}/mountinfo rw,
+
+  ## dconf abstraction is read-only, adding write access
+  owner @{run}/user/@{uid}/dconf/{,user} rw,
 
   owner @{run}/user/@{uid}/at-spi/ rw,
   owner @{run}/user/@{uid}/at-spi/bus{,_[0-9]*} rw,
