@@ -2109,10 +2109,8 @@ def include_list_recursive(profile, in_preamble=False):
 
 
 def is_known_rule(profile, rule_type, rule_obj):
-    # XXX get rid of get() checks after we have a proper function to initialize a profile
-    if profile.get(rule_type, False):
-        if profile[rule_type].is_covered(rule_obj, False):
-            return True
+    if profile[rule_type].is_covered(rule_obj, False):
+        return True
 
     includelist = include_list_recursive(profile)
 
