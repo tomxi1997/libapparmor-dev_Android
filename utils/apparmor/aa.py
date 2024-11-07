@@ -432,7 +432,7 @@ def create_new_profile(localfile, is_stub=False):
 def get_profile(prof_name):
     """search for inactive/extra profile, and ask if it should be used"""
 
-    if not extra_profiles.profiles.get(prof_name, False):
+    if not extra_profiles.profile_exists(prof_name):
         return None  # no inactive profile found
 
     # TODO: search based on the attachment, not (only?) based on the profile name
