@@ -265,7 +265,7 @@ public:
 
 	ostream &dump(ostream &os)
 	{
-		cerr << *this << "\n";
+		os << *this << "\n";
 		for (StateTrans::iterator i = trans.begin(); i != trans.end(); i++) {
 			os << "    " << i->first.c << " -> " << *i->second << "\n";
 		}
