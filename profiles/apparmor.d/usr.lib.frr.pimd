@@ -13,8 +13,6 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{DAEMON_NAME}=pimd
-
 profile pimd /usr/lib/frr/pimd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>

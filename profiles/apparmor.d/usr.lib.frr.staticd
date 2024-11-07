@@ -13,8 +13,6 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{DAEMON_NAME}=staticd
-
 profile staticd /usr/lib/frr/staticd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>

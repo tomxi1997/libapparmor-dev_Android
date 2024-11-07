@@ -13,8 +13,6 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{DAEMON_NAME}=ldpd
-
 profile ldpd /usr/lib/frr/ldpd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>

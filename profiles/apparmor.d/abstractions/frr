@@ -36,8 +36,8 @@
 
   @{run}/frr/ r,
   @{run}/frr/zserv.api rw,
-  @{run}/frr/@{DAEMON_NAME}.pid rwk,
-  @{run}/frr/@{DAEMON_NAME}.vty rw,
+  @{run}/frr/@{profile_name}.pid rwk,
+  @{run}/frr/@{profile_name}.vty rw,
 
   # YANG modules
   /usr/share/yang/ r, 
@@ -50,17 +50,17 @@
 
   # Daemon config
   /etc/frr/ r, 
-  /etc/frr/@{DAEMON_NAME}.conf{,.*} rwl,
+  /etc/frr/@{profile_name}.conf{,.*} rwl,
 
   # Log file
   /var/log/frr/ w,
-  /var/log/frr/@{DAEMON_NAME} w,
+  /var/log/frr/@{profile_name} w,
 
   # Crash logs https://docs.frrouting.org/en/latest/setup.html#crash-logs
   /var/tmp/frr/ w,
-  /var/tmp/frr/@{DAEMON_NAME}.@{pid}/ w,
-  /var/tmp/frr/@{DAEMON_NAME}.@{pid}/crashlog w,
-  /var/tmp/frr/@{DAEMON_NAME}.@{pid}/logbuf.@{tid} rw,
+  /var/tmp/frr/@{profile_name}.@{pid}/ w,
+  /var/tmp/frr/@{profile_name}.@{pid}/crashlog w,
+  /var/tmp/frr/@{profile_name}.@{pid}/logbuf.@{tid} rw,
 
   # Program output (working directory)
   / r,

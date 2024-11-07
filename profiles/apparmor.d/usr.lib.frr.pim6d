@@ -13,8 +13,6 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{DAEMON_NAME}=pim6d
-
 profile pim6d /usr/lib/frr/pim6d flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>

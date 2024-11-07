@@ -13,8 +13,6 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{DAEMON_NAME}=vrrpd
-
 profile vrrpd /usr/lib/frr/vrrpd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>

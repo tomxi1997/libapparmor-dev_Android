@@ -13,8 +13,6 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-@{DAEMON_NAME}=ospfd
-
 profile ospfd /usr/lib/frr/ospfd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
