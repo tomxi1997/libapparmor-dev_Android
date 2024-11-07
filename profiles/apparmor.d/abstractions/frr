@@ -11,6 +11,8 @@
 
   abi <abi/4.0>,
 
+  include <abstractions/nameservice-strict>
+
   # Common capabilities
   network,
   capability net_bind_service,
@@ -19,20 +21,6 @@
   capability setuid,
   capability dac_override,
   capability dac_read_search,
-
-  # Common files
-  /etc/passwd r,
-  /etc/group r, 
-  /etc/nsswitch.conf r,
-  /etc/gai.conf r,
-
-  /etc/resolv.conf r,
-  @{run}/systemd/resolve/stub-resolv.conf r,
-
-  @{run}/systemd/userdb/ r,
-  @{run}/systemd/userdb/io.systemd.DynamicUser rw,
-
-  @{PROC}/sys/kernel/random/boot_id r, 
 
   @{run}/frr/ r,
   @{run}/frr/zserv.api rw,
