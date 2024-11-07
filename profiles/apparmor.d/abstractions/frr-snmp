@@ -1,4 +1,5 @@
 # vim:syntax=apparmor
+# LOGPROF-SUGGEST: no
 # ------------------------------------------------------------------
 #
 #    Copyright (C) 2024 Canonical Ltd.
@@ -17,6 +18,6 @@
   /usr/share/snmp/mibs/{,*} r,
   /var/lib/mibs/iana/{,*} r,
   /var/lib/mibs/ietf/{,*} r,
-  /etc/host.conf r, 
+  /etc/host.conf r,
   /etc/hosts r,
   /etc/frr/agentx rw,

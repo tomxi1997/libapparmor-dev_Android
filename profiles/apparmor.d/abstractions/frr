@@ -1,4 +1,5 @@
 # vim:syntax=apparmor
+# LOGPROF-SUGGEST: no
 # ------------------------------------------------------------------
 #
 #    Copyright (C) 2024 Canonical Ltd.
