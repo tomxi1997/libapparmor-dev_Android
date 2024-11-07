@@ -24,7 +24,7 @@ profile bgpd /usr/lib/frr/bgpd flags=(attach_disconnected) {
   /etc/services r,
   @{run}/netns/* r,
 
-  @{PROC}/@{pid}/task/@{tid}/comm rw,
+  owner @{PROC}/@{pid}/task/@{tid}/comm rw,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/usr.lib.frr.bgpd>
