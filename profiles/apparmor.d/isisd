@@ -13,10 +13,16 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile fabricd /usr/lib/frr/fabricd flags=(attach_disconnected) {
+profile isisd /usr/lib/frr/isisd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
+  include <abstractions/frr-snmp>
+
+  capability net_raw,
+
+  /var/lib/frr/ r, 
+  /var/lib/frr/isisd.json{,.sav} rw,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.frr.fabricd>
+  include if exists <local/isisd>
 }

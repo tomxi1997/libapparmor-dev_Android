@@ -13,13 +13,10 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile pimd /usr/lib/frr/pimd flags=(attach_disconnected) {
+profile pbrd /usr/lib/frr/pbrd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
 
-  capability net_raw,
-  capability net_admin,
-
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.frr.pimd>
+  include if exists <local/pbrd>
 }

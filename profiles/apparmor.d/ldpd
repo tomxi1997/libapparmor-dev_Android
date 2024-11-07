@@ -13,10 +13,14 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile pbrd /usr/lib/frr/pbrd flags=(attach_disconnected) {
+profile ldpd /usr/lib/frr/ldpd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
+  include <abstractions/frr-snmp>
+
+  /usr/lib/frr/ldpd ix,
+  @{run}/frr/ldpd.sock rw,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.frr.pbrd>
+  include if exists <local/ldpd>
 }

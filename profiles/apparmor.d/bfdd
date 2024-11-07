@@ -13,12 +13,17 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile babeld /usr/lib/frr/babeld flags=(attach_disconnected) {
+profile bfdd /usr/lib/frr/bfdd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
 
-  @{run}/frr/babel-state w,
+  capability net_raw,
+  capability sys_admin,
+
+  @{run}/netns/* r,
+
+  @{run}/frr/bfdd.sock w,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.frr.babeld>
+  include if exists <local/bfdd>
 }

@@ -13,16 +13,10 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile isisd /usr/lib/frr/isisd flags=(attach_disconnected) {
+profile ripngd /usr/lib/frr/ripngd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
-  include <abstractions/frr-snmp>
-
-  capability net_raw,
-
-  /var/lib/frr/ r, 
-  /var/lib/frr/isisd.json{,.sav} rw,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.frr.isisd>
+  include if exists <local/ripngd>
 }

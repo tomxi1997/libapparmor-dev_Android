@@ -13,7 +13,7 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile ospfd /usr/lib/frr/ospfd flags=(attach_disconnected) {
+profile ospf6d /usr/lib/frr/ospf6d flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
   include <abstractions/frr-snmp>
@@ -24,20 +24,11 @@ profile ospfd /usr/lib/frr/ospfd flags=(attach_disconnected) {
   /etc/services r,
   @{run}/netns/* r,
 
-  @{run}/frr/ospfd-gr.json w,
+  @{run}/frr/ospf6d-gr.json w,
 
   /var/lib/frr/ r,
-  /var/lib/frr/ospfd.json{,.sav} rw,
-
-  # For OSPFv3
-  /var/tmp/frr/ospfd-3.@{pid}/ w,
-  /var/tmp/frr/ospfd-3.@{pid}/crashlog w,
-  /var/tmp/frr/ospfd-3.@{pid}/logbuf.@{tid} rw,
-
-  @{run}/frr/ospfd-3.pid rwk,
-  @{run}/frr/ospfd-3.vty rw,
-  @{run}/frr/ospfd-3.json{,.sav} rw,
+  /var/lib/frr/ospf6d.json{,.sav} rw,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.frr.ospfd>
+  include if exists <local/ospf6d>
 }

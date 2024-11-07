@@ -13,10 +13,31 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile ripngd /usr/lib/frr/ripngd flags=(attach_disconnected) {
+profile ospfd /usr/lib/frr/ospfd flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
+  include <abstractions/frr-snmp>
+
+  capability net_raw,
+  capability sys_admin,
+
+  /etc/services r,
+  @{run}/netns/* r,
+
+  @{run}/frr/ospfd-gr.json w,
+
+  /var/lib/frr/ r,
+  /var/lib/frr/ospfd.json{,.sav} rw,
+
+  # For OSPFv3
+  /var/tmp/frr/ospfd-3.@{pid}/ w,
+  /var/tmp/frr/ospfd-3.@{pid}/crashlog w,
+  /var/tmp/frr/ospfd-3.@{pid}/logbuf.@{tid} rw,
+
+  @{run}/frr/ospfd-3.pid rwk,
+  @{run}/frr/ospfd-3.vty rw,
+  @{run}/frr/ospfd-3.json{,.sav} rw,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.frr.ripngd>
+  include if exists <local/ospfd>
 }

@@ -13,19 +13,13 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile bgpd /usr/lib/frr/bgpd flags=(attach_disconnected) {
+profile pim6d /usr/lib/frr/pim6d flags=(attach_disconnected) {
   include <abstractions/base>
   include <abstractions/frr>
-  include <abstractions/frr-snmp>
 
   capability net_raw,
-  capability sys_admin,
-
-  /etc/services r,
-  @{run}/netns/* r,
-
-  owner @{PROC}/@{pid}/task/@{tid}/comm rw,
+  capability net_admin,
 
   # Site-specific additions and overrides. See local/README for details.
-  include if exists <local/usr.lib.frr.bgpd>
+  include if exists <local/pim6d>
 }
