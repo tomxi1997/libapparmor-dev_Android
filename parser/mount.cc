@@ -349,7 +349,8 @@ int is_valid_mnt_cond(const char *name, int src)
 static unsigned int extract_flags(struct value_list **list, unsigned int *inv)
 {
 	unsigned int flags = 0, invflags = 0;
-	*inv = 0;
+	if (inv)
+		*inv = 0;
 
 	struct value_list *entry, *tmp, *prev = NULL;
 	list_for_each_safe(*list, entry, tmp) {
