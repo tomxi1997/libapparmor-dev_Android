@@ -25,6 +25,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <limits>
+
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
@@ -587,10 +589,11 @@ void CHFA::weld_file_to_policy(CHFA &file_chfa, size_t &new_start,
 		//           to repeat
 		assert(accept.size() == old_base_size);
 		accept.resize(accept.size() + file_chfa.accept.size());
-		size_t size = policy_perms.size();
+		assert(policy_perms.size() < std::numeric_limits<ssize_t>::max());
+		ssize_t size = (ssize_t) policy_perms.size();
 		policy_perms.resize(size*2 + file_perms.size());
 		// shift and double the policy perms
-		for (size_t i = size - 1; size >= 0; i--) {
+		for (ssize_t i = size - 1; i >= 0; i--) {
 			policy_perms[i*2] = policy_perms[i];
 			policy_perms[i*2 + 1] = policy_perms[i];
 		}
