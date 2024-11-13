@@ -436,7 +436,6 @@ extern void free_var_string(struct var_string *var);
 extern void warn_uppercase(void);
 extern int is_blacklisted(const char *name, const char *path);
 extern struct value_list *new_value_list(char *value);
-extern struct value_list *dup_value_list(struct value_list *list);
 extern void free_value_list(struct value_list *list);
 extern void print_value_list(struct value_list *list);
 extern struct cond_entry *new_cond_entry(char *name, int eq, struct value_list *list);
