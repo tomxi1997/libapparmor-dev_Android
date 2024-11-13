@@ -142,8 +142,10 @@ static void process_entries(const void *nodep, VISIT value, int level unused)
 		}
 		if (dup) {
 			dup->alias_ignore = true;
-			/* adds to the front of the list, list iteratition
-			 * will skip it
+			/* The original entry->next is in dup->next, so we don't lose
+			 * any of the original elements of the linked list. Also, by
+			 * setting dup->alias_ignore, we trigger the check at the start
+			 * of the loop, skipping the new entry we just inserted.
 			 */
 			entry->next = dup;
 
