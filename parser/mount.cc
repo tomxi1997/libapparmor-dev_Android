@@ -363,11 +363,7 @@ static unsigned int extract_flags(struct value_list **list, unsigned int *inv)
 			       " => req: 0x%x inv: 0x%x\n",
 			       entry->value, mnt_opts_table[i].set,
 			       mnt_opts_table[i].clear, flags, invflags);
-			if (prev)
-				prev->next = tmp;
-			if (entry == *list)
-				*list = tmp;
-			entry->next = NULL;
+			list_remove_at(*list, prev, entry);
 			free_value_list(entry);
 		} else
 			prev = entry;
