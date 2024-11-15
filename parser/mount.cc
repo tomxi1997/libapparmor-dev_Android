@@ -349,7 +349,8 @@ int is_valid_mnt_cond(const char *name, int src)
 static unsigned int extract_flags(struct value_list **list, unsigned int *inv)
 {
 	unsigned int flags = 0, invflags = 0;
-	*inv = 0;
+	if (inv)
+		*inv = 0;
 
 	struct value_list *entry, *tmp, *prev = NULL;
 	list_for_each_safe(*list, entry, tmp) {
@@ -362,11 +363,7 @@ static unsigned int extract_flags(struct value_list **list, unsigned int *inv)
 			       " => req: 0x%x inv: 0x%x\n",
 			       entry->value, mnt_opts_table[i].set,
 			       mnt_opts_table[i].clear, flags, invflags);
-			if (prev)
-				prev->next = tmp;
-			if (entry == *list)
-				*list = tmp;
-			entry->next = NULL;
+			list_remove_at(*list, prev, entry);
 			free_value_list(entry);
 		} else
 			prev = entry;

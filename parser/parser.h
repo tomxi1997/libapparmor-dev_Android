@@ -242,17 +242,6 @@ do {						\
 	len;			\
 })
 
-#define list_find_prev(LIST, ENTRY)	\
-({					\
-	typeof(ENTRY) tmp, prev = NULL;	\
-	list_for_each((LIST), tmp) {	\
-		if (tmp == (ENTRY))	\
-			break;		\
-		prev = tmp;		\
-	}				\
-	prev;				\
-})
-
 #define list_pop(LIST)				\
 ({						\
 	typeof(LIST) _entry = (LIST);		\
@@ -269,12 +258,6 @@ do {						\
 	if ((ENTRY) == (LIST))					\
 		(LIST) = (ENTRY)->next;				\
 	(ENTRY)->next = NULL;					\
-
-#define list_remove(LIST, ENTRY)				\
-do {								\
-	typeof(ENTRY) prev = list_find_prev((LIST), (ENTRY));	\
-	list_remove_at((LIST), prev, (ENTRY));			\
-} while (0)
 
 
 #define DUP_STRING(orig, new, field, fail_target) \
