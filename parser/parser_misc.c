@@ -1208,37 +1208,6 @@ void free_value_list(struct value_list *list)
 	}
 }
 
-struct value_list *dup_value_list(struct value_list *list)
-{
-	struct value_list *entry, *dup, *head = NULL;
-	char *value;
-
-	list_for_each(list, entry) {
-		value = NULL;
-		if (list->value) {
-			value = strdup(list->value);
-			if (!value)
-				goto fail2;
-		}
-		dup = new_value_list(value);
-		if (!dup)
-			goto fail;
-		if (head)
-			list_append(head, dup);
-		else
-			head = dup;
-	}
-
-	return head;
-
-fail:
-	free(value);
-fail2:
-	free_value_list(head);
-
-	return NULL;
-}
-
 void print_value_list(struct value_list *list)
 {
 	struct value_list *entry;
