@@ -337,6 +337,7 @@ class capability_lookup {
 				return add_cap_result::ERROR;
 			}
 			new_entry.cap = cap;
+			new_entry.backmap = 0;
 			new_entry.flags = flag;
 			try {
 				this->add_capability_table_entry_raw(new_entry);
