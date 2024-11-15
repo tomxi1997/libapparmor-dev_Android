@@ -90,6 +90,7 @@ SRC=access.c \
     chmod.c \
     chown.c \
     clone.c \
+    complain.c \
     coredump.c \
     deleted.c \
     environ.c \
@@ -242,6 +243,7 @@ TESTS=aa_exec \
       changehat_misc \
       chdir \
       clone \
+      complain \
       coredump \
       deleted \
       e2e \
