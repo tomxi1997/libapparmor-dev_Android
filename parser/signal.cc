@@ -23,7 +23,7 @@
 #include <iomanip>
 #include <string>
 #include <sstream>
-#include <map>
+#include <unordered_map>
 
 #include "parser.h"
 #include "profile.h"
@@ -35,7 +35,7 @@
 #define MAXRT_SIG 32		/* Max RT above MINRT_SIG */
 
 /* Signal names mapped to and internal ordering */
-static struct signal_map { const char *name; int num; } signal_map[] = {
+static unordered_map<string, int> signal_map = {
 	{"hup",		1},
 	{"int",		2},
 	{"quit",	3},
@@ -71,9 +71,6 @@ static struct signal_map { const char *name; int num; } signal_map[] = {
 	{"sys",		31},
 	{"emt",		32},
 	{"exists",	35},
-
-	/* terminate */
-	{NULL,		0}
 };
 
 /* this table is ordered post sig_map[sig] mapping */
@@ -132,12 +129,14 @@ int find_signal_mapping(const char *sig)
 			return -1;
 		return MINRT_SIG + n;
 	} else {
-		for (int i = 0; signal_map[i].name; i++) {
-			if (strcmp(sig, signal_map[i].name) == 0)
-				return signal_map[i].num;
+		// Can't use string_view because that requires C++17
+		auto sigmap = signal_map.find(string(sig));
+		if (sigmap != signal_map.end()) {
+			return sigmap->second;
+		} else {
+			return -1;
 		}
 	}
-	return -1;
 }
 
 void signal_rule::extract_sigs(struct value_list **list)
