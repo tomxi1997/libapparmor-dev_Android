@@ -96,7 +96,7 @@ static const char *const sig_names[MAXMAPPED_SIG + 1] = {
 	"chld",
 	"cont",
 	"stop",
-	"stp",
+	"tstp",
 	"ttin",
 	"ttou",
 	"urg",
@@ -105,7 +105,7 @@ static const char *const sig_names[MAXMAPPED_SIG + 1] = {
 	"vtalrm",
 	"prof",
 	"winch",
-	"io",
+	"io", // SIGIO == SIGPOLL
 	"pwr",
 	"sys",
 	"emt",
