@@ -55,7 +55,8 @@ static struct signal_map { const char *name; int num; } signal_map[] = {
 	{"chld",	17},
 	{"cont",	18},
 	{"stop",	19},
-	{"stp",		20},
+	{"stp",		20}, // parser's previous name for SIGTSTP
+	{"tstp",	20},
 	{"ttin",	21},
 	{"ttou",	22},
 	{"urg",		23},
@@ -64,7 +65,8 @@ static struct signal_map { const char *name; int num; } signal_map[] = {
 	{"vtalrm",	26},
 	{"prof",	27},
 	{"winch",	28},
-	{"io",		29},
+	{"io",		29}, // SIGIO == SIGPOLL
+	{"poll",	29},
 	{"pwr",		30},
 	{"sys",		31},
 	{"emt",		32},
