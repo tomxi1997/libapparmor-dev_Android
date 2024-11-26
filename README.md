@@ -113,7 +113,7 @@ $ export PYTHON_VERSIONS=python3
 
 Note that, in general, the build steps can be run in parallel, while the test
 steps do not gain much speedup from being run in parallel. This is because the
-test steps spawn a handful of long-lived test runner processes that mostly that
+test steps spawn a handful of long-lived test runner processes that mostly
 run their tests sequentially and do not use `make`'s jobserver. Moreover,
 process spawning overhead constitutes a significant part of test runtime, so
 reworking the test harnesses to add parallelism (which would be a major undertaking
