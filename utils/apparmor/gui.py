@@ -2,7 +2,12 @@ import os
 import tkinter as tk
 import tkinter.ttk as ttk
 import subprocess
-import ttkthemes
+
+try:  # We use tk without themes as a fallback which makes the GUI uglier but functional.
+    import ttkthemes
+except ImportError:
+    ttkthemes = None
+
 
 import apparmor.aa as aa
 
@@ -26,17 +31,17 @@ class GUI:
             os._exit(1)
 
         self.result = None
-        style = ttkthemes.ThemedStyle(self.master)
-        style.theme_use(interface_theme)
-        self.bg_color = style.lookup('TLabel', 'background')
-        self.fg_color = style.lookup('TLabel', 'foreground')
-        self.master.configure(background=self.bg_color)
-
+        if ttkthemes:
+            style = ttkthemes.ThemedStyle(self.master)
+            style.theme_use(interface_theme)
+            self.bg_color = style.lookup('TLabel', 'background')
+            self.fg_color = style.lookup('TLabel', 'foreground')
+            self.master.configure(background=self.bg_color)
         self.label_frame = ttk.Frame(self.master, padding=(20, 10))
         self.label_frame.pack()
 
-        self.button_frame = ttk.Frame(self.master, padding=(0, 10))
-        self.button_frame.pack()
+        self.button_frame = ttk.Frame(self.master, padding=(10, 10))
+        self.button_frame.pack(fill='x', expand=True)
 
     def show(self):
         self.master.mainloop()
@@ -59,8 +64,9 @@ class ShowMoreGUI(GUI):
 
         self.master.title(_('AppArmor - More info'))
 
-        self.label = tk.Label(self.label_frame, background=self.bg_color, foreground=self.fg_color,
-                              text=self.msg, anchor='w', justify=tk.LEFT, wraplength=460)
+        self.label = tk.Label(self.label_frame, text=self.msg, anchor='w', justify=tk.LEFT, wraplength=460)
+        if ttkthemes:
+            self.label.configure(background=self.bg_color, foreground=self.fg_color)
         self.label.pack(pady=(0, 10) if not self.profile_found else (0, 0))
 
         if self.profile_found:
@@ -78,6 +84,75 @@ class ShowMoreGUI(GUI):
 
             self.do_nothing_button = ttk.Button(self.master, text=_('Do nothing'), command=self.master.destroy)
             self.do_nothing_button.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+
+class ShowMoreGUIAggregated(GUI):
+    def __init__(self, summary, detailed_text, clean_rules):
+        self.summary = summary
+        self.detailed_text = detailed_text
+        self.clean_rules = clean_rules
+
+        self.states = {
+            'summary': {
+                'msg': self.summary,
+                'btn_left': _('Show more details'),
+                'btn_right': _('Show rules only')
+            },
+            'detailed': {
+                'msg': self.detailed_text,
+                'btn_left': _('Show summary'),
+                'btn_right': _('Show rules only')
+            },
+            'rules_only': {
+                'msg': self.clean_rules,
+                'btn_left': _('Show more details'),
+                'btn_right': _('Show summary')
+            }
+        }
+
+        self.state = 'rules_only'
+
+        super().__init__()
+
+        self.master.title(_('AppArmor - More info'))
+
+        self.text_display = tk.Text(self.label_frame, height=40, width=100, wrap='word')
+        if ttkthemes:
+            self.text_display.configure(background=self.bg_color, foreground=self.fg_color)
+        self.text_display.insert('1.0', self.states[self.state]['msg'])
+        self.text_display['state'] = 'disabled'
+
+        self.scrollbar = ttk.Scrollbar(self.label_frame, command=self.text_display.yview)
+        self.text_display['yscrollcommand'] = self.scrollbar.set
+
+        self.scrollbar.pack(side='right', fill='y')
+        self.text_display.pack(side='left', fill='both', expand=True)
+
+        self.btn_left = ttk.Button(self.button_frame, text=self.states[self.state]['btn_left'], width=1, command=lambda: self.change_view('btn_left'))
+        self.btn_left.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+
+        self.btn_right = ttk.Button(self.button_frame, text=self.states[self.state]['btn_right'], width=1, command=lambda: self.change_view('btn_right'))
+        self.btn_right.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
+        self.btn_allow_all = ttk.Button(self.button_frame, text="Allow All", width=1, command=lambda: self.set_result('allow_all'))
+        self.btn_allow_all.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+
+        for i in range(3):
+            self.button_frame.grid_columnconfigure(i, weight=1)
+
+    def change_view(self, action):
+
+        if action == 'btn_left':
+            self.state = 'detailed' if self.state != 'detailed' else 'summary'
+        elif action == 'btn_right':
+            self.state = 'rules_only' if self.state != 'rules_only' else 'summary'
+
+        self.btn_left['text'] = self.states[self.state]['btn_left']
+        self.btn_right['text'] = self.states[self.state]['btn_right']
+        self.text_display['state'] = 'normal'
+        self.text_display.delete('1.0', 'end')
+        self.text_display.insert('1.0', self.states[self.state]['msg'])
+        self.text_display['state'] = 'disabled'
 
 
 class UsernsGUI(GUI):
@@ -143,11 +218,11 @@ class ErrorGUI(GUI):
 
         self.master.title('AppArmor Error')
 
-        # Create label to display the error message
-        self.label = ttk.Label(self.label_frame, background=self.bg_color, text=self.msg, wraplength=460)
+        self.label = ttk.Label(self.label_frame, text=self.msg, wraplength=460)
+        if ttkthemes:
+            self.label.configure(background=self.bg_color)
         self.label.pack()
 
-        # Create a button to close the dialog
         self.button = ttk.Button(self.button_frame, text='OK', command=self.destroy)
         self.button.pack()
 

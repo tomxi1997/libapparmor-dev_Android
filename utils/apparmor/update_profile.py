@@ -29,7 +29,7 @@ def create_userns(template_path, name, bin_path, profile_path, decision):
 
 def add_to_profile(rule, profile_name):
     aa.init_aa()
-    aa.read_profiles()
+    aa.update_profiles()
 
     rule_type, rule_class = ReadLog('', '', '').get_rule_type(rule)
 
@@ -48,11 +48,42 @@ def usage(is_help):
     print('This tool is a low level tool - do not use it directly')
     print('{} create_userns <template_path> <name> <bin_path> <profile_path> <decision>'.format(sys.argv[0]))
     print('{} add_rule <rule> <profile_name>'.format(sys.argv[0]))
-
+    print('{} from_file <file>'.format(sys.argv[0]))
     if is_help:
         exit(0)
     else:
         exit(1)
+
+
+def create_from_file(file_path):
+    with open(file_path) as file:
+        for line in file:
+            args = line[:-1].split('\t')
+            if len(args) > 1:
+                command = args[0]
+            else:
+                command = None  # Handle the case where no command is provided
+            do_command(command, args)
+
+
+def do_command(command, args):
+    match command:
+        case 'from_file':
+            if not len(args) == 2:
+                usage(False)
+            create_from_file(args[1])
+        case 'create_userns':
+            if not len(args) == 6:
+                usage(False)
+            create_userns(args[1], args[2], args[3], args[4], args[5])
+        case 'add_rule':
+            if not len(args) == 3:
+                usage(False)
+            add_to_profile(args[1], args[2])
+        case 'help':
+            usage(True)
+        case _:
+            usage(False)
 
 
 def main():
@@ -61,19 +92,7 @@ def main():
     else:
         command = None  # Handle the case where no command is provided
 
-    match command:
-        case 'create_userns':
-            if not len(sys.argv) == 7:
-                usage(False)
-            create_userns(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
-        case 'add_rule':
-            if not len(sys.argv) == 4:
-                usage(False)
-            add_to_profile(sys.argv[2], sys.argv[3])
-        case 'help':
-            usage(True)
-        case _:
-            usage(False)
+    do_command(command, sys.argv[1:])
 
 
 if __name__ == '__main__':
