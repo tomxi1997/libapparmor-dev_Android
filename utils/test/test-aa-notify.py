@@ -184,7 +184,7 @@ class AANotifyTest(AANotifyBase):
         expected_return_code = 0
         expected_output_1 = \
 '''usage: aa-notify [-h] [-p] [--display DISPLAY] [-f FILE] [-l] [-s NUM] [-v]
-                 [-u USER] [-w NUM] [--prompt-filter PF] [--debug]
+                 [-u USER] [-w NUM] [-m] [--prompt-filter PF] [--debug]
                  [--filter.profile PROFILE] [--filter.operation OPERATION]
                  [--filter.name NAME] [--filter.denied DENIED]
                  [--filter.family FAMILY] [--filter.socket SOCKET]
@@ -207,6 +207,8 @@ Display AppArmor notifications or messages for DENIED entries.
   -u USER, --user USER  user to drop privileges to when not using sudo
   -w NUM, --wait NUM    wait NUM seconds before displaying notifications (with
                         -p)
+  -m, --merge-notifications
+                        Merge notification for improved readability (with -p)
   --prompt-filter PF    kind of operations which display a popup prompt
   --debug               debug mode
 
