@@ -111,13 +111,21 @@ $ export PYTHON_VERSION=3
 $ export PYTHON_VERSIONS=python3
 ```
 
+Note that, in general, the build steps can be run in parallel, while the test
+steps do not gain much speedup from being run in parallel. This is because the
+test steps spawn a handful of long-lived test runner processes that mostly
+run their tests sequentially and do not use `make`'s jobserver. Moreover,
+process spawning overhead constitutes a significant part of test runtime, so
+reworking the test harnesses to add parallelism (which would be a major undertaking
+for the harnesses that do not have it already) would not produce much of a speedup.
+
 ### libapparmor:
 
 ```
 $ cd ./libraries/libapparmor
 $ sh ./autogen.sh
 $ sh ./configure --prefix=/usr --with-perl --with-python # see below
-$ make
+$ make -j $(nproc)
 $ make check
 $ make install
 ```
@@ -130,7 +138,7 @@ generate Ruby bindings to libapparmor.]
 
 ```
 $ cd binutils
-$ make
+$ make -j $(nproc)
 $ make check
 $ make install
 ```
@@ -139,7 +147,8 @@ $ make install
 
 ```
 $ cd parser
-$ make		# depends on libapparmor having been built first
+$ make -j $(nproc)		# depends on libapparmor having been built first
+$ make -j $(nproc) tst_binaries		# a build step of make check that can be parallelized
 $ make check
 $ make install
 ```
@@ -149,7 +158,7 @@ $ make install
 
 ```
 $ cd utils
-$ make
+$ make -j $(nproc)
 $ make check PYFLAKES=/usr/bin/pyflakes3
 $ make install
 ```
@@ -158,7 +167,7 @@ $ make install
 
 ```
 $ cd changehat/mod_apparmor
-$ make		# depends on libapparmor having been built first
+$ make -j $(nproc)		# depends on libapparmor having been built first
 $ make install
 ```
 
@@ -167,7 +176,7 @@ $ make install
 
 ```
 $ cd changehat/pam_apparmor
-$ make		# depends on libapparmor having been built first
+$ make -j $(nproc)		# depends on libapparmor having been built first
 $ make install
 ```
 
@@ -207,7 +216,7 @@ To run:
 ### Regression tests - using apparmor userspace installed on host
 ```
 $ cd tests/regression/apparmor (requires root)
-$ make USE_SYSTEM=1
+$ make -j $(nproc) USE_SYSTEM=1
 $ sudo make tests USE_SYSTEM=1
 $ sudo bash open.sh -r	 # runs and saves the last testcase from open.sh
 ```
@@ -220,7 +229,7 @@ $ sudo bash open.sh -r	 # runs and saves the last testcase from open.sh
 
 ```
 $ cd tests/regression/apparmor (requires root)
-$ make
+$ make -j $(nproc)
 $ sudo make tests
 $ sudo bash open.sh -r	 # runs and saves the last testcase from open.sh
 ```
