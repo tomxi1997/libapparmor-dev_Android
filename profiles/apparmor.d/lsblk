@@ -18,8 +18,6 @@ profile lsblk /usr/bin/lsblk {
   include <abstractions/consoles>
   include <abstractions/nameservice-strict>
 
-  capability dac_read_search,
-
   @{sys}/block/ r,
   @{sys}/class/block/ r,
   @{sys}/dev/block/ r,
