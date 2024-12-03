@@ -44,8 +44,6 @@ class AANamedRegexTest(AATest):
 
         for exp in expected:
             match = matches.group(exp)
-            if match:
-                match = match
             self.assertEqual(match, expected[exp], 'Group {} mismatch in rule {}'.format(exp, line))
 
 
