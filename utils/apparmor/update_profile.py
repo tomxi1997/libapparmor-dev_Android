@@ -67,23 +67,22 @@ def create_from_file(file_path):
 
 
 def do_command(command, args):
-    match command:
-        case 'from_file':
-            if not len(args) == 2:
-                usage(False)
-            create_from_file(args[1])
-        case 'create_userns':
-            if not len(args) == 6:
-                usage(False)
-            create_userns(args[1], args[2], args[3], args[4], args[5])
-        case 'add_rule':
-            if not len(args) == 3:
-                usage(False)
-            add_to_profile(args[1], args[2])
-        case 'help':
-            usage(True)
-        case _:
+    if command == 'from_file':
+        if not len(args) == 2:
             usage(False)
+        create_from_file(args[1])
+    elif command == 'create_userns':
+        if not len(args) == 6:
+            usage(False)
+        create_userns(args[1], args[2], args[3], args[4], args[5])
+    elif command == 'add_rule':
+        if not len(args) == 3:
+            usage(False)
+        add_to_profile(args[1], args[2])
+    elif command == 'help':
+        usage(True)
+    else:
+        usage(False)
 
 
 def main():
