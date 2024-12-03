@@ -15,21 +15,26 @@ include <tunables/global>
 
 profile lsblk /usr/bin/lsblk {
   include <abstractions/base>
+  include <abstractions/consoles>
+  include <abstractions/nameservice-strict>
+
+  capability dac_read_search,
 
   @{sys}/block/ r,
+  @{sys}/class/block/ r,
   @{sys}/dev/block/ r,
+
   @{sys}/devices/pci[0-9]*:[0-9]*/** r,
   @{sys}/devices/virtual/** r,
+  @{sys}/devices/platform/** r,
 
-  @{run}/mount/** r,
+  /dev/sr[0-9]* rk,
+
   @{run}/udev/data/** r,
 
+  @{run}/mount/** r,
   @{PROC}/swaps r,
-  @{PROC}/*/mountinfo r,
-
-  /etc/nsswitch.conf r,
-  /etc/passwd r,
-  /etc/group r,
+  owner @{PROC}/@{pid}/mountinfo r,
 
   include if exists <local/lsblk>
 }
