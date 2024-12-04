@@ -449,7 +449,7 @@ fi
 
 	while /bin/true
 	do
-		imagename=$testexec
+		imagename=$test
 
 		# image/subhat allows overriding of the default
 		# imagename which is based on the testname
