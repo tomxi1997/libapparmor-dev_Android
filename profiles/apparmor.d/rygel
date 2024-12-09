@@ -22,9 +22,8 @@ profile rygel /usr/bin/rygel {
   include <abstractions/freedesktop.org>
   include <abstractions/nameservice>
 
-  # gst-plugin-scanner tries to probe various things but is not really needed so
-  # deny it
-  deny file r /{dev,sys}/{,**},
+  # gst-plugin-scanner tries to probe various things and inherit fds
+  file r /dev/{,urandom,null},
 
   file r @{etc_ro}/rygel.conf,
 
@@ -93,8 +92,8 @@ profile rygel /usr/bin/rygel {
     include <abstractions/base>
     include <abstractions/dbus-session-strict>
 
-    # is not actually needed so deny it
-    deny file r /{dev,sys}/{,**},
+    # gst-plugin-scanner tries to probe various things and inherit fds
+    file r /dev/{,urandom,null},
 
     file mr /usr/libexec/rygel/mx-extract,
     file r  /usr/share/gupnp-dlna-2.0/dlna-profiles/{,*},
