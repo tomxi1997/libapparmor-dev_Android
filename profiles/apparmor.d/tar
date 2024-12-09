@@ -21,9 +21,9 @@ profile tar /usr/bin/tar {
   # Sometimes tar does not invoke bzip2/gzip/etc directly, but rather by
   # executing, for instance, `/bin/sh -c bzip2`. Since we don't know what
   # shell the user might be running (and hence, where /bin/sh might be
-  # pointing to in case it's a symlink), we let tar execute anything,
+  # pointing to in case it's a symlink), let tar execute the link,
   # but we only let the child process execute one of the "safe" binaries.
-  /** -> Cx shell,
+  /bin/sh Cxl -> shell,
 
   profile shell {
     /usr/bin/{bzip2,gzip,lzip,lzop,xz,zstd} PUx,
