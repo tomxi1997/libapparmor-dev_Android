@@ -16,9 +16,8 @@ profile tar /usr/bin/tar {
 
   file rwl /**,
 
-  # tar can be made to filter archives through an arbitrary program,
-  # restrict it to any binary from "safe" locations
-  /{bin,opt,snap,usr}/** PUx,
+  # tar can be made to filter archives through an arbitrary program
+  /** mrwlkix,
 
   # used to extract user files as root
   capability chown,
