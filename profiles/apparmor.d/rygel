@@ -106,6 +106,7 @@ profile rygel /usr/bin/rygel {
   profile mx-extract {
     include <abstractions/base>
     include <abstractions/dbus-session-strict>
+    include <abstractions/freedesktop.org>
 
     # gst-plugin-scanner tries to probe various things and inherit fds
     file r /dev/{,urandom,null},
