@@ -14,21 +14,20 @@ include <tunables/global>
 profile tar /usr/bin/tar {
   include <abstractions/base>
 
-  file rw /**,
+  file rwl /**,
 
-  /usr/bin/{bzip2,gzip,lzip,lzop,xz,zstd} PUx,
+  # tar can be made to filter archives through an arbitrary program,
+  # restrict it to any binary from "safe" locations
+  /{bin,opt,snap,usr}/** PUx,
 
-  # Sometimes tar does not invoke bzip2/gzip/etc directly, but rather by
-  # executing, for instance, `/bin/sh -c bzip2`. Since we don't know what
-  # shell the user might be running (and hence, where /bin/sh might be
-  # pointing to in case it's a symlink), let tar execute the link,
-  # but we only let the child process execute one of the "safe" binaries.
-  /bin/sh Cxl -> shell,
+  # used to extract user files as root
+  capability chown,
 
-  profile shell {
-    /usr/bin/{bzip2,gzip,lzip,lzop,xz,zstd} PUx,
-  }
+  # used to compress user files as root
+  capability dac_override,
+  capability dac_read_search,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/tar>
 }
+
