@@ -55,6 +55,11 @@ profile rygel /usr/bin/rygel {
   # dconf access
   owner rw @{run}/user/*/dconf/user,
 
+  # liborc temporary files from gstreamer Orc Integration
+  owner file mrw @{HOME}/orcexec.*,
+  owner file mrw @{run}/user/*/orcexec.*,
+  owner file mrw /tmp/orcexec.*,
+
   network netlink dgram,
 
   # dbus access
