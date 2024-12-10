@@ -22,8 +22,10 @@ profile rygel /usr/bin/rygel {
   include <abstractions/freedesktop.org>
   include <abstractions/nameservice>
 
-  # gst-plugin-scanner tries to probe various things and inherit fds
+  # gst-plugin-scanner tries to probe various things and inherit fds but
+  # explicitly deny others as they are not needed and are noisy
   file r /dev/{,urandom,null},
+  deny file /{dev,sys}/** r,
 
   file r @{etc_ro}/rygel.conf,
 
