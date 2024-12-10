@@ -95,6 +95,14 @@ profile rygel /usr/bin/rygel {
       path="/org/gnome/Rygel{,1}"
       peer=(label=unconfined),
 
+  # allow to enumerate mounts
+  dbus (send)
+    bus=session
+    path="/org/gtk/vfs/mounttracker"
+    interface="org.gtk.vfs.MountTracker"
+    member="ListMountableInfo"
+    peer=(label=unconfined),
+
   profile mx-extract {
     include <abstractions/base>
     include <abstractions/dbus-session-strict>
