@@ -123,6 +123,11 @@ profile rygel /usr/bin/rygel {
 
     # media files - see tunables/rygel
     owner file r  @{rygel_media_dirs}/{,**},
+
+    # liborc temporary files from gstreamer Orc Integration
+    owner file mrw @{HOME}/orcexec.*,
+    owner file mrw @{run}/user/*/orcexec.*,
+    owner file mrw /tmp/orcexec.*,
   }
 
   # Site-specific additions and overrides. See local/README for details.
