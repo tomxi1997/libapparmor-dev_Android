@@ -39,7 +39,7 @@ profile rygel /usr/bin/rygel {
   file r /usr/share/gupnp-av/{,*},
   file r /usr/share/rygel/{,**},
 
-  owner file rw  @{HOME}/.cache/gstreamer-1.0/*,
+  owner file rw  @{HOME}/.cache/gstreamer-1.0/{,*},
 
   # config and cache
   owner file rwk @{HOME}/.cache/rygel/{,*},
