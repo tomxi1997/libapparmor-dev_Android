@@ -22,10 +22,13 @@ profile rygel /usr/bin/rygel {
   include <abstractions/freedesktop.org>
   include <abstractions/nameservice>
 
-  # gst-plugin-scanner tries to probe various things and inherit fds but
-  # explicitly deny others as they are not needed and are noisy
+  # gst-plugin-scanner tries to probe various things including display devices
+  # etc so allow those that are harmless but deny the rest
   file r /dev/{,urandom,null},
-  deny file /{dev,sys}/** r,
+  file r /sys/,
+  file r /sys/{bus,class}/,
+  file r /sys/class/drm/,
+  deny file r /dev/dri/{,**},
 
   file r @{etc_ro}/rygel.conf,
 
@@ -108,10 +111,16 @@ profile rygel /usr/bin/rygel {
     include <abstractions/dbus-session-strict>
     include <abstractions/freedesktop.org>
 
-    # gst-plugin-scanner tries to probe various things and inherit fds
+    # gst-plugin-scanner tries to probe various things including display devices
+    # etc so allow those that are harmless but deny the rest
     file r /dev/{,urandom,null},
+    file r /sys/,
+    file r /sys/{bus,class}/,
+    file r /sys/class/drm/,
+    deny file r /dev/dri/{,**},
 
     file mr /usr/libexec/rygel/mx-extract,
+
     file r  /usr/share/gupnp-dlna-2.0/dlna-profiles/{,*},
 
     file mrix /usr/lib/@{multiarch}/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner,
