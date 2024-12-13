@@ -21,6 +21,9 @@ profile tar /usr/bin/tar {
   /opt/** Pix,
   @{HOME}/bin/* Pix,
 
+  # tar can compress/extract files over rsh/ssh
+  network stream,
+
   # used to extract user files as root
   capability chown,
 
