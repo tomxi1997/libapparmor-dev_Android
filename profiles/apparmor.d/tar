@@ -17,7 +17,9 @@ profile tar /usr/bin/tar {
   file rwl /**,
 
   # tar can be made to filter archives through an arbitrary program
-  /** mrwlkix,
+  /{usr{/local,},}/{bin,sbin}/* Pix,
+  /opt/** Pix,
+  @{HOME}/bin/* Pix,
 
   # used to extract user files as root
   capability chown,
