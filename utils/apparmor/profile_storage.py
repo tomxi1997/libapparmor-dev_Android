@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 #    Copyright (C) 2013 Kshitij Gupta <kgupta8592@gmail.com>
-#    Copyright (C) 2014-2021 Christian Boltz <apparmor@cboltz.de>
+#    Copyright (C) 2014-2024 Christian Boltz <apparmor@cboltz.de>
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -77,6 +77,7 @@ class ProfileStorage:
 
         data['filename'] = ''
         data['logprof_suggest'] = ''  # set in abstractions that should be suggested by aa-logprof
+        data['parent'] = ''  # parent profile, or '' for top-level profiles and external hats
         data['name'] = ''
         data['attachment'] = ''
         data['xattrs'] = ''
@@ -221,11 +222,13 @@ class ProfileStorage:
                     _('%(profile)s profile in %(file)s contains syntax errors in line %(line)s: a child profile inside another child profile is not allowed.')
                     % {'profile': profile, 'file': file, 'line': lineno + 1})
 
+            parent = profile
             hat = matches['profile']
             prof_or_hat_name = hat
             pps_set_hat_external = False
 
         else:  # stand-alone profile
+            parent = ''
             profile = matches['profile']
             prof_or_hat_name = profile
             if len(profile.split('//')) > 2:
@@ -241,6 +244,7 @@ class ProfileStorage:
 
         prof_storage = cls(profile, hat, cls.__name__ + '.parse()')
 
+        prof_storage['parent'] = parent
         prof_storage['name'] = prof_or_hat_name
         prof_storage['filename'] = file
         prof_storage['external'] = pps_set_hat_external

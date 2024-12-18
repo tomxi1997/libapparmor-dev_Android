@@ -35,9 +35,9 @@ def add_to_profile(rule, profile_name):
 
     rule_obj = rule_class.create_instance(rule)
 
-    if profile_name not in aa.aa or profile_name not in aa.aa[profile_name]:
+    if not aa.active_profiles.profile_exists(profile_name):
         exit(_('Cannot find {} in profiles').format(profile_name))
-    aa.aa[profile_name][profile_name][rule_type].add(rule_obj, cleanup=True)
+    aa.active_profiles[profile_name][rule_type].add(rule_obj, cleanup=True)
 
     # Save changes
     aa.write_profile_ui_feedback(profile_name)

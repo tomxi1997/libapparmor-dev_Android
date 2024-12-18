@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # ------------------------------------------------------------------
 #
-#    Copyright (C) 2018 Christian Boltz <apparmor@cboltz.de>
+#    Copyright (C) 2018-2024 Christian Boltz <apparmor@cboltz.de>
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -12,6 +12,7 @@
 import os
 import shutil
 import unittest
+from copy import deepcopy
 
 import apparmor.aa
 from apparmor.common import AppArmorBug, AppArmorException
@@ -37,29 +38,50 @@ class TestAdd_profile(AATest):
         self.assertEqual(str(self.pl), "\n".join(['', '<ProfileList>', '', '</ProfileList>', '']))
 
     def testAdd_profile_1(self):
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
+        self.assertTrue(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.assertEqual(self.pl.profile_names, {'foo': '/etc/apparmor.d/bin.foo'})
         self.assertEqual(self.pl.attachments, {'/bin/foo': {'f': '/etc/apparmor.d/bin.foo', 'p': 'foo', 're': AARE('/bin/foo', True)}})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
+        # test __getitem__()
+        self.assertEqual(self.pl['foo'], self.dummy_profile)
+        with self.assertRaises(AppArmorBug):
+            self.pl['does_not_exist']
+
     def testAdd_profile_2(self):
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.pl.add_profile('/etc/apparmor.d/bin.foo', None, '/bin/foo', self.dummy_profile)
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertTrue(self.pl.profile_exists('/bin/foo'))
         self.assertEqual(self.pl.profile_names, {})
         self.assertEqual(self.pl.attachments, {'/bin/foo': {'f': '/etc/apparmor.d/bin.foo', 'p': '/bin/foo', 're': AARE('/bin/foo', True)}})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['/bin/foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profile_3(self):
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', None, self.dummy_profile)
+        self.assertTrue(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         self.assertEqual(self.pl.profile_names, {'foo': '/etc/apparmor.d/bin.foo'})
         self.assertEqual(self.pl.attachments, {})
         self.assertEqual(self.pl.profiles_in_file('/etc/apparmor.d/bin.foo'), ['foo'])
         self.assertEqual(str(self.pl), '\n<ProfileList>\n/etc/apparmor.d/bin.foo\n</ProfileList>\n')
 
     def testAdd_profileError_1(self):
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
         with self.assertRaises(AppArmorBug):
             self.pl.add_profile('', 'foo', '/bin/foo', self.dummy_profile)  # no filename
+        self.assertFalse(self.pl.profile_exists('foo'))
+        self.assertFalse(self.pl.profile_exists('/bin/foo'))
 
     def testAdd_profileError_2(self):
         with self.assertRaises(AppArmorBug):
@@ -98,6 +120,25 @@ class TestAdd_profile(AATest):
     def testAdd_profileError_wrong_prof_type(self):
         with self.assertRaises(AppArmorBug):
             self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', 'wrong_type')
+
+    def testReplace_profile_1(self):
+        self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
+        # test if replacement works (but without checking if the content of the actual profile really changed)
+        self.pl.replace_profile('foo', self.dummy_profile)
+        with self.assertRaises(AppArmorBug):
+            self.pl.replace_profile('/bin/foo', self.dummy_profile)
+
+    def testReplace_profile_error_1(self):
+        self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
+        dummy2 = deepcopy(self.dummy_profile)
+        dummy2['attachment'] = 'changed'
+        with self.assertRaises(AppArmorBug):
+            self.pl.replace_profile('foo', dummy2)  # changed attachment
+
+    def testReplace_profile_error_2(self):
+        self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo', '/bin/foo', self.dummy_profile)
+        with self.assertRaises(AppArmorBug):
+            self.pl.replace_profile('foo', [])  # [] is wrong type
 
 
 class TestFilename_from_profile_name(AATest):
@@ -467,8 +508,11 @@ class TestGet_profile_and_childs(AATest):
         self.pl.add_profile('/etc/apparmor.d/bin.foo', 'foo//xy',  '/bin/foo//xy',  self.dummy_profile)
 
         expected = ['foo', 'foo//bar', 'foo//xy']
-
         self.assertEqual(list(self.pl.get_profile_and_childs('foo')), expected)
+
+        # while on it, also test get_all_profiles()
+        all_profiles = ['bafoo', 'foo', 'foobar', 'foo//bar', 'foo//xy']
+        self.assertEqual(list(self.pl.get_all_profiles()), all_profiles)
 
 
 setup_aa(apparmor.aa)

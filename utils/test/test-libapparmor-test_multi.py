@@ -219,7 +219,8 @@ def logfile_to_profile(logfile):
 
     apparmor.aa.load_sev_db()
 
-    profile, hat = split_name(parsed_event['profile'])
+    full_profile = parsed_event['profile']
+    profile, hat = split_name(full_profile)
 
     dummy_prof = apparmor.aa.ProfileStorage('TEST DUMMY for active_profiles', profile_dummy_file, 'logprof_to_profile()')
 
@@ -227,10 +228,10 @@ def logfile_to_profile(logfile):
     # if profile.startswith('/'):
     #     apparmor.aa.active_profiles.add_profile(profile_dummy_file, profile, profile, dummy_prof)
     # else:
-    apparmor.aa.active_profiles.add_profile(profile_dummy_file, profile, '', dummy_prof)
 
-    apparmor.aa.aa[profile] = {}
-    apparmor.aa.aa[profile][hat] = dummy_prof
+    # create (only) the main/parent profile in active_profiles so that ask_exec() can add an exec rule to it
+    # If we ever add tests that create an exec rule in a child profile (for nested childs), we'll have to create the child profile that will get the grandchild exec rule
+    apparmor.aa.active_profiles.add_profile(profile_dummy_file, profile, '', dummy_prof)
 
     log_reader = ReadLog(logfile, apparmor.aa.active_profiles, '')
     hashlog = log_reader.read_log('')
@@ -243,13 +244,14 @@ def logfile_to_profile(logfile):
     # ask_exec modifies 'aa', not log_dict. "transfer" exec rules from 'aa' to log_dict
     for tmpaamode in hashlog:
         for tmpprofile in hashlog[tmpaamode]:
-            for rule_obj in apparmor.aa.aa[profile][hat]['file'].rules:
+            for rule_obj in apparmor.aa.active_profiles[profile]['file'].rules:  # when the log contains an exec event, the exec event/rule will be in the parent profile, therefore check 'profile', not 'full_profile'.
+                # Also, at this point, tmpprofile might contain a child profile - which we didn't create in active_profiles, so trying to read it would trigger an error.
                 log_dict[tmpaamode][tmpprofile]['file'].add(rule_obj)
 
     if list(log_dict[aamode].keys()) != [parsed_event['profile']]:
         raise Exception('log_dict[{}] contains unexpected keys. Logfile: {}, keys {}'.format(aamode, logfile, log_dict.keys()))
 
-    if '//' in parsed_event['profile']:
+    if '//' in full_profile:
         # log event for a child profile means log_dict only contains the child profile
         # initialize parent profile in log_dict as ProfileStorage to ensure writing the profile doesn't fail
         # (in "normal" usage outside of this test, log_dict will not be handed over to serialize_profile())

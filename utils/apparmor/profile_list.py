@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------
-#    Copyright (C) 2018-2020 Christian Boltz <apparmor@cboltz.de>
+#    Copyright (C) 2018-2024 Christian Boltz <apparmor@cboltz.de>
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -52,6 +52,12 @@ class ProfileList:
         name = type(self).__name__
         return '\n<%s>\n%s\n</%s>\n' % (name, '\n'.join(self.files), name)
 
+    def __getitem__(self, key):
+        if key in self.profiles:
+            return self.profiles[key]
+        else:
+            raise AppArmorBug('attempt to read unknown profile %s' % key)
+
     def init_file(self, filename):
         if self.files.get(filename):
             return  # don't re-initialize / overwrite existing data
@@ -63,7 +69,7 @@ class ProfileList:
         for rule in preamble_ruletypes:
             self.files[filename][rule] = preamble_ruletypes[rule]['ruleset']()
 
-    def add_profile(self, filename, profile_name, attachment, prof_storage=None):
+    def add_profile(self, filename, profile_name, attachment, prof_storage):
         """Add the given profile and attachment to the list"""
 
         if not filename:
@@ -72,7 +78,7 @@ class ProfileList:
         if not profile_name and not attachment:
             raise AppArmorBug('Neither profile name or attachment given')
 
-        if type(prof_storage) is not ProfileStorage and prof_storage is not None:
+        if type(prof_storage) is not ProfileStorage:
             raise AppArmorBug('Invalid profile type: %s' % type(prof_storage))
 
         if profile_name in self.profile_names:
@@ -100,6 +106,21 @@ class ProfileList:
         else:
             self.files[filename]['profiles'].append(attachment)
             self.profiles[attachment] = prof_storage
+
+    def replace_profile(self, profile_name, prof_storage):
+        """Replace the given profile in the profile list"""
+
+        if profile_name not in self.profiles:
+            raise AppArmorBug('Attempt to replace non-existing profile %s' % profile_name)
+
+        if type(prof_storage) is not ProfileStorage:
+            raise AppArmorBug('Invalid profile type: %s' % type(prof_storage))
+
+        # we might lift this restriction later, but for now, forbid changing the attachment instead of updating self.attachments
+        if self.profiles[profile_name]['attachment'] != prof_storage['attachment']:
+            raise AppArmorBug('Attempt to change atttachment while replacing profile %s - original: %s, new: %s' % (profile_name, self.profiles[profile_name]['attachment'], prof_storage['attachment']))
+
+        self.profiles[profile_name] = prof_storage
 
     def add_rule(self, filename, ruletype, rule):
         """Store the given rule for the given profile filename preamble"""
@@ -167,6 +188,9 @@ class ProfileList:
             deleted += self.files[filename][r_type].delete_duplicates(None)  # None means not to check includes -- TODO check if this makes sense for all preamble rule types
 
         return deleted
+
+    def get_all_profiles(self):
+        return self.profiles
 
     def get_profile_and_childs(self, profile_name):
         found = {}
@@ -282,6 +306,9 @@ class ProfileList:
                         % {'var': var, 'profile': filename, 'file': incname})
 
         return merged_variables
+
+    def profile_exists(self, profile_name):
+        return profile_name in self.profiles
 
     def profiles_in_file(self, filename):
         """Return list of profiles in the given file"""

@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # ------------------------------------------------------------------
 #
-#    Copyright (C) 2014-2021 Christian Boltz
+#    Copyright (C) 2014-2024 Christian Boltz
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -16,7 +16,7 @@ import unittest
 import apparmor.aa  # needed to set global vars in some tests
 from apparmor.aa import (
     change_profile_flags, check_for_apparmor, create_new_profile, get_file_perms, get_interpreter_and_abstraction, get_profile_flags,
-    merged_to_split, parse_profile_data, propose_file_rules, set_options_audit_mode, set_options_owner_mode, split_to_merged)
+    merged_to_split, parse_profile_data, propose_file_rules, set_options_audit_mode, set_options_owner_mode)
 from apparmor.aare import AARE
 from apparmor.common import AppArmorBug, AppArmorException, is_skippable_file
 from apparmor.rule.file import FileRule
@@ -515,6 +515,21 @@ class AaTest_parse_profile_data(AATest):
         self.assertEqual(prof['/foo']['filename'], 'somefile')
         self.assertEqual(prof['/foo']['flags'], None)
 
+    def test_parse_parent_and_child(self):
+        prof = parse_profile_data('profile /foo {\nprofile /bar {\n}\n}\n'.split(), 'somefile', False, False)
+
+        self.assertEqual(list(prof.keys()), ['/foo', '/foo///bar'])
+
+        self.assertEqual(prof['/foo']['parent'], '')
+        self.assertEqual(prof['/foo']['name'], '/foo')
+        self.assertEqual(prof['/foo']['filename'], 'somefile')
+        self.assertEqual(prof['/foo']['flags'], None)
+
+        self.assertEqual(prof['/foo///bar']['parent'], '/foo')
+        self.assertEqual(prof['/foo///bar']['name'], '/bar')
+        self.assertEqual(prof['/foo///bar']['filename'], 'somefile')
+        self.assertEqual(prof['/foo///bar']['flags'], None)
+
     def test_parse_duplicate_profile(self):
         with self.assertRaises(AppArmorException):
             # file contains two profiles with the same name
@@ -744,25 +759,6 @@ class AaTest_merged_to_split(AATest):
         self.assertEqual(list(result.keys()), [profile])
         self.assertEqual(list(result[profile].keys()), [hat])
         self.assertTrue(result[profile][hat])
-
-
-class AaTest_split_to_merged(AATest):
-    tests = (
-        (("foo", "foo"), "foo"),
-        (("foo", "bar"), "foo//bar"),
-    )
-
-    def _run_test(self, params, expected):
-        old = {}
-        profile = params[0]
-        hat = params[1]
-
-        old[profile] = {}
-        old[profile][hat] = True  # simplified, but enough for this test
-        result = split_to_merged(old)
-
-        self.assertEqual(list(result.keys()), [expected])
-        self.assertTrue(result[expected])
 
 
 setup_aa(apparmor.aa)
