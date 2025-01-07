@@ -21,3 +21,5 @@
   /etc/host.conf r,
   /etc/hosts r,
   /etc/frr/agentx rw,
+
+  include if exists <abstractions/frr-snmp.d>
