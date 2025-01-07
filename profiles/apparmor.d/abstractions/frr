@@ -60,4 +60,4 @@
   # Tests for staticd, bgpd, ospfd
   owner /tmp/*.log w,
 
-include if exists <abstractions/frr.d>
+  include if exists <abstractions/frr.d>
