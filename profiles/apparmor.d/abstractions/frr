@@ -46,16 +46,16 @@
   /var/log/frr/@{profile_name} w,
 
   # Crash logs https://docs.frrouting.org/en/latest/setup.html#crash-logs
-  /var/tmp/frr/ w,
-  /var/tmp/frr/@{profile_name}.@{pid}/ w,
-  /var/tmp/frr/@{profile_name}.@{pid}/crashlog w,
-  /var/tmp/frr/@{profile_name}.@{pid}/logbuf.@{tid} rw,
+  owner /var/tmp/frr/ w,
+  owner /var/tmp/frr/@{profile_name}.@{pid}/ w,
+  owner /var/tmp/frr/@{profile_name}.@{pid}/crashlog w,
+  owner /var/tmp/frr/@{profile_name}.@{pid}/logbuf.@{tid} rw,
 
   # Program output (working directory)
-  / r,
-  /tmp/ r,
-  /tmp/topotests/ r,
-  /tmp/topotests/** rw,
+  owner / r,
+  owner /tmp/ r,
+  owner /tmp/topotests/ r,
+  owner /tmp/topotests/** rw,
 
   # Tests for staticd, bgpd, ospfd
-  /tmp/*.log w,
+  owner /tmp/*.log w,

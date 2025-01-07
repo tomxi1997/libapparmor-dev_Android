@@ -29,9 +29,9 @@ profile ospfd /usr/lib/frr/ospfd flags=(attach_disconnected) {
   /var/lib/frr/ospfd.json{,.sav} rw,
 
   # For OSPFv3
-  /var/tmp/frr/ospfd-3.@{pid}/ w,
-  /var/tmp/frr/ospfd-3.@{pid}/crashlog w,
-  /var/tmp/frr/ospfd-3.@{pid}/logbuf.@{tid} rw,
+  owner /var/tmp/frr/ospfd-3.@{pid}/ w,
+  owner /var/tmp/frr/ospfd-3.@{pid}/crashlog w,
+  owner /var/tmp/frr/ospfd-3.@{pid}/logbuf.@{tid} rw,
 
   @{run}/frr/ospfd-3.pid rwk,
   @{run}/frr/ospfd-3.vty rw,
