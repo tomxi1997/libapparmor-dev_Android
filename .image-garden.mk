@@ -31,6 +31,7 @@ packages:
 - python3-tk
 - python3-ttkthemes
 - swig
+- toybox
 endef
 
 # Ubuntu shares cloud-init profile with Debian.
