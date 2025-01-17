@@ -14,6 +14,13 @@ include <tunables/global>
 profile tar /usr/bin/tar {
   include <abstractions/base>
 
+  # used to extract user files as root
+  capability chown,
+
+  # used to compress user files as root
+  capability dac_override,
+  capability dac_read_search,
+
   file rwl /**,
 
   # tar can be made to filter archives through an arbitrary program
@@ -23,13 +30,6 @@ profile tar /usr/bin/tar {
 
   # tar can compress/extract files over rsh/ssh
   network stream,
-
-  # used to extract user files as root
-  capability chown,
-
-  # used to compress user files as root
-  capability dac_override,
-  capability dac_read_search,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/tar>
