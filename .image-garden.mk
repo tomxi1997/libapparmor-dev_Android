@@ -8,6 +8,7 @@
 define DEBIAN_CLOUD_INIT_USER_DATA_TEMPLATE
 $(CLOUD_INIT_USER_DATA_TEMPLATE)
 packages:
+- apache2-dev
 - attr
 - autoconf
 - autoconf-archive
@@ -20,6 +21,7 @@ packages:
 - flex
 - gettext
 - libdbus-1-dev
+- libpam0g-dev
 - libtool
 - liburing-dev
 - pkg-config
@@ -40,6 +42,7 @@ UBUNTU_CLOUD_INIT_USER_DATA_TEMPLATE=$(DEBIAN_CLOUD_INIT_USER_DATA_TEMPLATE)
 define OPENSUSE_tumbleweed_CLOUD_INIT_USER_DATA_TEMPLATE
 $(CLOUD_INIT_USER_DATA_TEMPLATE)
 packages:
+- apache2-devel
 - attr
 - autoconf
 - autoconf-archive
@@ -56,6 +59,7 @@ packages:
 - libtool
 - liburing2-devel
 - make
+- pam-devel
 - pkg-config
 - python3-devel
 - python3-flake8
