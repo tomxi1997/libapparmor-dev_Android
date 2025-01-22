@@ -14,6 +14,7 @@ import os
 import pwd
 import signal
 import subprocess
+import sys
 import time
 import unittest
 from tempfile import NamedTemporaryFile
@@ -603,6 +604,9 @@ setup_all_loops(__name__)
 if __name__ == '__main__':
     if 'APPARMOR_NOTIFY' in os.environ:
         aanotify_bin = [os.environ['APPARMOR_NOTIFY']]
+
+    if sys.executable:
+        aanotify_bin = [sys.executable] + aanotify_bin
 
     if '__AA_CONFDIR' in os.environ:
         aanotify_bin = aanotify_bin + ['--configdir', os.getenv('__AA_CONFDIR')]
