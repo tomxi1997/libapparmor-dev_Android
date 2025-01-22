@@ -602,7 +602,7 @@ setup_aa(aa)  # Wrapper for aa.init_aa()
 setup_all_loops(__name__)
 if __name__ == '__main__':
     if 'APPARMOR_NOTIFY' in os.environ:
-        aanotify_bin = os.environ['APPARMOR_NOTIFY']
+        aanotify_bin = [os.environ['APPARMOR_NOTIFY']]
 
     if '__AA_CONFDIR' in os.environ:
         aanotify_bin = aanotify_bin + ['--configdir', os.getenv('__AA_CONFDIR')]
