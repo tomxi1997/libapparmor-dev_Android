@@ -18,7 +18,6 @@ profile tinyproxy /usr/bin/tinyproxy {
   include <abstractions/base>
   include <abstractions/nameservice>
 
-  file rw /run/tinyproxy/tinyproxy.pid,
   # to provide flexibility, when run as a root tinyproxy may need to run files
   # owned by other users and similarly when run as an unprivileged user allow
   # tinyproxy to bind to privileged ports
@@ -29,9 +28,16 @@ profile tinyproxy /usr/bin/tinyproxy {
   file mr /usr/bin/tinyproxy,
 
   file r @{etc_ro}/tinyproxy/tinyproxy.conf,
-  file rw /var/log/tinyproxy/tinyproxy.log,
+  # tinyproxy.conf allows to configure the locations of various files that will
+  # be written to by tinyproxy including ErrorFile, DefaultErrorFile, LogFile,
+  # and StatFile as well as PidFile. This profile allows tinyproxy to write to
+  # the default locations but if these are changed in the configuration file,
+  # additional rules should be added to the /etc/apparmor.d/local/tinyproxy file
+  # to allow this access
+  file rw /run/tinyproxy/tinyproxy.pid,  # PidFile
+  file rw /var/log/tinyproxy/tinyproxy.log, # LogFile
 
-  file r /usr/share/tinyproxy/*,
+  file r /usr/share/tinyproxy/*, #ErrorFile, DefaultErrorFile, StatFile etc
 
   network inet stream,
   network inet6 stream,
