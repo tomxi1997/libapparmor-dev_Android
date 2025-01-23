@@ -18,11 +18,12 @@ profile tinyproxy /usr/bin/tinyproxy {
   include <abstractions/base>
   include <abstractions/nameservice>
 
-  # to provide flexibility, when run as a root tinyproxy may need to run files
-  # owned by other users and similarly when run as an unprivileged user allow
-  # tinyproxy to bind to privileged ports
+  # to provide flexibility, when run as root tinyproxy may need to read files
+  # owned by other users
   capability dac_override,
   capability dac_read_search,
+  # also tinyproxy may be configured to bind to a privileged port so ensure we
+  # allow this as well
   capability net_bind_service,
 
   file mr /usr/bin/tinyproxy,
