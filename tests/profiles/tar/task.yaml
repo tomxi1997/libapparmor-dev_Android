@@ -5,7 +5,7 @@ execute: |
     echo "test" > file.txt
     tar -czf archive.tar file.txt
     rm file.txt
-    # extract archive, assert contets are correct
+    # extract archive, assert content is correct
     tar -xzf archive.tar
     test "$(cat file.txt)" = "test"
 
