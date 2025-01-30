@@ -1,0 +1,32 @@
+abi <abi/4.0>,
+include <tunables/global>
+
+profile /usr/bin/fusermount3 {
+  include <abstractions/base>
+  include <abstractions/nameservice>
+
+  capability sys_admin,
+
+  audit mount, 
+  audit umount,
+
+  mount fstype=fuse options=(nosuid) -> /home/*/mounts/,
+  mount fstype=fuseblk options=(nosuid) -> /home/*/mounts/,
+  mount fstype=fuse options=(nosuid) -> /run/user/*/mounts/,
+  mount fstype=fuseblk options=(nosuid) -> /run/user/*/mounts/,
+  mount fstype=fuse options=(nosuid) -> /mnt/,
+  mount fstype=fuseblk options=(nosuid) -> /mnt/,
+  mount fstype=fuse options=(nosuid) -> /media/,
+  mount fstype=fuseblk options=(nosuid) -> /media/,
+
+  /dev/fuse rw,
+
+  # Allow reading of fuse configuration files
+  @{etc_rw}/fuse.conf r,
+  @{PROC}/@{pid}/mounts r,
+
+  # Allow only read and execute permissions for the binary itself
+  /usr/bin/fusermount3 mr,
+
+  include if exists <local/fusermount3>
+}
