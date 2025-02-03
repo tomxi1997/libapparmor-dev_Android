@@ -28,7 +28,8 @@ profile tar /usr/bin/tar {
   /opt/** ix,
 
   # tar can compress/extract files over rsh/ssh
-  network stream,
+  network stream ip=127.0.0.1,
+  network stream ip=::1,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/tar>
