@@ -26,7 +26,6 @@ profile tar /usr/bin/tar {
   # tar can be made to filter archives through an arbitrary program
   /{usr{/local,},}/{bin,sbin}/* ix,
   /opt/** ix,
-  @{HOME}/bin/* ix,
 
   # tar can compress/extract files over rsh/ssh
   network stream,
