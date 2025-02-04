@@ -1,0 +1,10 @@
+summary: smoke test for the tinyproxy profile
+execute: |
+    # enable tinyproxy service
+    systemctl start tinyproxy
+
+    # check is running
+    systemctl is-active tinyproxy
+
+    # tinyproxy system service is confined
+    cat /proc/$(pidof tinyproxy)/attr/apparmor/current | MATCH 'tinyproxy (enforce)'
