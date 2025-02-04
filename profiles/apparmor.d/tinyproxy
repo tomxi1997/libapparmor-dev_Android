@@ -16,7 +16,7 @@ include <tunables/global>
 
 profile tinyproxy /usr/bin/tinyproxy {
   include <abstractions/base>
-  include <abstractions/nameservice>
+  include <abstractions/nameservice-strict>
 
   # to provide flexibility, when run as root tinyproxy may need to read files
   # owned by other users
