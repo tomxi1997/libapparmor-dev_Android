@@ -38,9 +38,10 @@
   # MGMT Backend Server https://docs.frrouting.org/en/latest/mgmtd.html#mgmtd-backend-interface
   @{run}/frr/mgmtd_be.sock rw,
 
-  # Daemon config
+  # Daemon config https://docs.frrouting.org/en/latest/basic.html
   /etc/frr/ r, 
   /etc/frr/@{profile_name}.conf rw,
+  /etc/frr/frr.conf rw,
 
   # Log file
   /var/log/frr/ w,
