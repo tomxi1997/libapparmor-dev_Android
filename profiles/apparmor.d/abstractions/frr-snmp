@@ -12,9 +12,10 @@
 
   abi <abi/4.0>,
 
+  include <abstractions/openssl>
+
   /etc/snmp/frr.conf r,
   /etc/snmp/snmp.conf r,
-  /etc/ssl/openssl.cnf r,
   /usr/share/snmp/mibs/{,*} r,
   /var/lib/mibs/iana/{,*} r,
   /var/lib/mibs/ietf/{,*} r,
