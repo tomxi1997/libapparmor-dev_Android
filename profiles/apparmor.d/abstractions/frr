@@ -23,6 +23,7 @@
   capability dac_override,
   capability dac_read_search,
 
+  / r,
   @{run}/frr/ r,
   @{run}/frr/zserv.api rw,
   @{run}/frr/@{profile_name}.pid rwk,
@@ -39,7 +40,7 @@
 
   # Daemon config
   /etc/frr/ r, 
-  /etc/frr/@{profile_name}.conf{,.*} rwl,
+  /etc/frr/@{profile_name}.conf rw,
 
   # Log file
   /var/log/frr/ w,
@@ -50,14 +51,5 @@
   owner /var/tmp/frr/@{profile_name}.@{pid}/ w,
   owner /var/tmp/frr/@{profile_name}.@{pid}/crashlog w,
   owner /var/tmp/frr/@{profile_name}.@{pid}/logbuf.@{tid} rw,
-
-  # Program output (working directory)
-  owner / r,
-  owner /tmp/ r,
-  owner /tmp/topotests/ r,
-  owner /tmp/topotests/** rw,
-
-  # Tests for staticd, bgpd, ospfd
-  owner /tmp/*.log w,
 
   include if exists <abstractions/frr.d>
