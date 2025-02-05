@@ -43,9 +43,9 @@
   /etc/frr/@{profile_name}.conf rw,
   /etc/frr/frr.conf rw,
 
-  # Log file
+  # Log file https://docs.frrouting.org/en/latest/basic.html
   /var/log/frr/ w,
-  /var/log/frr/@{profile_name} w,
+  /var/log/frr/* w,
 
   # Crash logs https://docs.frrouting.org/en/latest/setup.html#crash-logs
   /var/tmp/frr/ w,
