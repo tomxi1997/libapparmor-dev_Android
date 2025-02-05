@@ -46,7 +46,7 @@
   /var/log/frr/@{profile_name} w,
 
   # Crash logs https://docs.frrouting.org/en/latest/setup.html#crash-logs
-  owner /var/tmp/frr/ w,
+  /var/tmp/frr/ w,
   owner /var/tmp/frr/@{profile_name}.@{pid}/ w,
   owner /var/tmp/frr/@{profile_name}.@{pid}/crashlog w,
   owner /var/tmp/frr/@{profile_name}.@{pid}/logbuf.@{tid} rw,
