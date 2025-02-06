@@ -18,6 +18,9 @@ profile tinyproxy /usr/bin/tinyproxy {
   include <abstractions/base>
   include <abstractions/nameservice-strict>
 
+  # allow to drop privileges
+  capability setgid,
+
   # to provide flexibility, when run as root tinyproxy may need to read files
   # owned by other users
   capability dac_override,
