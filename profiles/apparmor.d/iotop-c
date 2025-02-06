@@ -2,7 +2,7 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-/usr/sbin/iotop-c {
+profile iotop-c /usr/sbin/iotop-c {
   include <abstractions/base>
   include <abstractions/bash>
   include <abstractions/nameservice>
