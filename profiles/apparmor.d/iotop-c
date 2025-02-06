@@ -18,7 +18,7 @@ profile iotop-c /usr/sbin/iotop-c {
   owner /proc/ r,
   owner /proc/sys/kernel/task_delayacct rw,
   owner /proc/vmstat r,
-  owner /root/.config/iotop/iotoprc rw,
+  owner @{HOME}/.config/iotop/iotoprc rw,
 
 }
 
