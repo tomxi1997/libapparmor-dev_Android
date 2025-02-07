@@ -9,17 +9,17 @@ profile fusermount3 /usr/bin/fusermount3 {
   capability sys_admin,
   capability dac_read_search,
 
-  mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> @{HOME}/{**,},
-  mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> /mnt/{**,},
+  mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> @{HOME}/**/,
+  mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> /mnt/**/,
   mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> @{run}/user/@{uid}/*/,
-  mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> /media/*/*/,
-  mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> /tmp/{**,},
+  mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> /media/**/,
+  mount fstype=@{fuse_types} options=(nosuid,nodev,rw) -> /tmp/**/,
  
-  umount @{HOME}/{**,},
-  umount /mnt/{**,},
+  umount @{HOME}/**/,
+  umount /mnt/**/,
   umount @{run}/user/@{uid}/*/,
-  umount /media/*/*/,
-  umount /tmp/{**,},
+  umount /media/**/,
+  umount /tmp/**/,
 
   /dev/fuse rw,
 
