@@ -111,6 +111,7 @@ SRC=access.c \
     complain.c \
     coredump.c \
     deleted.c \
+    disconnected_mount_complain.c \
     environ.c \
     env_check.c \
     exec.c \
@@ -277,6 +278,7 @@ TESTS=aa_exec \
       complain \
       coredump \
       deleted \
+      disconnected_mount_complain \
       e2e \
       environ \
       exec \
