@@ -1,4 +1,14 @@
 summary: smoke test for the tinyproxy profile
+prepare: |
+    # start a simple local web server which we will use later for functional
+    # tests
+    python3 -m http.server 1>/dev/null 2>&1 &
+    echo $! > .http-server.pid
+
+restore: |
+    kill $(cat .http-server.pid)
+    rm -f .http-server.pid
+
 execute: |
     # restart tinyproxy service as it may already be running
     systemctl restart tinyproxy
@@ -16,9 +26,9 @@ execute: |
     # previous test it could possibly being done by systemd instead
     "$SPREAD_PATH"/tests/bin/actual-profile-of tinyproxy | MATCH 'tinyproxy \(enforce\)'
 
-    # interact with tinyproxy to make sure it works and we get the expected
-    # response headers
-    http_proxy=http://localhost:8888 curl -s -i http://neverssl.com | MATCH '^Via: .*tinyproxy'
+    # interact with local web server via tinyproxy to make sure it works and we
+    # get the expected response headers
+    env http_proxy=http://localhost:8888 curl -s -i http://localhost:8000/task.yaml | MATCH '^Via: .*tinyproxy'
 
     # also check we can get the statistics page
-    http_proxy=http://localhost:8888 curl -s http://tinyproxy.stats | MATCH 'tinyproxy .* statistics'
+    env http_proxy=http://localhost:8888 curl -s http://tinyproxy.stats | MATCH 'tinyproxy .* statistics'
