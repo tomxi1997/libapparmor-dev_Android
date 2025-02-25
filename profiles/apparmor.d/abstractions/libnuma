@@ -1,0 +1,22 @@
+# vim:syntax=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2025 Canonical Ltd.
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+  abi <abi/4.0>,
+
+  # this abstract profile can be included by applications that are
+  # dynamically linked to libnuma
+  # libnuma defines the function num_init() as the .init function
+  # to be called by the runtime linker (ld) when libnuma is loaded
+
+  @{sys}/devices/system/cpu/node/ r,
+
+  # Include additions to the abstraction
+  include if exists <abstractions/libnuma.d>
