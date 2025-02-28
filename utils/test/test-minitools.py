@@ -18,7 +18,7 @@ import sys
 import unittest
 
 import apparmor.aa as apparmor
-from common_test import AATest, read_file, write_file, setup_aa, setup_all_loops, skip_active_profiles
+from common_test import AATest, read_file, write_file, setup_aa, setup_all_loops
 
 # Use the same python as the one this script is being run with
 python_interpreter = sys.executable
@@ -35,7 +35,7 @@ class MinitoolsTest(AATest):
         # Should be the set of cleanprofile
         self.profile_dir = self.tmpdir + '/profiles'
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir,
-                        symlinks=True, ignore=shutil.ignore_patterns(*skip_active_profiles))
+                        symlinks=True)
 
         apparmor.profile_dir = self.profile_dir
 
