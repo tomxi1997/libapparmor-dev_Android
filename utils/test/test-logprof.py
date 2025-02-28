@@ -81,7 +81,10 @@ class TestLogprof(AATest):
 
         for line in jlog:
             if line.startswith('o '):  # read from stdout
-                output = self.process.stdout.readline().decode("utf-8").strip()
+                while True:
+                    output = self.process.stdout.readline().decode("utf-8").strip()
+                    if "skipping unparseable" not in output:
+                        break
                 self.assertEqual(output, line[2:])
 
             elif line.startswith('i '):  # send to stdin
@@ -124,7 +127,10 @@ class TestLogprof(AATest):
         self.process = self._startLogprof(auditlog, 'allow-all')
 
         for line in slog:
-            output = self.process.stdout.readline().decode("utf-8").strip()
+            while True:
+                output = self.process.stdout.readline().decode("utf-8").strip()
+                if not output.startswith("skipping unparseable"):
+                    break
             self.assertEqual(output, line)
         # give logprof some time to write the updated profile and terminate
         self.process.wait(timeout=0.3)
