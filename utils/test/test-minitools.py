@@ -66,6 +66,17 @@ class MinitoolsTest(AATest):
             None,
             'Audit flag could not be removed in profile ' + self.local_profilename)
 
+    def test_audit_with_garbage(self):
+        # Inject a garbage profile into the profile directory and check that
+        # test_audit still passes
+        with open(self.profile_dir + "/duchamps_readymades", "w") as fil:
+            fil.write("a porcelain toilet rotated on its side and signed")
+
+        try:
+            self.test_audit()
+        finally:
+            os.unlink(self.profile_dir + "/duchamps_readymades")
+
     def test_complain(self):
         # Set test profile to complain mode and check if it was correctly set
         subprocess.check_output(
