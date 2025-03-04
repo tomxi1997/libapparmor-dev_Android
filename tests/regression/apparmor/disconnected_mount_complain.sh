@@ -25,6 +25,7 @@ bin=$pwd
 
 shadowed_target=$tmpdir/shadowed
 shadowing_dir=$tmpdir/shadowing
+backing_file_fsmount="$tmpdir/loop_file"
 
 mkdir "$shadowed_target"
 # Complications because true is also a shell builtin
@@ -37,7 +38,19 @@ echo "corn" > "${shadowing_dir}/cornh"
 
 genprofile -C cap:sys_admin
 runchecktest "Complain mode profile and disconnected path mounts (mount(2))" pass $tmpdir old
-runchecktest "Complain mode profile and disconnected path mounts (open_tree(2))" pass $tmpdir new
+runchecktest "Complain mode profile and disconnected path mounts (open_tree(2))" pass $tmpdir open_tree
 
 rm -r "$shadowed_target"
 rm -r "$shadowing_dir"
+
+
+fallocate -l 512K "${backing_file_fsmount}"
+mkfs.ext4 -F "${backing_file_fsmount}" > /dev/null 2> /dev/null
+
+losetup -f "${backing_file_fsmount}" || fatalerror 'Unable to set up loop device'
+loop_device="$(/sbin/losetup -n -O NAME -l -j "${backing_file_fsmount}")"
+
+runchecktest "Complain mode profile and disconnected path mounts (fsmount(2))" pass $tmpdir fsmount "${loop_device}"
+
+losetup -d "${loop_device}"
+rm "${backing_file_fsmount}"

@@ -184,7 +184,7 @@ int test_with_old_style_mount() {
     return rc;
 }
 
-int test_with_new_style_mount() {
+int test_with_open_tree_mount() {
     DEBUG_PRINTF("Unshare mount ns\n");
     // Call unshare() to step into a new mount namespace
     if (unshare(CLONE_NEWNS) == -1) {
@@ -231,7 +231,6 @@ int test_with_new_style_mount() {
      * audit log inspection
      */
     if (move_status == -1 && errno != EINVAL) {
-        // TODO: fails due to invalid arg
         perror("FAIL: could not attach nested bind mount");
         rc |= 1;
         goto cleanup_mount;
@@ -275,9 +274,95 @@ int test_with_new_style_mount() {
     return rc;
 }
 
+int test_with_fsmount(const char *source) {
+    DEBUG_PRINTF("Unshare mount ns\n");
+    // Call unshare() to step into a new mount namespace
+    if (unshare(CLONE_NEWNS) == -1) {
+        perror("FAIL: could not unshare mount namespace");
+        return 1;
+    }
+
+    DEBUG_PRINTF("Fsopen ext4\n");
+    int fsopen_fd = fsopen("ext4", FSOPEN_CLOEXEC);
+    if (fsopen_fd == -1) {
+        perror("FAIL: fsopen() failed");
+        return -1;
+    }
+    int rc = 0;
+
+    DEBUG_PRINTF("Fsconfig source\n");
+    int fsconfig_src_status = fsconfig(fsopen_fd, FSCONFIG_SET_STRING, "source", source, 0);
+    if (fsconfig_src_status == -1) {
+        perror("FAIL: fsconfig() of source failed");
+        rc |= 1;
+        goto fsopen_cleanup;
+    }
+
+    DEBUG_PRINTF("Fsconfig create\n");
+    int fsconfig_creat_status = fsconfig(fsopen_fd, FSCONFIG_CMD_CREATE, NULL, NULL, 0);
+    if (fsconfig_creat_status == -1) {
+        perror("FAIL: fsconfig() create failed");
+        rc |= 1;
+        goto fsopen_cleanup;
+    }
+
+    // The LSM lacks hooks for this so no audit gets generated for fsmount
+    DEBUG_PRINTF("Fsmount\n");
+    int fsmount_fd = fsmount(fsopen_fd, FSMOUNT_CLOEXEC, 0);
+    if (fsmount_fd == -1) {
+        perror("FAIL: fsmount() failed");
+        rc |= 1;
+        goto fsopen_cleanup;
+    }
+
+    DEBUG_PRINTF("Create and populate shell script in fsmount\n");
+    int inner_fd_w = openat(fsmount_fd, "absolute_cinema.sh",
+        O_CREAT | O_WRONLY | O_CLOEXEC, 0755);
+    if (inner_fd_w == -1) {
+        perror("FAIL: could not create file in fsmount");
+        rc |= 1;
+        goto fsmount_cleanup;
+    }
+    if (write(inner_fd_w, "#!/bin/sh\ntrue\n", 16) == -1) {
+        perror("FAIL: could not write to file in fsmount");
+        rc |= 1;
+        close(inner_fd_w);
+        goto fsmount_cleanup;
+    }
+
+    close(inner_fd_w);
+    // This fd must not be O_CLOEXEC or the execveat will fail with ENOENT
+    int inner_fd_path = openat(fsmount_fd, "absolute_cinema.sh", O_PATH);
+    if (inner_fd_path == -1) {
+        perror("FAIL: could not reopen file in fsmount");
+        rc |= 1;
+        goto file_cleanup;
+    }
+
+    DEBUG_PRINTF("Execute shell script in fsmount\n");
+    char* const script_argv[] = {"absolute_cinema.sh", NULL};
+    if (fork_and_execvat(inner_fd_path, script_argv) != 0) {
+        perror("FAIL: script execution in fsmount failure");
+        rc |= 1;
+        goto file_cleanup;
+    }
+
+    file_cleanup:
+    close(inner_fd_path);
+    fsmount_cleanup:
+    close(fsmount_fd);
+    fsopen_cleanup:
+    close(fsopen_fd);
+
+    if (rc == 0) {
+        fprintf(stderr, "PASS\n");
+    }
+    return rc;
+}
+
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        fprintf(stderr, "FAIL: Usage: disconnected_mount_complain [WORKDIR] (old|new)");
+    if (argc != 3 && argc != 4) {
+        fprintf(stderr, "FAIL: Usage: disconnected_mount_complain [WORKDIR] (old|open_tree|fsmount) [device_if_fsmount]");
         return 1;
     }
     #ifdef DEBUG
@@ -300,10 +385,16 @@ int main(int argc, char **argv) {
     }
     if (strcmp(argv[2], "old") == 0) {
         return test_with_old_style_mount();
-    } else if (strcmp(argv[2], "new") == 0) {
-        return test_with_new_style_mount();
+    } else if (strcmp(argv[2], "open_tree") == 0) {
+        return test_with_open_tree_mount();
+    } else if (strcmp(argv[2], "fsmount") == 0) {
+        if (argc != 4) {
+            fprintf(stderr, "FAIL: Usage: disconnected_mount_complain [WORKDIR] fsmount device");
+            return 1;
+        }
+        return test_with_fsmount(argv[3]);
     } else {
-        fprintf(stderr, "FAIL: second argument must be 'old' or 'new'\n");
+        fprintf(stderr, "FAIL: second argument must be 'old', 'open_tree', or 'fsmount'\n");
         return 1;
     }
 }
