@@ -1782,6 +1782,11 @@ static int abi_features_base(struct aa_features **features, char *filename, bool
 	if (search) {
 		if (strcmp(filename, "kernel") == 0)
 			return aa_features_new_from_kernel(features);
+		else if (strcmp(filename, "default") == 0) {
+			return aa_features_new_from_string(features,
+								default_features_abi,
+								strlen(default_features_abi));
+		}
 		f = search_path(filename, &fullpath, &cached);
 		PDEBUG("abi lookup '%s' -> '%s' f %p cached %d\n", filename, fullpath, f, cached);
 		if (!f && cached) {
