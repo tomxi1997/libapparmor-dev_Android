@@ -21,6 +21,7 @@ profile fusermount3 /usr/bin/fusermount3 {
   mount fstype=@{fuse_types} options=(nosuid,nodev,ro) -> @{run}/user/@{uid}/*/,
   mount fstype=@{fuse_types} options=(nosuid,nodev,ro) -> /media/**/,
   mount fstype=@{fuse_types} options=(nosuid,nodev,ro) -> /tmp/**/,
+  mount fstype=@{fuse_types} options=(nosuid,nodev,ro) -> /cvmfs/**/,
 
   umount @{HOME}/**/,
   umount /mnt/{,**/},
