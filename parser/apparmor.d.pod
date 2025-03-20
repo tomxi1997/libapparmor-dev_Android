@@ -80,7 +80,7 @@ B<ALIAS RULE> = 'alias' I<ABS PATH> '-E<gt>' I<REWRITTEN ABS PATH> ','
 
 B<INCLUDE> = ( '#include' | 'include' ) [ 'if exists' ] ( I<ABS PATH> | I<MAGIC PATH> )
 
-B<ABI> = ( 'abi' ) ( I<ABS PATH> | I<MAGIC PATH> ) ','
+B<ABI> = ( 'abi' ) ( I<ABS PATH> | I<MAGIC PATH> | '<kernel>' ) ','
 
 B<ABS PATH> = '"' path '"' (the path is passed to open(2))
 
