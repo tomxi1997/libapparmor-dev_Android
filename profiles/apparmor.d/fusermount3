@@ -28,6 +28,7 @@ profile fusermount3 /usr/bin/fusermount3 {
   umount @{run}/user/@{uid}/*/,
   umount /media/**/,
   umount /tmp/**/,
+  umount /cvmfs/**/,
 
   /dev/fuse rw,
 
