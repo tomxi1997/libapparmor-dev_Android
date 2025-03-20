@@ -12,21 +12,11 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#include "mount_syscall_iface.h"
+
 #ifdef DEBUG
 #include <sys/apparmor.h>
 #endif
-
-/*static int mount_setattr(int dirfd, const char *pathname, unsigned int flags,
-        struct mount_attr *attr, size_t size) {
-    return syscall(SYS_mount_setattr, dirfd, pathname, flags, attr, size);
-}
-static int open_tree(int dirfd, const char *filename, unsigned int flags) {
-    return syscall(SYS_open_tree, dirfd, filename, flags);
-}
-static int move_mount(int from_dirfd, const char *from_pathname,
-        int to_dirfd, const char *to_pathname, unsigned int flags) {
-    return syscall(SYS_move_mount, from_dirfd, from_pathname, to_dirfd, to_pathname, flags);
-}*/
 
 #ifdef DEBUG
 #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -184,6 +174,7 @@ int test_with_old_style_mount() {
     return rc;
 }
 
+#ifndef SKIP_NEW_MOUNT_TESTING
 int test_with_open_tree_mount() {
     DEBUG_PRINTF("Unshare mount ns\n");
     // Call unshare() to step into a new mount namespace
@@ -359,10 +350,15 @@ int test_with_fsmount(const char *source) {
     }
     return rc;
 }
+#endif
 
 int main(int argc, char **argv) {
     if (argc != 3 && argc != 4) {
+#ifdef SKIP_NEW_MOUNT_TESTING
+        fprintf(stderr, "FAIL: Usage: disconnected_mount_complain [WORKDIR] old");
+#else
         fprintf(stderr, "FAIL: Usage: disconnected_mount_complain [WORKDIR] (old|open_tree|fsmount) [device_if_fsmount]");
+#endif
         return 1;
     }
     #ifdef DEBUG
@@ -385,7 +381,9 @@ int main(int argc, char **argv) {
     }
     if (strcmp(argv[2], "old") == 0) {
         return test_with_old_style_mount();
-    } else if (strcmp(argv[2], "open_tree") == 0) {
+    }
+#ifndef SKIP_NEW_MOUNT_TESTING
+    else if (strcmp(argv[2], "open_tree") == 0) {
         return test_with_open_tree_mount();
     } else if (strcmp(argv[2], "fsmount") == 0) {
         if (argc != 4) {
@@ -397,4 +395,10 @@ int main(int argc, char **argv) {
         fprintf(stderr, "FAIL: second argument must be 'old', 'open_tree', or 'fsmount'\n");
         return 1;
     }
+#else
+    else {
+        fprintf(stderr, "FAIL: second argument must be 'old'\n");
+        return 1;
+    }
+#endif
 }
