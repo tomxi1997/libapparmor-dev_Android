@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <linux/mount.h>
-#include <linux/types.h>
 
 #include "mount_syscall_iface.h"
 
