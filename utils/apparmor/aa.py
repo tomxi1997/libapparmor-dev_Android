@@ -2004,8 +2004,9 @@ def serialize_profile(profile_data, name, options):
 
     # Here should be all the profiles from the files added write after global/common stuff
     for prof in sorted(active_profiles.profiles_in_file(prof_filename)):
-        if active_profiles.profiles[prof]['parent']:
-            continue  # child profile or hat, already part of its parent profile
+        parent = active_profiles.profiles[prof]['parent']
+        if parent and parent in active_profiles.profiles:
+            continue  # child profile or hat, already part of its parent profile if parent is defined
 
         # aa-logprof asks to save each file separately. Therefore only update the given profile, and keep the original version of other profiles in the file
         if prof != name:
