@@ -1972,8 +1972,8 @@ def write_piece(profile_data, depth, name, nhat):
         for hat in all_childs:
             if name == nhat and profile_data[hat].get('external', False):
                 data.append('')
-                data.extend(map(lambda x: '  %s' % x, write_piece(profile_data, depth - 1, name, nhat)))
-                data.append('  }')
+                data.extend(map(lambda x: '%s%s' % (pre, x), write_piece(profile_data, depth, name, hat)))
+                data.append('%s}' % pre)
 
     return data
 
