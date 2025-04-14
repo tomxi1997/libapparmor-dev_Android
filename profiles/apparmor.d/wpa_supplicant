@@ -66,6 +66,7 @@ profile wpa_supplicant /usr/sbin/wpa_supplicant {
   network inet dgram,
   network inet6 dgram,
   network netlink raw,
+  network packet dgram,
 
   @{sys}/devices/pci[0-9]*:[0-9]*/**/ieee80211/phy[0-9]*/name r,
   # Might also need @{sys}/class/ieee80211/ r,
