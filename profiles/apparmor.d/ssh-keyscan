@@ -21,9 +21,6 @@ profile ssh-keyscan /usr/bin/ssh-keyscan {
   network inet6 stream,
   network netlink raw,
 
-  # By default, limit file options to the following dirs
-  file r @{HOME}/.ssh/{,**},
-
   # Allow executable mapping and read for the binary
   file mr /usr/bin/ssh-keyscan,
 
