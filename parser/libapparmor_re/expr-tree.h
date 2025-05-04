@@ -1033,6 +1033,7 @@ public:
 
 class CacheStats {
 public:
+	virtual ~CacheStats() {}
 	unsigned long dup, sum, max;
 
 	CacheStats(void): dup(0), sum(0), max(0) { };
