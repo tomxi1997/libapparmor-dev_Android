@@ -354,7 +354,7 @@ public:
 		return *ptr < rhs;
 	}
 
-	virtual int cmp(rule_t const &rhs) const {
+	int cmp(rule_t const &rhs) const override {
 		int res = rule_t::cmp(rhs);
 		if (res)
 			return res;
@@ -363,7 +363,7 @@ public:
 		return lhsptr->cmp(*rhsptr);
 	}
 
-	virtual bool operator<(rule_t const &rhs) const {
+	bool operator<(rule_t const &rhs) const override {
 		if (rule_type < rhs.rule_type)
 			return true;
 		if (rhs.rule_type < rule_type)
@@ -373,7 +373,7 @@ public:
 		return *this < *rhsptr;
 	}
 
-	virtual ostream &dump(ostream &os) {
+	ostream &dump(ostream &os) override {
 		prefixes::dump(os);
 
 		return os;
@@ -394,11 +394,11 @@ public:
 	 * can in herit the generic one that redirects to cmp()
 	 * that does get overriden
 	 */
-	virtual bool operator<(rule_t const &rhs) const {
+	bool operator<(rule_t const &rhs) const override {
 		return cmp(rhs) < 0;
 	}
 
-	virtual ostream &dump(ostream &os) {
+	ostream &dump(ostream &os) override {
 		prefix_rule_t::dump(os);
 
 		os << aa_class_table[aa_class()];
@@ -415,12 +415,12 @@ class perms_rule_t: public class_rule_t {
 public:
 	perms_rule_t(int c): class_rule_t(c), perms(0), saved(0) { };
 
-	virtual int cmp(rule_t const &rhs) const {
+	int cmp(rule_t const &rhs) const override {
 		/* don't compare perms so they can be merged */
 		return class_rule_t::cmp(rhs);
 	}
 
-	virtual bool merge(rule_t &rhs)
+	bool merge(rule_t &rhs) override
 	{
 		int res = class_rule_t::merge(rhs);
 		if (!res)
@@ -432,7 +432,7 @@ public:
 	};
 
 	/* defaut perms, override/mask off if none default used */
-	virtual ostream &dump(ostream &os) {
+	ostream &dump(ostream &os) override {
 		class_rule_t::dump(os);
 
 		if (saved)
@@ -451,7 +451,7 @@ class dedup_perms_rule_t: public class_rule_t {
 public:
 	dedup_perms_rule_t(int c): class_rule_t(c), perms(0) { };
 
-	virtual int cmp(rule_t const &rhs) const {
+	int cmp(rule_t const &rhs) const override {
 		int res = class_rule_t::cmp(rhs);
 		if (res)
 			return res;
@@ -461,7 +461,7 @@ public:
 	// inherit default merge which does dedup
 
 	/* defaut perms, override/mask off if none default used */
-	virtual ostream &dump(ostream &os) {
+	ostream &dump(ostream &os) override {
 		class_rule_t::dump(os);
 
 		os << "(0x" << hex << perms << ") ";
