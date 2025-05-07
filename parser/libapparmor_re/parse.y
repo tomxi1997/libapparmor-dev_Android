@@ -24,6 +24,8 @@
 /* #define DEBUG_TREE */
 #include "expr-tree.h"
 
+using namespace std;
+
 %}
 
 %union {
@@ -60,7 +62,7 @@ static inline Chars* insert_char_range(Chars* cset, transchar a, transchar b)
 %lex-param {YYLEX_PARAM}
 %parse-param {Node **root}
 %parse-param {const char *text}
-%name-prefix "regex_"
+%define api.prefix {regex_}
 
 %token <c> CHAR
 %type <c> regex_char cset_char1 cset_char cset_charN
