@@ -29,8 +29,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get install -y build-essential unzip autoconf2.64 autotools-dev \
-        libtool automake bison make
+        sudo apt-get install -y build-essential unzip autoconf libtool gperf flex swig autoconf-archive bison
         
     - name: Set build parameters
       id: vars
