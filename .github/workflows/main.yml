@@ -1,4 +1,4 @@
-name: Android Build libseccomp-dev
+name: Android Build libapparmor-dev
 
 on:
   workflow_dispatch:
@@ -46,7 +46,7 @@ jobs:
         echo "target=$target" >> $GITHUB_OUTPUT
         echo "api=${{ github.event.inputs.android_api || '30' }}" >> $GITHUB_OUTPUT
 
-    - name: Build libseccomp-dev
+    - name: Build libapparmor-dev
       run: |
         export NDK_TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
         export TARGET=${{ steps.vars.outputs.target }}
@@ -69,11 +69,11 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4.3.1
       with:
-        name: android-${{ github.event.inputs.target_arch || 'aarch64' }}-libseccomp-dev-dev
+        name: android-${{ github.event.inputs.target_arch || 'aarch64' }}-libapparmor-dev
         path: /data/sysroot/*
 
     - name: Create a ZIP file for artifact
-      run: zip -r android-${{ github.event.inputs.target_arch || 'aarch64' }}-libseccomp-dev.zip /data/sysroot/*
+      run: zip -r android-${{ github.event.inputs.target_arch || 'aarch64' }}-libapparmor-dev.zip /data/sysroot/*
     
     - name: Create Release and Upload Release Asset
       uses: softprops/action-gh-release@v1
@@ -84,4 +84,4 @@ jobs:
         draft: false
         prerelease: false
         files: |
-            android-${{ github.event.inputs.target_arch || 'aarch64' }}-libseccomp-dev.zip
+            android-${{ github.event.inputs.target_arch || 'aarch64' }}-libapparmor-dev.zip
